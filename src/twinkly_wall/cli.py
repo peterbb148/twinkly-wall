@@ -119,7 +119,8 @@ def create_parser() -> argparse.ArgumentParser:
         help="Text to display",
     )
     say_parser.add_argument(
-        "-c", "--color",
+        "-c",
+        "--color",
         default="white",
         help="Text color (name, hex #RRGGBB, or R,G,B). Default: white",
     )

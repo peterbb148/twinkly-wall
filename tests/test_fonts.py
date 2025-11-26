@@ -71,9 +71,7 @@ def test_draw_char():
 
     # The letter 'A' should have some pixels set
     has_pixels = any(
-        canvas.get_pixel(x, y) != BLACK
-        for y in range(CHAR_HEIGHT)
-        for x in range(CHAR_WIDTH)
+        canvas.get_pixel(x, y) != BLACK for y in range(CHAR_HEIGHT) for x in range(CHAR_WIDTH)
     )
     assert has_pixels
 
@@ -85,9 +83,7 @@ def test_draw_char_respects_color():
 
     # At least one pixel should be RED
     has_red = any(
-        canvas.get_pixel(x, y) == RED
-        for y in range(CHAR_HEIGHT)
-        for x in range(CHAR_WIDTH)
+        canvas.get_pixel(x, y) == RED for y in range(CHAR_HEIGHT) for x in range(CHAR_WIDTH)
     )
     assert has_red
 
@@ -103,9 +99,7 @@ def test_draw_text():
     # Both characters should have pixels
     # Check first char area
     first_has_pixels = any(
-        canvas.get_pixel(x, y) != BLACK
-        for y in range(CHAR_HEIGHT)
-        for x in range(CHAR_WIDTH)
+        canvas.get_pixel(x, y) != BLACK for y in range(CHAR_HEIGHT) for x in range(CHAR_WIDTH)
     )
     assert first_has_pixels
 

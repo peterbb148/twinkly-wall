@@ -180,7 +180,7 @@ def render_text_to_frame(
 
     Returns a frame just wide enough to contain the text.
     """
-    from .types import BLACK, HEIGHT
+    from .types import HEIGHT
 
     width = text_width(text, spacing)
     if width <= 0:

@@ -2,9 +2,9 @@
 
 import sys
 import time
-from typing import Iterator
+from collections.abc import Iterator
 
-from ..types import BLACK, Frame, RGB
+from ..types import BLACK, RGB, Frame
 
 
 def _brightness(color: RGB) -> int:

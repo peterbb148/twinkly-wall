@@ -2,7 +2,7 @@
 
 import pytest
 
-from twinkly_wall.cli import parse_color, render_text_centered, create_parser, main
+from twinkly_wall.cli import create_parser, main, parse_color, render_text_centered
 
 
 class TestParseColor:
@@ -61,11 +61,7 @@ class TestRenderTextCentered:
         frame = render_text_centered("A", red)
 
         # Should have at least one red pixel
-        has_red = any(
-            frame[y][x] == red
-            for y in range(len(frame))
-            for x in range(len(frame[0]))
-        )
+        has_red = any(frame[y][x] == red for y in range(len(frame)) for x in range(len(frame[0])))
         assert has_red
 
 

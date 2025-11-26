@@ -8,7 +8,6 @@ from .types import (
     Frame,
     blend_color,
     copy_frame,
-    create_empty_frame,
 )
 
 
