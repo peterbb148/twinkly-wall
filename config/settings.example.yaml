@@ -1,0 +1,24 @@
+# Twinkly Wall Settings
+# Copy this file to settings.yaml and configure your values
+
+twinkly:
+  # IP address of your Twinkly device (or leave empty to use discovery)
+  host: ""
+
+weather:
+  # OpenWeatherMap API key
+  api_key: ""
+  # City ID for weather data (find at openweathermap.org)
+  city_id: "2618425"  # Copenhagen
+  # Units: metric, imperial, or standard
+  units: "metric"
+  # Cache TTL in seconds
+  cache_ttl: 300
+
+leaderboard:
+  # Your custom leaderboard API endpoint
+  api_url: ""
+  # API key if required
+  api_key: ""
+  # Cache TTL in seconds
+  cache_ttl: 60

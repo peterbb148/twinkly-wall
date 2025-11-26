@@ -1,0 +1,28 @@
+# Twinkly Wall Card Playlist
+# Cards are displayed in sequence, looping forever
+
+cards:
+  - type: clock
+    duration: 10  # seconds
+
+  - type: text
+    text: "Merry Christmas!"
+    color: [255, 0, 0]
+    duration: 8
+
+  - type: pacman_christmas
+    duration: 10
+
+  - type: snow
+    duration: 8
+
+  - type: beer_bubbles
+    duration: 10
+
+  # Uncomment when weather API is configured
+  # - type: weather
+  #   duration: 8
+
+  # Uncomment when leaderboard API is configured
+  # - type: leaderboard
+  #   duration: 15
