@@ -4,8 +4,9 @@ import argparse
 import sys
 
 from .canvas import Canvas
+from .cards import CardContext, ClockCard, TextCard
 from .fonts import draw_text, text_width
-from .outputs.terminal import print_frame
+from .outputs.terminal import animate_frames, print_frame
 from .types import HEIGHT, RGB, WHITE, WIDTH
 
 
@@ -99,6 +100,65 @@ def cmd_say(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_preview(args: argparse.Namespace) -> int:
+    """Handle the 'preview' subcommand - preview a card animation."""
+    card_type = args.card
+    duration = args.duration
+
+    # Create the appropriate card
+    if card_type == "clock":
+        try:
+            color = parse_color(args.color) if args.color else WHITE
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        card = ClockCard(
+            {
+                "duration": duration,
+                "color": list(color),
+                "format_24h": not args.twelve_hour,
+                "blink_colon": not args.no_blink,
+            }
+        )
+    elif card_type == "text":
+        if not args.text:
+            print("Error: --text is required for text card", file=sys.stderr)
+            return 1
+        try:
+            color = parse_color(args.color) if args.color else WHITE
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        card = TextCard(
+            {
+                "duration": duration,
+                "text": args.text,
+                "color": list(color),
+                "scroll": args.scroll,
+            }
+        )
+    else:
+        print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
+        print("Available cards: clock, text", file=sys.stderr)
+        return 1
+
+    # Create context and run
+    ctx = CardContext()
+
+    print(f"Previewing '{card_type}' card for {duration}s (Ctrl+C to stop)...")
+    print()
+
+    # Use animate_frames for smooth animation
+    animate_frames(
+        card.frames(ctx),
+        color_mode=not args.no_color,
+        use_half_blocks=True,
+        clear_between=False,
+    )
+
+    return 0
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser for twinklysay."""
     parser = argparse.ArgumentParser(
@@ -135,6 +195,57 @@ def create_parser() -> argparse.ArgumentParser:
         help="Use full blocks instead of half-blocks (lower resolution)",
     )
 
+    # 'preview' subcommand
+    preview_parser = subparsers.add_parser(
+        "preview",
+        help="Preview a card animation",
+        description="Preview a card animation in the terminal",
+    )
+    preview_parser.add_argument(
+        "card",
+        choices=["clock", "text"],
+        help="Card type to preview",
+    )
+    preview_parser.add_argument(
+        "-d",
+        "--duration",
+        type=float,
+        default=10.0,
+        help="Duration in seconds (default: 10)",
+    )
+    preview_parser.add_argument(
+        "-c",
+        "--color",
+        help="Text color (name, hex #RRGGBB, or R,G,B)",
+    )
+    preview_parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="Use grayscale output",
+    )
+    # Clock-specific options
+    preview_parser.add_argument(
+        "--twelve-hour",
+        action="store_true",
+        help="Use 12-hour format (clock only)",
+    )
+    preview_parser.add_argument(
+        "--no-blink",
+        action="store_true",
+        help="Disable colon blinking (clock only)",
+    )
+    # Text-specific options
+    preview_parser.add_argument(
+        "-t",
+        "--text",
+        help="Text message (required for text card)",
+    )
+    preview_parser.add_argument(
+        "--scroll",
+        action="store_true",
+        help="Force scrolling (text card)",
+    )
+
     # Version
     parser.add_argument(
         "--version",
@@ -156,6 +267,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "say":
         return cmd_say(args)
+    elif args.command == "preview":
+        return cmd_preview(args)
 
     return 0
 
