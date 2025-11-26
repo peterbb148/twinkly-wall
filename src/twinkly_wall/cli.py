@@ -4,7 +4,15 @@ import argparse
 import sys
 
 from .canvas import Canvas
-from .cards import BeerCard, CardContext, ClockCard, PacmanCard, SnowCard, TextCard
+from .cards import (
+    BeerCard,
+    CardContext,
+    ClockCard,
+    PacmanCard,
+    RainbowCard,
+    SnowCard,
+    TextCard,
+)
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .types import HEIGHT, RGB, WHITE, WIDTH
@@ -159,9 +167,17 @@ def cmd_preview(args: argparse.Namespace) -> int:
                 "accumulate": args.accumulate,
             }
         )
+    elif card_type == "rainbow":
+        card = RainbowCard(
+            {
+                "duration": duration,
+                "mode": args.mode,
+                "speed": args.speed,
+            }
+        )
     else:
         print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
-        print("Available cards: clock, text, pacman, beer, snow", file=sys.stderr)
+        print("Available cards: clock, text, pacman, beer, snow, rainbow", file=sys.stderr)
         return 1
 
     # Create context and run
@@ -225,7 +241,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "card",
-        choices=["clock", "text", "pacman", "beer", "snow"],
+        choices=["clock", "text", "pacman", "beer", "snow", "rainbow"],
         help="Card type to preview",
     )
     preview_parser.add_argument(
@@ -291,6 +307,13 @@ def create_parser() -> argparse.ArgumentParser:
         "--accumulate",
         action="store_true",
         help="Accumulate snow at bottom (snow card)",
+    )
+    # Rainbow-specific options
+    preview_parser.add_argument(
+        "--mode",
+        choices=["rainbow", "plasma", "wave", "gradient"],
+        default="rainbow",
+        help="Rainbow animation mode (rainbow card, default: rainbow)",
     )
 
     # Version

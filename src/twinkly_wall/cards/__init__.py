@@ -11,6 +11,7 @@ from .base import (
 from .beer import BeerCard
 from .clock import ClockCard
 from .pacman import PacmanCard
+from .rainbow import RainbowCard
 from .snow import SnowCard
 from .text import TextCard
 
@@ -20,6 +21,7 @@ __all__ = [
     "CardContext",
     "ClockCard",
     "PacmanCard",
+    "RainbowCard",
     "SnowCard",
     "TextCard",
     "create_card",
