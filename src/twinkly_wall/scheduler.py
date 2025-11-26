@@ -3,13 +3,13 @@
 import logging
 import time
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from .cards import CardContext, create_card
 from .config import CardConfig, PlaylistConfig
 from .effects import crossfade
-from .types import BLACK, Frame, create_empty_frame
+from .types import Frame
 
 logger = logging.getLogger(__name__)
 

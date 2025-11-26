@@ -1,7 +1,5 @@
 """Tests for the card scheduler."""
 
-import pytest
-
 from twinkly_wall.cards import CardContext
 from twinkly_wall.config import CardConfig, PlaylistConfig
 from twinkly_wall.scheduler import Scheduler, SchedulerState
@@ -62,9 +60,7 @@ class TestScheduler:
 
     def test_scheduler_frames_generator(self):
         """Test scheduler frames generator produces frames."""
-        playlist = PlaylistConfig(
-            cards=[CardConfig(type="clock", duration=0.1)]
-        )
+        playlist = PlaylistConfig(cards=[CardConfig(type="clock", duration=0.1)])
         scheduler = Scheduler(playlist)
 
         # Get some frames
@@ -102,9 +98,7 @@ class TestScheduler:
 
     def test_scheduler_sends_to_outputs(self):
         """Test that scheduler sends frames to outputs."""
-        playlist = PlaylistConfig(
-            cards=[CardConfig(type="clock", duration=0.1)]
-        )
+        playlist = PlaylistConfig(cards=[CardConfig(type="clock", duration=0.1)])
         output = MockOutput()
         scheduler = Scheduler(playlist, outputs=[output])
 

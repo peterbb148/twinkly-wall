@@ -21,6 +21,12 @@ dev = [
     "ruff>=0.1",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1",
+]
+
 [project.scripts]
 twinklysay = "twinkly_wall.cli:main"
 twinkly-wall = "twinkly_wall.daemon:main"
