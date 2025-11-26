@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from .canvas import Canvas
-from .cards import CardContext, ClockCard, TextCard
+from .cards import BeerCard, CardContext, ClockCard, PacmanCard, SnowCard, TextCard
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .types import HEIGHT, RGB, WHITE, WIDTH
@@ -137,9 +137,31 @@ def cmd_preview(args: argparse.Namespace) -> int:
                 "scroll": args.scroll,
             }
         )
+    elif card_type == "pacman":
+        card = PacmanCard(
+            {
+                "duration": duration,
+                "speed": args.speed,
+                "theme": args.theme,
+            }
+        )
+    elif card_type == "beer":
+        card = BeerCard(
+            {
+                "duration": duration,
+            }
+        )
+    elif card_type == "snow":
+        card = SnowCard(
+            {
+                "duration": duration,
+                "wind": args.wind,
+                "accumulate": args.accumulate,
+            }
+        )
     else:
         print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
-        print("Available cards: clock, text", file=sys.stderr)
+        print("Available cards: clock, text, pacman, beer, snow", file=sys.stderr)
         return 1
 
     # Create context and run
@@ -203,7 +225,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "card",
-        choices=["clock", "text"],
+        choices=["clock", "text", "pacman", "beer", "snow"],
         help="Card type to preview",
     )
     preview_parser.add_argument(
@@ -244,6 +266,31 @@ def create_parser() -> argparse.ArgumentParser:
         "--scroll",
         action="store_true",
         help="Force scrolling (text card)",
+    )
+    # Pacman-specific options
+    preview_parser.add_argument(
+        "--speed",
+        type=float,
+        default=15.0,
+        help="Animation speed in pixels/sec (pacman card, default: 15)",
+    )
+    preview_parser.add_argument(
+        "--theme",
+        choices=["trees", "beer", "hearts", "snow", "ghosts", "dots", "snowman"],
+        default="trees",
+        help="What Pac-Man eats (pacman card, default: trees)",
+    )
+    # Snow-specific options
+    preview_parser.add_argument(
+        "--wind",
+        type=float,
+        default=0.0,
+        help="Wind direction -1 to 1 (snow card, default: 0)",
+    )
+    preview_parser.add_argument(
+        "--accumulate",
+        action="store_true",
+        help="Accumulate snow at bottom (snow card)",
     )
 
     # Version
