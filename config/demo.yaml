@@ -1,0 +1,129 @@
+# Twinkly Wall Demo Playlist
+# Shows off all available cards and their options
+
+default_duration: 10
+default_transition: none
+
+cards:
+  # Weather display
+  - type: weather
+    duration: 8
+
+  # Clock variations
+  - type: clock
+    duration: 5
+    color: [255, 255, 255]
+    format_24h: true
+    blink_colon: true
+
+  - type: clock
+    duration: 5
+    color: [0, 255, 255]
+    format_24h: false
+    blink_colon: false
+
+  # Text - static short message
+  - type: text
+    text: "HELLO"
+    color: [0, 255, 0]
+    duration: 3
+
+  # Text - scrolling message
+  - type: text
+    text: "Welcome to Twinkly Wall!"
+    color: [255, 255, 0]
+    scroll: true
+    scroll_speed: 40
+    duration: 5
+
+  # Text - Christmas message
+  - type: text
+    text: "Merry Christmas!"
+    color: [255, 0, 0]
+    scroll: true
+    duration: 5
+
+  # Pac-Man with different themes
+  - type: pacman
+    duration: 8
+    theme: trees
+    speed: 15
+
+  - type: pacman
+    duration: 8
+    theme: ghosts
+    speed: 20
+
+  - type: pacman
+    duration: 8
+    theme: dots
+    speed: 15
+
+  - type: pacman
+    duration: 8
+    theme: snowman
+    speed: 12
+
+  - type: pacman
+    duration: 8
+    theme: beer
+    speed: 15
+
+  - type: pacman
+    duration: 8
+    theme: hearts
+    speed: 18
+
+  # Rainbow modes
+  - type: rainbow
+    duration: 8
+    mode: rainbow
+    speed: 1.0
+
+  - type: rainbow
+    duration: 8
+    mode: plasma
+    speed: 1.5
+
+  - type: rainbow
+    duration: 8
+    mode: wave
+    speed: 1.0
+
+  - type: rainbow
+    duration: 8
+    mode: gradient
+    speed: 0.5
+
+  # Snow variations
+  - type: snow
+    duration: 8
+    wind: 0.0
+    accumulate: false
+
+  - type: snow
+    duration: 8
+    wind: 0.3
+    accumulate: true
+
+  - type: snow
+    duration: 8
+    wind: -0.5
+    accumulate: false
+
+  # Beer animation
+  - type: beer
+    duration: 10
+
+  # Test patterns (useful for debugging)
+  - type: test_pattern
+    duration: 3
+    mode: corners
+
+  - type: test_pattern
+    duration: 3
+    mode: all_rows
+
+  - type: test_pattern
+    duration: 3
+    mode: gradient

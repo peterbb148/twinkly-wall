@@ -20,6 +20,7 @@ class TextCard(Card):
         bgcolor: RGB tuple for background color (default: black)
         scroll: Enable scrolling for long text (default: auto)
         scroll_speed: Pixels per second for scrolling (default: 30)
+        scroll_complete: Wait for text to fully scroll before ending (default: true)
         align: Text alignment - left, center, right (default: center)
     """
 
@@ -32,6 +33,7 @@ class TextCard(Card):
         self.bgcolor: RGB = tuple(self.config.get("bgcolor", BLACK))  # type: ignore
         self.scroll: bool | str = self.config.get("scroll", "auto")
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.scroll_complete: bool = self.config.get("scroll_complete", True)
         self.align: str = self.config.get("align", "center")
 
     def _should_scroll(self) -> bool:
@@ -101,13 +103,26 @@ class TextCard(Card):
 
             start_time = time.time()
             offset = 0.0
+            scroll_completed = False
 
-            while time.time() - start_time < self.duration:
+            while True:
                 frame = self._render_scrolling_frame(int(offset), content_width)
                 yield frame, frame_delay
 
                 offset += pixels_per_frame
 
-                # Loop the scroll
+                # Check if scroll completed
                 if offset >= total_scroll:
+                    scroll_completed = True
                     offset = 0.0
+
+                # Exit conditions
+                elapsed = time.time() - start_time
+                if self.scroll_complete:
+                    # Wait for at least one complete scroll AND duration
+                    if scroll_completed and elapsed >= self.duration:
+                        break
+                else:
+                    # Just respect duration
+                    if elapsed >= self.duration:
+                        break

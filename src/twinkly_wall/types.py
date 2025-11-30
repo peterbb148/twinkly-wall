@@ -2,7 +2,7 @@
 
 from typing import TypeAlias
 
-# Display dimensions (Twinkly Matrix 500: 10 rows × 50 columns)
+# Display dimensions (Twinkly Matrix 500: 50 columns × 10 rows for horizontal display)
 WIDTH: int = 50
 HEIGHT: int = 10
 

@@ -82,6 +82,8 @@ class TwinklyDaemon:
             self._twinkly = TwinklyOutput(
                 host=self.settings.twinkly.host,
                 port=self.settings.twinkly.port,
+                mirror_h=self.settings.twinkly.mirror_h,
+                mirror_v=self.settings.twinkly.mirror_v,
             )
             outputs.append(self._twinkly)
             logger.info(f"Twinkly output configured: {self.settings.twinkly.host}")
@@ -97,15 +99,18 @@ class TwinklyDaemon:
         datasources: dict = {}
 
         # Add weather datasource if configured
-        if self.settings.weather.api_key:
-            logger.info("Weather datasource configured")
-            # TODO: Add weather datasource when implemented
-            # from .datasources.weather import WeatherDataSource
-            # datasources["weather"] = WeatherDataSource(
-            #     api_key=self.settings.weather.api_key,
-            #     city_id=self.settings.weather.city_id,
-            #     units=self.settings.weather.units,
-            # )
+        if self.settings.weather.latitude and self.settings.weather.longitude:
+            from .datasources.weather import WeatherDataSource
+
+            datasources["weather"] = WeatherDataSource(
+                latitude=self.settings.weather.latitude,
+                longitude=self.settings.weather.longitude,
+                cache_duration=self.settings.weather.cache_duration,
+            )
+            logger.info(
+                f"Weather datasource configured: {self.settings.weather.latitude}, "
+                f"{self.settings.weather.longitude}"
+            )
 
         return CardContext(datasources=datasources)
 

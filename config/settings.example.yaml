@@ -6,14 +6,12 @@ twinkly:
   host: ""
 
 weather:
-  # OpenWeatherMap API key
-  api_key: ""
-  # City ID for weather data (find at openweathermap.org)
-  city_id: "2618425"  # Copenhagen
-  # Units: metric, imperial, or standard
-  units: "metric"
-  # Cache TTL in seconds
-  cache_ttl: 300
+  # Coordinates for Open-Meteo weather API (no API key needed!)
+  # Get coordinates from https://www.latlong.net/
+  latitude: 55.6761  # Copenhagen
+  longitude: 12.5683
+  # Cache duration in seconds
+  cache_duration: 600
 
 leaderboard:
   # Your custom leaderboard API endpoint

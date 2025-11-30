@@ -1,0 +1,4 @@
+cards:
+  - type: test_pattern
+    duration: 60
+    mode: corners

@@ -11,6 +11,7 @@ from .cards import (
     PacmanCard,
     RainbowCard,
     SnowCard,
+    TestPatternCard,
     TextCard,
 )
 from .fonts import draw_text, text_width
@@ -175,9 +176,16 @@ def cmd_preview(args: argparse.Namespace) -> int:
                 "speed": args.speed,
             }
         )
+    elif card_type == "test_pattern":
+        card = TestPatternCard(
+            {
+                "duration": duration,
+                "mode": args.pattern_mode,
+            }
+        )
     else:
         print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
-        print("Available cards: clock, text, pacman, beer, snow, rainbow", file=sys.stderr)
+        print("Available cards: clock, text, pacman, beer, snow, rainbow, test_pattern", file=sys.stderr)
         return 1
 
     # Create context and run
@@ -241,7 +249,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "card",
-        choices=["clock", "text", "pacman", "beer", "snow", "rainbow"],
+        choices=["clock", "text", "pacman", "beer", "snow", "rainbow", "test_pattern"],
         help="Card type to preview",
     )
     preview_parser.add_argument(
@@ -314,6 +322,13 @@ def create_parser() -> argparse.ArgumentParser:
         choices=["rainbow", "plasma", "wave", "gradient"],
         default="rainbow",
         help="Rainbow animation mode (rainbow card, default: rainbow)",
+    )
+    # Test pattern options
+    preview_parser.add_argument(
+        "--pattern-mode",
+        choices=["rows", "all_rows", "cols", "corners", "gradient", "numbers"],
+        default="rows",
+        help="Test pattern mode (test_pattern card, default: rows)",
     )
 
     # Version
