@@ -10,6 +10,7 @@ from .base import (
 )
 from .beer import BeerCard
 from .clock import ClockCard
+from .image import ImageCard
 from .leaderboard import LeaderboardCard
 from .pacman import PacmanCard
 from .pacman_chase import PacmanChaseCard
@@ -24,6 +25,7 @@ __all__ = [
     "Card",
     "CardContext",
     "ClockCard",
+    "ImageCard",
     "LeaderboardCard",
     "PacmanCard",
     "PacmanChaseCard",
