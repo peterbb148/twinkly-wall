@@ -1,0 +1,45 @@
+# Twinkly Wall Card Playlist
+# Cards are displayed in sequence, looping forever
+
+# Default duration and transition for all cards (can be overridden per card)
+default_duration: 10
+default_transition: none  # none or crossfade
+
+cards:
+  - type: clock
+    duration: 10
+    color: [255, 255, 255]
+    format_24h: true
+    blink_colon: true
+
+  - type: text
+    text: "Merry Christmas!"
+    color: [255, 0, 0]
+    duration: 8
+    scroll: true
+
+  - type: pacman
+    duration: 10
+    theme: trees  # trees, beer, hearts, snow, ghosts, dots, snowman
+    speed: 15
+
+  - type: rainbow
+    duration: 10
+    mode: plasma  # rainbow, plasma, wave, gradient
+    speed: 1.0
+
+  - type: snow
+    duration: 8
+    wind: 0.0
+    accumulate: false
+
+  - type: beer
+    duration: 10
+
+  # Uncomment when weather API is configured
+  # - type: weather
+  #   duration: 8
+
+  # Uncomment when leaderboard API is configured
+  # - type: leaderboard
+  #   duration: 15

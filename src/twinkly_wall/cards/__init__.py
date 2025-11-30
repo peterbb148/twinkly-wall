@@ -10,20 +10,26 @@ from .base import (
 )
 from .beer import BeerCard
 from .clock import ClockCard
+from .leaderboard import LeaderboardCard
 from .pacman import PacmanCard
 from .rainbow import RainbowCard
 from .snow import SnowCard
+from .test_pattern import TestPatternCard
 from .text import TextCard
+from .weather import WeatherCard
 
 __all__ = [
     "BeerCard",
     "Card",
     "CardContext",
     "ClockCard",
+    "LeaderboardCard",
     "PacmanCard",
     "RainbowCard",
     "SnowCard",
+    "TestPatternCard",
     "TextCard",
+    "WeatherCard",
     "create_card",
     "get_card_class",
     "list_card_types",

@@ -29,16 +29,24 @@ class TwinklyDaemon:
         self,
         settings_path: Path | None = None,
         cards_path: Path | None = None,
+        terminal_output: bool = False,
     ):
         """Initialize the daemon.
 
         Args:
             settings_path: Path to settings.yaml
             cards_path: Path to cards.yaml
+            terminal_output: If True, output to terminal instead of Twinkly device
         """
         self.settings = load_settings(settings_path)
         self.playlist = load_playlist(cards_path)
+        from .outputs.terminal import TerminalOutput
+        from .outputs.twinkly import TwinklyOutput
+
+        self.terminal_output = terminal_output
         self.scheduler: Scheduler | None = None
+        self._terminal: TerminalOutput | None = None
+        self._twinkly: TwinklyOutput | None = None
         self._setup_signals()
 
     def _setup_signals(self) -> None:
@@ -59,15 +67,26 @@ class TwinklyDaemon:
         """
         outputs = []
 
+        # Add terminal output if requested
+        if self.terminal_output:
+            from .outputs.terminal import TerminalOutput
+
+            self._terminal = TerminalOutput()
+            outputs.append(self._terminal)
+            logger.info("Terminal output enabled")
+
         # Add Twinkly output if configured
         if self.settings.twinkly.host:
+            from .outputs.twinkly import TwinklyOutput
+
+            self._twinkly = TwinklyOutput(
+                host=self.settings.twinkly.host,
+                port=self.settings.twinkly.port,
+                mirror_h=self.settings.twinkly.mirror_h,
+                mirror_v=self.settings.twinkly.mirror_v,
+            )
+            outputs.append(self._twinkly)
             logger.info(f"Twinkly output configured: {self.settings.twinkly.host}")
-            # TODO: Add TwinklyOutput when implemented
-            # from .outputs.twinkly import TwinklyOutput
-            # outputs.append(TwinklyOutput(
-            #     host=self.settings.twinkly.host,
-            #     port=self.settings.twinkly.port,
-            # ))
 
         return outputs
 
@@ -80,15 +99,18 @@ class TwinklyDaemon:
         datasources: dict = {}
 
         # Add weather datasource if configured
-        if self.settings.weather.api_key:
-            logger.info("Weather datasource configured")
-            # TODO: Add weather datasource when implemented
-            # from .datasources.weather import WeatherDataSource
-            # datasources["weather"] = WeatherDataSource(
-            #     api_key=self.settings.weather.api_key,
-            #     city_id=self.settings.weather.city_id,
-            #     units=self.settings.weather.units,
-            # )
+        if self.settings.weather.latitude and self.settings.weather.longitude:
+            from .datasources.weather import WeatherDataSource
+
+            datasources["weather"] = WeatherDataSource(
+                latitude=self.settings.weather.latitude,
+                longitude=self.settings.weather.longitude,
+                cache_duration=self.settings.weather.cache_duration,
+            )
+            logger.info(
+                f"Weather datasource configured: {self.settings.weather.latitude}, "
+                f"{self.settings.weather.longitude}"
+            )
 
         return CardContext(datasources=datasources)
 
@@ -109,8 +131,21 @@ class TwinklyDaemon:
             outputs=outputs,
         )
 
-        logger.info("Starting playlist loop...")
-        self.scheduler.run_loop()
+        # Start outputs
+        if self._terminal:
+            self._terminal.start()
+        if self._twinkly:
+            self._twinkly.start()
+
+        try:
+            logger.info("Starting playlist loop...")
+            self.scheduler.run_loop()
+        finally:
+            # Clean up outputs
+            if self._terminal:
+                self._terminal.stop()
+            if self._twinkly:
+                self._twinkly.stop()
 
         logger.info("Daemon stopped")
 
@@ -139,6 +174,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Path to cards.yaml",
     )
     parser.add_argument(
+        "-t",
+        "--terminal",
+        action="store_true",
+        help="Output to terminal instead of Twinkly device",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -163,6 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     daemon = TwinklyDaemon(
         settings_path=args.settings,
         cards_path=args.cards,
+        terminal_output=args.terminal,
     )
 
     try:
