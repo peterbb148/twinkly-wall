@@ -171,3 +171,45 @@ def preview_text(text: str, color: RGB = (255, 255, 255)) -> None:
     canvas = Canvas(WIDTH, HEIGHT)
     draw_text(canvas, 0, 1, text, color)
     print_frame(canvas.copy())
+
+
+class TerminalOutput:
+    """Terminal output target for the scheduler.
+
+    This class implements the Output protocol and renders frames
+    to the terminal in real-time.
+    """
+
+    def __init__(self, color_mode: bool = True, use_half_blocks: bool = True):
+        """Initialize terminal output.
+
+        Args:
+            color_mode: Use ANSI 24-bit colors
+            use_half_blocks: Use half-block characters for double resolution
+        """
+        self.color_mode = color_mode
+        self.use_half_blocks = use_half_blocks
+        self._first_frame = True
+        self._last_height = 0
+
+    def start(self) -> None:
+        """Prepare terminal for output."""
+        hide_cursor()
+        clear_screen()
+        self._first_frame = True
+
+    def stop(self) -> None:
+        """Restore terminal state."""
+        show_cursor()
+        print()
+
+    def send_frame(self, frame: Frame) -> None:
+        """Send a frame to the terminal."""
+        if not self._first_frame and self._last_height > 0:
+            move_cursor_up(self._last_height)
+
+        print_frame(frame, self.color_mode, self.use_half_blocks)
+
+        height = len(frame)
+        self._last_height = height // 2 if self.use_half_blocks else height
+        self._first_frame = False

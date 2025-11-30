@@ -16,7 +16,7 @@ cards:
     text: "Merry Christmas!"
     color: [255, 0, 0]
     duration: 8
-    scroll: false
+    scroll: true
 
   - type: pacman
     duration: 10
