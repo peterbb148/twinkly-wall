@@ -121,6 +121,12 @@ cards:
   - type: beer
     duration: 10
 
+  # Image display - scrolling Carlsberg bottle
+  - type: image
+    path: assets/carlsberg.png
+    duration: 10
+    scroll_speed: 30
+
   # Test patterns (useful for debugging)
   - type: test_pattern
     duration: 3
