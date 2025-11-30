@@ -5,6 +5,14 @@ default_duration: 10
 default_transition: none
 
 cards:
+  # Welcome message - scrolling
+  - type: text
+    text: "Welcome to Twinkly Wall!"
+    color: [255, 255, 0]
+    scroll: true
+    scroll_speed: 40
+    duration: 5
+
   # Weather display with animated icons
   - type: weather
     duration: 8
@@ -30,14 +38,6 @@ cards:
     text: "HELLO"
     color: [0, 255, 0]
     duration: 3
-
-  # Text - scrolling message
-  - type: text
-    text: "Welcome to Twinkly Wall!"
-    color: [255, 255, 0]
-    scroll: true
-    scroll_speed: 40
-    duration: 5
 
   # Coffee break
   - type: coffee
