@@ -43,7 +43,6 @@ htmlcov/
 .ruff_cache/
 
 # Local config (may contain secrets)
-config/settings.yaml
 .env
 
 # OS

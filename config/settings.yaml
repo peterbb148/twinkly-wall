@@ -1,0 +1,13 @@
+# Twinkly Wall Settings
+
+twinkly:
+  host: "192.168.1.138"
+  port: 80
+  mirror_h: true
+  mirror_v: true
+
+weather:
+  # Copenhagen coordinates
+  latitude: 55.6761
+  longitude: 12.5683
+  cache_duration: 600
