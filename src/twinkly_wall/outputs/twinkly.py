@@ -217,6 +217,8 @@ class TwinklyOutput:
         port: int = 80,
         brightness: int = 100,
         led_profile: str = "RGB",
+        mirror_h: bool = False,
+        mirror_v: bool = False,
     ):
         """Initialize Twinkly output.
 
@@ -225,10 +227,14 @@ class TwinklyOutput:
             port: HTTP port
             brightness: Initial brightness 0-100
             led_profile: LED color profile (RGB, RGBW)
+            mirror_h: Mirror horizontally (flip left-right)
+            mirror_v: Mirror vertically (flip top-bottom)
         """
         self.client = TwinklyClient(host, port)
         self.brightness = brightness
         self.led_profile = led_profile
+        self.mirror_h = mirror_h
+        self.mirror_v = mirror_v
         self._frame_count = 0
 
     def start(self) -> None:
@@ -258,27 +264,90 @@ class TwinklyOutput:
     def _frame_to_bytes(self, frame: Frame) -> bytes:
         """Convert a frame to Twinkly binary format.
 
-        The Twinkly expects LEDs in a specific order based on the
-        physical layout. For now, we assume a simple row-major order.
+        The Twinkly Matrix 500 has two strips of 250 LEDs each:
+        - Physical layout: 10 vertical strands × 50 LEDs per strand
+        - Strip 1 (LEDs 0-249): Strands 4,3,2,1,0 (center to left), serpentine
+        - Strip 2 (LEDs 250-499): Strands 5,6,7,8,9 (center to right), serpentine
+
+        The frame comes in as 10 rows × 50 columns (HEIGHT=10, WIDTH=50) for
+        horizontal display. We need to rotate it 90° clockwise to map to
+        the physical vertical strand layout:
+        - Frame row 0 (top) -> Physical strand 9 (rightmost)
+        - Frame row 9 (bottom) -> Physical strand 0 (leftmost)
+        - Frame column 0 (left) -> Physical LED position 0 (top of strand)
+        - Frame column 49 (right) -> Physical LED position 49 (bottom of strand)
+
+        After rotation: physical_strand = 9 - frame_row, led_pos = frame_col
 
         Args:
-            frame: 2D array of RGB tuples
+            frame: 2D array of RGB tuples [y][x], 10 rows × 50 cols
 
         Returns:
             Binary data for the frame
         """
-        # For realtime frames, we need a version byte header
-        # Version 3 format: 1 byte version + RGB data
-        data = bytearray([0x03])  # Version 3
+        data = bytearray()
+        frame_height = len(frame)  # 10 rows
+        frame_width = len(frame[0]) if frame_height > 0 else 0  # 50 cols
 
-        # Flatten frame to LED order (row-major for now)
-        for row in frame:
-            for r, g, b in row:
-                if self.led_profile == "RGBW":
-                    # Add white channel (0 for now)
-                    data.extend([r, g, b, 0])
-                else:
-                    data.extend([r, g, b])
+        # Helper to get pixel with mirroring applied
+        def get_pixel(row: int, col: int) -> tuple[int, int, int]:
+            # Apply horizontal mirror (flip left-right)
+            if self.mirror_h:
+                col = frame_width - 1 - col
+            # Apply vertical mirror (flip top-bottom)
+            if self.mirror_v:
+                row = frame_height - 1 - row
+            if 0 <= row < frame_height and 0 <= col < frame_width:
+                return frame[row][col]
+            return (0, 0, 0)
+
+        # After 90° clockwise rotation:
+        # Physical strand = 9 - frame_row
+        # LED position in strand = frame_col
+
+        # Strip 1: Physical strands 4,3,2,1,0 in that order
+        # strand 4 = frame_row 5, strand 3 = frame_row 6, etc.
+        strip1_mapping = [(4, 5), (3, 6), (2, 7), (1, 8), (0, 9)]
+
+        for strand_idx, (physical_strand, frame_row) in enumerate(strip1_mapping):
+            if strand_idx % 2 == 0:
+                # Even strand index in strip: LED 0 at bottom, so traverse cols in reverse
+                for col in range(frame_width - 1, -1, -1):
+                    r, g, b = get_pixel(frame_row, col)
+                    if self.led_profile == "RGBW":
+                        data.extend([r, g, b, 0])
+                    else:
+                        data.extend([r, g, b])
+            else:
+                # Odd strand index in strip: LED 0 at top, so traverse cols forward
+                for col in range(frame_width):
+                    r, g, b = get_pixel(frame_row, col)
+                    if self.led_profile == "RGBW":
+                        data.extend([r, g, b, 0])
+                    else:
+                        data.extend([r, g, b])
+
+        # Strip 2: Physical strands 5,6,7,8,9 in that order
+        # strand 5 = frame_row 4, strand 6 = frame_row 3, etc.
+        strip2_mapping = [(5, 4), (6, 3), (7, 2), (8, 1), (9, 0)]
+
+        for strand_idx, (physical_strand, frame_row) in enumerate(strip2_mapping):
+            if strand_idx % 2 == 0:
+                # Even strand index in strip: LED 0 at bottom, so traverse cols in reverse
+                for col in range(frame_width - 1, -1, -1):
+                    r, g, b = get_pixel(frame_row, col)
+                    if self.led_profile == "RGBW":
+                        data.extend([r, g, b, 0])
+                    else:
+                        data.extend([r, g, b])
+            else:
+                # Odd strand index in strip: LED 0 at top, so traverse cols forward
+                for col in range(frame_width):
+                    r, g, b = get_pixel(frame_row, col)
+                    if self.led_profile == "RGBW":
+                        data.extend([r, g, b, 0])
+                    else:
+                        data.extend([r, g, b])
 
         return bytes(data)
 

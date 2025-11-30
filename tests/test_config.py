@@ -22,18 +22,19 @@ class TestSettings:
         settings = Settings()
         assert settings.twinkly.host == ""
         assert settings.twinkly.port == 80
-        assert settings.weather.api_key == ""
+        assert settings.weather.latitude == 0.0
+        assert settings.weather.longitude == 0.0
         assert settings.extra == {}
 
     def test_custom_settings(self):
         """Test settings with custom values."""
         settings = Settings(
             twinkly=TwinklyConfig(host="192.168.1.100", port=8080),
-            weather=WeatherConfig(api_key="test", city_id="123"),
+            weather=WeatherConfig(latitude=55.67, longitude=12.56),
         )
         assert settings.twinkly.host == "192.168.1.100"
         assert settings.twinkly.port == 8080
-        assert settings.weather.api_key == "test"
+        assert settings.weather.latitude == 55.67
 
 
 class TestLoadSettings:
@@ -58,9 +59,9 @@ twinkly:
   host: "192.168.1.50"
   port: 8080
 weather:
-  api_key: "my-api-key"
-  city_id: "2618425"
-  units: "imperial"
+  latitude: 55.6761
+  longitude: 12.5683
+  cache_duration: 300
 """)
             f.flush()
 
@@ -68,30 +69,30 @@ weather:
                 settings = load_settings(f.name)
                 assert settings.twinkly.host == "192.168.1.50"
                 assert settings.twinkly.port == 8080
-                assert settings.weather.api_key == "my-api-key"
-                assert settings.weather.city_id == "2618425"
-                assert settings.weather.units == "imperial"
+                assert settings.weather.latitude == 55.6761
+                assert settings.weather.longitude == 12.5683
+                assert settings.weather.cache_duration == 300
             finally:
                 os.unlink(f.name)
 
     def test_load_settings_env_var_substitution(self):
         """Test environment variable substitution in settings."""
-        os.environ["TEST_API_KEY"] = "secret-key-123"
+        os.environ["TEST_HOST"] = "192.168.1.200"
         try:
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
                 f.write("""
-weather:
-  api_key: "${TEST_API_KEY}"
+twinkly:
+  host: "${TEST_HOST}"
 """)
                 f.flush()
 
                 try:
                     settings = load_settings(f.name)
-                    assert settings.weather.api_key == "secret-key-123"
+                    assert settings.twinkly.host == "192.168.1.200"
                 finally:
                     os.unlink(f.name)
         finally:
-            del os.environ["TEST_API_KEY"]
+            del os.environ["TEST_HOST"]
 
     def test_load_settings_extra_keys(self):
         """Test that extra keys are stored in extra dict."""

@@ -15,15 +15,17 @@ class TwinklyConfig:
 
     host: str = ""
     port: int = 80
+    mirror_h: bool = False
+    mirror_v: bool = False
 
 
 @dataclass
 class WeatherConfig:
-    """Weather API configuration."""
+    """Weather configuration for Open-Meteo API."""
 
-    api_key: str = ""
-    city_id: str = ""
-    units: str = "metric"
+    latitude: float = 0.0
+    longitude: float = 0.0
+    cache_duration: int = 600  # 10 minutes
 
 
 @dataclass
@@ -118,14 +120,16 @@ def load_settings(path: Path | str | None = None) -> Settings:
         settings.twinkly = TwinklyConfig(
             host=tw.get("host", ""),
             port=tw.get("port", 80),
+            mirror_h=tw.get("mirror_h", False),
+            mirror_v=tw.get("mirror_v", False),
         )
 
     if "weather" in data:
         w = data["weather"]
         settings.weather = WeatherConfig(
-            api_key=w.get("api_key", ""),
-            city_id=w.get("city_id", ""),
-            units=w.get("units", "metric"),
+            latitude=w.get("latitude", 0.0),
+            longitude=w.get("longitude", 0.0),
+            cache_duration=w.get("cache_duration", 600),
         )
 
     # Store any extra config
