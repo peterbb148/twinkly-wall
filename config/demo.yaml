@@ -5,9 +5,18 @@ default_duration: 10
 default_transition: none
 
 cards:
-  # Weather display
+  # Welcome message - scrolling
+  - type: text
+    text: "Welcome to Twinkly Wall!"
+    color: [255, 255, 0]
+    scroll: true
+    scroll_speed: 40
+    duration: 5
+
+  # Weather display with animated icons
   - type: weather
     duration: 8
+    show_icon: true
 
   # Calendar - today's date
   - type: calendar
@@ -30,17 +39,19 @@ cards:
     color: [0, 255, 0]
     duration: 3
 
-  # Text - scrolling message
-  - type: text
-    text: "Welcome to Twinkly Wall!"
-    color: [255, 255, 0]
-    scroll: true
-    scroll_speed: 40
-    duration: 5
-
   # Coffee break
   - type: coffee
     duration: 5
+
+  # Quote of the day
+  - type: quote
+    duration: 15
+    show_author: true
+
+  # News headlines
+  - type: news
+    duration: 15
+    max_headlines: 5
 
   # Countdown to Christmas
   - type: countdown
@@ -141,6 +152,12 @@ cards:
     duration: 8
     theme: hearts
     speed: 18
+
+  # Pac-Man eating Carlsberg hops
+  - type: pacman
+    duration: 8
+    theme: hops
+    speed: 15
 
   # === AMBIENT EFFECTS ===
 
