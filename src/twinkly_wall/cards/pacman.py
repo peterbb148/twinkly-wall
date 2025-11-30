@@ -109,6 +109,19 @@ SPRITE_SNOWMAN: list[list[int]] = [
     [0, 1, 1, 1, 1, 1, 0],  # base
 ]
 
+# Carlsberg Hop sprite (7x9) - inspired by Carlsberg hop logo
+SPRITE_HOP: list[list[int]] = [
+    [0, 0, 0, 2, 0, 0, 0],  # 2 = stem
+    [0, 0, 1, 2, 1, 0, 0],  # top leaves
+    [0, 1, 1, 1, 1, 1, 0],  # upper cone
+    [1, 1, 1, 1, 1, 1, 1],  # main body
+    [1, 1, 1, 1, 1, 1, 1],  # main body
+    [1, 1, 1, 1, 1, 1, 1],  # main body
+    [0, 1, 1, 1, 1, 1, 0],  # lower cone
+    [0, 0, 1, 1, 1, 0, 0],  # bottom
+    [0, 0, 0, 1, 0, 0, 0],  # tip
+]
+
 
 @dataclass
 class EdibleTheme:
@@ -176,6 +189,14 @@ THEMES: dict[str, EdibleTheme] = {
             3: (0, 0, 0),  # Black eyes
             4: (255, 140, 0),  # Orange carrot nose
             5: (60, 60, 60),  # Dark buttons
+        },
+        y_offset=0,
+    ),
+    "hops": EdibleTheme(
+        sprite=SPRITE_HOP,
+        color_map={
+            1: (40, 74, 65),  # Carlsberg green (#284a41)
+            2: (60, 100, 60),  # Stem green
         },
         y_offset=0,
     ),

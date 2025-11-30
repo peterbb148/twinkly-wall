@@ -22,11 +22,13 @@ from .lava import LavaCard
 from .leaderboard import LeaderboardCard
 from .matrix import MatrixCard
 from .menorah import MenorahCard
+from .news import NewsCard
 from .ocean import OceanCard
 from .pacman import PacmanCard
 from .pacman_chase import PacmanChaseCard
 from .pong import PongCard
 from .pomodoro import PomodoroCard
+from .quote import QuoteCard
 from .rainbow import RainbowCard
 from .santa import SantaCard
 from .snake import SnakeCard
@@ -55,11 +57,13 @@ __all__ = [
     "LeaderboardCard",
     "MatrixCard",
     "MenorahCard",
+    "NewsCard",
     "OceanCard",
     "PacmanCard",
     "PacmanChaseCard",
     "PomodoroCard",
     "PongCard",
+    "QuoteCard",
     "RainbowCard",
     "SantaCard",
     "SnakeCard",
