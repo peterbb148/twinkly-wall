@@ -106,17 +106,41 @@ cards:
     num_ghosts: 3
     speed: 20
 
+  # Pac-Man eating blue ghosts (revenge!)
+  - type: pacman
+    duration: 8
+    theme: ghosts
+    speed: 20
+
   # Pac-Man eating trees
   - type: pacman
     duration: 8
     theme: trees
     speed: 15
 
-  # Pac-Man eating blue ghosts
+  # Pac-Man eating dots
   - type: pacman
     duration: 8
-    theme: ghosts
-    speed: 20
+    theme: dots
+    speed: 15
+
+  # Pac-Man eating snowmen
+  - type: pacman
+    duration: 8
+    theme: snowman
+    speed: 12
+
+  # Pac-Man eating beer
+  - type: pacman
+    duration: 8
+    theme: beer
+    speed: 15
+
+  # Pac-Man eating hearts
+  - type: pacman
+    duration: 8
+    theme: hearts
+    speed: 18
 
   # === AMBIENT EFFECTS ===
 
