@@ -43,6 +43,12 @@ cards:
     scroll: true
     duration: 5
 
+  # Pac-Man chase (ghosts chasing Pac-Man)
+  - type: pacman_chase
+    duration: 8
+    num_ghosts: 3
+    speed: 20
+
   # Pac-Man with different themes
   - type: pacman
     duration: 8
@@ -51,7 +57,7 @@ cards:
 
   - type: pacman
     duration: 8
-    theme: ghosts
+    theme: ghosts  # Blue ghosts (vulnerable)
     speed: 20
 
   - type: pacman
