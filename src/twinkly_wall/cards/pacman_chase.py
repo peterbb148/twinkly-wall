@@ -38,6 +38,7 @@ class PacmanChaseCard(Card):
         ghost_colors: List of RGB colors for ghosts (default: classic colors)
         speed: Pixels per second (default: 20)
         ghost_spacing: Pixels between ghosts (default: 12)
+        animation_complete: Wait for animation to complete before ending (default: true)
     """
 
     card_type = "pacman_chase"
@@ -47,6 +48,7 @@ class PacmanChaseCard(Card):
         self.num_ghosts: int = min(4, max(1, self.config.get("num_ghosts", 3)))
         self.speed: float = self.config.get("speed", 20.0)
         self.ghost_spacing: int = self.config.get("ghost_spacing", 12)
+        self.animation_complete: bool = self.config.get("animation_complete", True)
 
         # Ghost colors - default to classic arcade colors (all variations of red)
         default_colors = [GHOST_RED, GHOST_PINK, GHOST_CYAN, GHOST_ORANGE]
@@ -92,11 +94,12 @@ class PacmanChaseCard(Card):
 
         mouth_open = True
         mouth_timer = 0.0
+        animation_completed = False
 
         start_time = time.time()
         frame_delay = 1.0 / 30.0  # 30 FPS
 
-        while time.time() - start_time < self.duration:
+        while True:
             # Render frame
             frame = self._render_frame(pacman_x, ghost_positions, mouth_open)
             yield frame, frame_delay
@@ -108,11 +111,21 @@ class PacmanChaseCard(Card):
 
             # Loop when everything is off-screen left
             if ghost_positions[-1] < -10:
+                animation_completed = True
                 pacman_x = float(WIDTH)
                 ghost_positions = [
                     float(WIDTH + 10 + i * self.ghost_spacing)
                     for i in range(self.num_ghosts)
                 ]
+
+            # Check exit conditions
+            elapsed = time.time() - start_time
+            if self.animation_complete:
+                if animation_completed and elapsed >= self.duration:
+                    break
+            else:
+                if elapsed >= self.duration:
+                    break
 
             # Animate mouth (toggle every 0.12s - faster when running!)
             mouth_timer += frame_delay
