@@ -207,6 +207,7 @@ class PacmanCard(Card):
         pacman_color: RGB tuple for Pac-Man (default: yellow)
         speed: Pixels per second (default: 15)
         num_items: Number of items to place (default: 4)
+        animation_complete: Wait for animation to complete before ending (default: true)
     """
 
     card_type = "pacman"
@@ -218,6 +219,7 @@ class PacmanCard(Card):
         self.pacman_color: RGB = tuple(self.config.get("pacman_color", PACMAN_COLOR))  # type: ignore
         self.speed: float = self.config.get("speed", 15.0)
         self.num_items: int = self.config.get("num_items", 4)
+        self.animation_complete: bool = self.config.get("animation_complete", True)
 
     def _render_frame(
         self,
@@ -262,11 +264,12 @@ class PacmanCard(Card):
         eaten: set[int] = set()
         mouth_open = True
         mouth_timer = 0.0
+        animation_completed = False
 
         start_time = time.time()
         frame_delay = 1.0 / 30.0  # 30 FPS
 
-        while time.time() - start_time < self.duration:
+        while True:
             # Check for eating items
             pacman_front = int(pacman_x) + 7  # Front of Pac-Man
             for i, ix in enumerate(item_positions):
@@ -283,8 +286,18 @@ class PacmanCard(Card):
 
             # Loop when off-screen right
             if pacman_x > WIDTH:
+                animation_completed = True
                 pacman_x = -8.0
                 eaten.clear()
+
+            # Check exit conditions
+            elapsed = time.time() - start_time
+            if self.animation_complete:
+                if animation_completed and elapsed >= self.duration:
+                    break
+            else:
+                if elapsed >= self.duration:
+                    break
 
             # Animate mouth (toggle every 0.15s)
             mouth_timer += frame_delay
