@@ -3,7 +3,7 @@ set -euo pipefail
 
 ### CONFIGURABLE VALUES ###
 SSID="TwinklyNet"
-PASSPHRASE="twinklypassword"
+PASSPHRASE="twinkly"
 AP_IP="192.168.50.1"
 DHCP_START="192.168.50.10"
 DHCP_END="192.168.50.20"
