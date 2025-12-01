@@ -18,6 +18,11 @@ cards:
     scroll_speed: 30
     duration: 8
 
+  # Ocean waves
+  - type: ocean
+    duration: 8
+    wave_speed: 1.0
+
   # Date and Time
   - type: calendar
     duration: 5
@@ -28,6 +33,10 @@ cards:
     format_24h: true
     blink_colon: true
 
+  # Beer pouring
+  - type: beer
+    duration: 10
+
   # Countdown to Christmas
   - type: countdown
     target: "2025-12-25"
@@ -35,18 +44,44 @@ cards:
     color: [255, 0, 0]
     duration: 8
 
+  # Matrix rain
+  - type: matrix
+    duration: 8
+    density: 15
+
   # Pac-Man being chased by ghosts
   - type: pacman_chase
     duration: 10
     num_ghosts: 3
     speed: 20
 
+  # Rainbow
+  - type: rainbow
+    duration: 8
+    mode: rainbow
+    speed: 1.0
+
   # Time for coffee
   - type: coffee
     duration: 8
+
+  # Lava lamp
+  - type: lava
+    duration: 8
+    num_blobs: 5
 
   # Pac-Man eating the monsters (revenge!)
   - type: pacman
     duration: 10
     theme: ghosts
     speed: 20
+
+  # Friday detector
+  - type: friday
+    duration: 5
+
+  # Plasma effect
+  - type: rainbow
+    duration: 8
+    mode: plasma
+    speed: 1.5
