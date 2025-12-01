@@ -7,6 +7,7 @@ from .canvas import Canvas
 from .cards import (
     BeerCard,
     CardContext,
+    CarlsbergLabCard,
     ClockCard,
     PacmanCard,
     RainbowCard,
@@ -183,9 +184,16 @@ def cmd_preview(args: argparse.Namespace) -> int:
                 "mode": args.pattern_mode,
             }
         )
+    elif card_type == "carlsberg_lab":
+        card = CarlsbergLabCard(
+            {
+                "duration": duration,
+                "scroll_speed": args.speed,
+            }
+        )
     else:
         print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
-        print("Available cards: clock, text, pacman, beer, snow, rainbow, test_pattern", file=sys.stderr)
+        print("Available cards: clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab", file=sys.stderr)
         return 1
 
     # Create context and run
@@ -249,7 +257,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "card",
-        choices=["clock", "text", "pacman", "beer", "snow", "rainbow", "test_pattern"],
+        choices=["clock", "text", "pacman", "beer", "snow", "rainbow", "test_pattern", "carlsberg_lab"],
         help="Card type to preview",
     )
     preview_parser.add_argument(
@@ -300,7 +308,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "--theme",
-        choices=["trees", "beer", "hearts", "snow", "ghosts", "dots", "snowman"],
+        choices=["trees", "beer", "hearts", "snow", "ghosts", "dots", "snowman", "hops"],
         default="trees",
         help="What Pac-Man eats (pacman card, default: trees)",
     )
