@@ -1,0 +1,159 @@
+# Twinkly Wall Offline Playlist
+# For use without internet connection (no weather, RSS, quotes)
+
+default_duration: 10
+default_transition: none
+
+cards:
+  # Carlsberg Research Laboratory branding (inverted)
+  - type: carlsberg_lab
+    duration: 12
+    scroll_speed: 25
+
+  # Welcome message
+  - type: text
+    text: "Welcome to Twinkly Wall!"
+    color: [255, 255, 0]
+    scroll: true
+    scroll_speed: 40
+    duration: 5
+
+  # Calendar - today's date
+  - type: calendar
+    duration: 5
+
+  # Clock
+  - type: clock
+    duration: 5
+    color: [255, 255, 255]
+    format_24h: true
+    blink_colon: true
+
+  # Friday detector
+  - type: friday
+    duration: 5
+
+  # Coffee break
+  - type: coffee
+    duration: 5
+
+  # Countdown to Christmas
+  - type: countdown
+    target: "2025-12-25"
+    label: "XMAS"
+    color: [255, 0, 0]
+    duration: 5
+
+  # === FESTIVE ===
+
+  # Santa sleigh flying
+  - type: santa
+    duration: 8
+    speed: 15
+
+  # Fireworks
+  - type: fireworks
+    duration: 8
+    num_fireworks: 3
+
+  # Confetti celebration
+  - type: confetti
+    duration: 8
+    density: 25
+
+  # Snow falling
+  - type: snow
+    duration: 8
+    wind: 0.2
+    accumulate: true
+
+  # === RETRO GAMES ===
+
+  # Pac-Man chase (ghosts chasing Pac-Man)
+  - type: pacman_chase
+    duration: 8
+    num_ghosts: 3
+    speed: 20
+
+  # Pac-Man eating blue ghosts (revenge!)
+  - type: pacman
+    duration: 8
+    theme: ghosts
+    speed: 20
+
+  # Pac-Man eating Carlsberg hops
+  - type: pacman
+    duration: 8
+    theme: hops
+    speed: 15
+
+  # Pac-Man eating beer
+  - type: pacman
+    duration: 8
+    theme: beer
+    speed: 15
+
+  # Space Invaders
+  - type: space_invaders
+    duration: 10
+    speed: 1.0
+
+  # Pong
+  - type: pong
+    duration: 10
+    ball_speed: 1.0
+
+  # Snake
+  - type: snake
+    duration: 10
+    speed: 1.0
+
+  # Tetris
+  - type: tetris
+    duration: 10
+    speed: 1.0
+
+  # === AMBIENT EFFECTS ===
+
+  # Fire
+  - type: fire
+    duration: 8
+    intensity: 1.0
+
+  # Matrix rain
+  - type: matrix
+    duration: 8
+    density: 15
+
+  # Starfield warp
+  - type: starfield
+    duration: 8
+    speed: 1.0
+
+  # Lava lamp
+  - type: lava
+    duration: 8
+    num_blobs: 5
+
+  # Ocean waves
+  - type: ocean
+    duration: 8
+    wave_speed: 1.0
+
+  # Rainbow
+  - type: rainbow
+    duration: 8
+    mode: rainbow
+    speed: 1.0
+
+  # === MEDIA ===
+
+  # Beer animation
+  - type: beer
+    duration: 10
+
+  # Carlsberg bottle image
+  - type: image
+    path: assets/carlsberg.png
+    duration: 10
+    scroll_speed: 30

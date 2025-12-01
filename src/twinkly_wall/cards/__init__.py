@@ -10,6 +10,7 @@ from .base import (
 )
 from .beer import BeerCard
 from .calendar import CalendarCard
+from .carlsberg_lab import CarlsbergLabCard
 from .clock import ClockCard
 from .coffee import CoffeeCard
 from .confetti import ConfettiCard
@@ -43,6 +44,7 @@ from .weather import WeatherCard
 __all__ = [
     "BeerCard",
     "CalendarCard",
+    "CarlsbergLabCard",
     "Card",
     "CardContext",
     "ClockCard",
