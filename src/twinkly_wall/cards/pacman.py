@@ -109,17 +109,17 @@ SPRITE_SNOWMAN: list[list[int]] = [
     [0, 1, 1, 1, 1, 1, 0],  # base
 ]
 
-# Carlsberg Hop sprite (7x9) - inspired by Carlsberg hop logo
+# Carlsberg Hop logo sprite (9x9) - three overlapping leaf shapes
 SPRITE_HOP: list[list[int]] = [
-    [0, 0, 0, 2, 0, 0, 0],  # 2 = stem
-    [0, 0, 1, 2, 1, 0, 0],  # top leaves
-    [0, 1, 1, 1, 1, 1, 0],  # upper cone
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [0, 1, 1, 1, 1, 1, 0],  # lower cone
-    [0, 0, 1, 1, 1, 0, 0],  # bottom
-    [0, 0, 0, 1, 0, 0, 0],  # tip
+    [0, 0, 0, 0, 1, 0, 0, 0, 0],  # top leaf tip
+    [0, 0, 0, 1, 1, 1, 0, 0, 0],  # top leaf
+    [0, 0, 1, 1, 1, 1, 1, 0, 0],  # top leaf base
+    [0, 1, 1, 0, 1, 0, 1, 1, 0],  # side leaves start
+    [1, 1, 1, 0, 0, 0, 1, 1, 1],  # side leaves middle
+    [1, 1, 0, 0, 0, 0, 0, 1, 1],  # side leaves
+    [1, 1, 0, 0, 0, 0, 0, 1, 1],  # side leaves
+    [0, 1, 1, 0, 0, 0, 1, 1, 0],  # side leaves taper
+    [0, 0, 1, 0, 0, 0, 1, 0, 0],  # side leaf tips
 ]
 
 
