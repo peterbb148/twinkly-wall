@@ -9,17 +9,18 @@ from ..fonts import draw_text, text_width
 from ..types import HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
-# Carlsberg Hop sprite (7x9) - matches the one in pacman.py
+# Carlsberg Hop logo sprite (9x9) - three overlapping leaf shapes
+# Based on the Carlsberg brand mark with three hop leaves
 SPRITE_HOP: list[list[int]] = [
-    [0, 0, 0, 1, 0, 0, 0],  # stem
-    [0, 0, 1, 1, 1, 0, 0],  # top leaves
-    [0, 1, 1, 1, 1, 1, 0],  # upper cone
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [1, 1, 1, 1, 1, 1, 1],  # main body
-    [0, 1, 1, 1, 1, 1, 0],  # lower cone
-    [0, 0, 1, 1, 1, 0, 0],  # bottom
-    [0, 0, 0, 1, 0, 0, 0],  # tip
+    [0, 0, 0, 0, 1, 0, 0, 0, 0],  # top leaf tip
+    [0, 0, 0, 1, 1, 1, 0, 0, 0],  # top leaf
+    [0, 0, 1, 1, 1, 1, 1, 0, 0],  # top leaf base
+    [0, 1, 1, 0, 1, 0, 1, 1, 0],  # side leaves start
+    [1, 1, 1, 0, 0, 0, 1, 1, 1],  # side leaves middle
+    [1, 1, 0, 0, 0, 0, 0, 1, 1],  # side leaves
+    [1, 1, 0, 0, 0, 0, 0, 1, 1],  # side leaves
+    [0, 1, 1, 0, 0, 0, 1, 1, 0],  # side leaves taper
+    [0, 0, 1, 0, 0, 0, 1, 0, 0],  # side leaf tips
 ]
 
 # Colors
@@ -95,7 +96,7 @@ class CarlsbergLabCard(Card):
         total_text_width = text_width(text)
 
         # Total content width includes text + gap + hop sprite
-        hop_width = 7 if self.show_hop else 0
+        hop_width = 9 if self.show_hop else 0
         gap = 10 if self.show_hop else 0
         content_width = total_text_width + gap + hop_width
 
