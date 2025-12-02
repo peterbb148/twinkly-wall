@@ -48,7 +48,9 @@ cards:
     color: [255, 0, 0]
     scroll: true
     scroll_speed: 30
-    duration: 10
+    prefix_sprite: tree
+    suffix_sprite: tree
+    duration: 12
 
   # Matrix rain
   - type: matrix
