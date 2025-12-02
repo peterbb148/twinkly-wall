@@ -14,6 +14,7 @@ from .cards import (
     SnowCard,
     TestPatternCard,
     TextCard,
+    TwinklysayCard,
 )
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
@@ -191,9 +192,25 @@ def cmd_preview(args: argparse.Namespace) -> int:
                 "scroll_speed": args.speed,
             }
         )
+    elif card_type == "twinklysay":
+        if not args.text:
+            print("Error: --text is required for twinklysay card", file=sys.stderr)
+            return 1
+        try:
+            color = parse_color(args.color) if args.color else WHITE
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        card = TwinklysayCard(
+            {
+                "duration": duration,
+                "text": args.text,
+                "color": list(color),
+            }
+        )
     else:
         print(f"Error: Unknown card type '{card_type}'", file=sys.stderr)
-        print("Available cards: clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab", file=sys.stderr)
+        print("Available cards: clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay", file=sys.stderr)
         return 1
 
     # Create context and run
@@ -257,7 +274,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     preview_parser.add_argument(
         "card",
-        choices=["clock", "text", "pacman", "beer", "snow", "rainbow", "test_pattern", "carlsberg_lab"],
+        choices=["clock", "text", "pacman", "beer", "snow", "rainbow", "test_pattern", "carlsberg_lab", "twinklysay"],
         help="Card type to preview",
     )
     preview_parser.add_argument(
