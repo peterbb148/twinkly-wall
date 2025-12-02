@@ -37,9 +37,9 @@ cards:
   - type: beer
     duration: 10
 
-  # Countdown to Christmas
+  # Countdown to Christmas (Dec 24 in Denmark)
   - type: countdown
-    target: "2025-12-25"
+    target: "2025-12-24"
     label: "XMAS"
     color: [255, 0, 0]
     duration: 8
