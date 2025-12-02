@@ -28,15 +28,89 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 # Install with UV
 uv pip install -e .
 
-# Preview text in terminal
-twinklysay "Hello World"
-
-# Preview with color
-twinklysay "Merry Christmas" --color 255,0,0
-
-# Preview animation
-twinklysay --animation snow
+# Run the CLI
+uv run twinklysay --help
 ```
+
+## CLI Usage (`twinklysay`)
+
+The `twinklysay` command provides two subcommands for terminal preview and testing.
+
+### Display Text (`say`)
+
+Render a static text message in your terminal:
+
+```bash
+# Basic text (white)
+uv run twinklysay say "Hello World"
+
+# Colored text (by name)
+uv run twinklysay say "Merry Christmas" --color red
+
+# Colored text (hex)
+uv run twinklysay say "Happy New Year" --color "#FFD700"
+
+# Colored text (RGB)
+uv run twinklysay say "Cheers!" --color 255,165,0
+```
+
+**Supported color names:** black, white, red, green, blue, yellow, cyan, magenta, orange, gold
+
+### Preview Animations (`preview`)
+
+Preview card animations in your terminal:
+
+```bash
+# Clock (24-hour format, blinking colon)
+uv run twinklysay preview clock
+
+# Clock (12-hour format)
+uv run twinklysay preview clock --twelve-hour
+
+# Scrolling text
+uv run twinklysay preview text --text "Hello from the Twinkly Wall!"
+
+# Pac-Man eating Christmas trees
+uv run twinklysay preview pacman --theme trees
+
+# Pac-Man eating beer mugs
+uv run twinklysay preview pacman --theme beer
+
+# Snowfall
+uv run twinklysay preview snow
+
+# Snowfall with wind and accumulation
+uv run twinklysay preview snow --wind 0.5 --accumulate
+
+# Beer bubbles
+uv run twinklysay preview beer
+
+# Rainbow effects
+uv run twinklysay preview rainbow --mode plasma
+
+# Twinklysay (scrolling message, used for remote messages)
+uv run twinklysay preview twinklysay --text "Remote message!" --color gold
+```
+
+**Available cards:** clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay
+
+### Common Options
+
+| Option | Description |
+|--------|-------------|
+| `-d, --duration` | Animation duration in seconds (default: 10) |
+| `-c, --color` | Text color (name, hex, or R,G,B) |
+| `--no-color` | Grayscale output |
+
+## Remote Messages (via MCP Server)
+
+The `twinklysay` card is designed for remote messages sent via the [twinkly-mcp](https://github.com/peterbb148/twinkly-mcp) server. When a message is received:
+
+1. The current card is interrupted
+2. The message scrolls across the display once
+3. The previous card resumes
+
+This enables sending messages to the LED wall from Claude Desktop or other MCP clients.
 
 ## Development
 
