@@ -75,22 +75,22 @@ class CountdownCard(Card):
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
 
-        # Draw label if present (top line)
         if self.label:
-            label_w = text_width(self.label)
-            label_x = (WIDTH - label_w) // 2
-            draw_text(canvas, label_x, 0, self.label, (150, 150, 150))
+            # Combine label and countdown on one line
+            display_text = f"{self.label} {countdown_text}"
+            tw = text_width(display_text)
+            x = (WIDTH - tw) // 2
+            y = 1  # Vertically centered
 
-            # Draw countdown below
-            count_w = text_width(countdown_text)
-            count_x = (WIDTH - count_w) // 2
-            draw_text(canvas, count_x, 5, countdown_text, self.color)
+            # Draw label in gray, countdown in color
+            draw_text(canvas, x, y, self.label, (150, 150, 150))
+            label_w = text_width(self.label + " ")
+            draw_text(canvas, x + label_w, y, countdown_text, self.color)
         else:
             # Center countdown vertically
             count_w = text_width(countdown_text)
             count_x = (WIDTH - count_w) // 2
-            count_y = (HEIGHT - 5) // 2  # Approximate text height
-            draw_text(canvas, count_x, count_y, countdown_text, self.color)
+            draw_text(canvas, count_x, 1, countdown_text, self.color)
 
         return canvas.copy()
 
