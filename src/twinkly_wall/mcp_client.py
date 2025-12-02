@@ -6,14 +6,13 @@ and executes commands received from Claude Desktop or other MCP clients.
 The client is optional and can be disabled for offline operation.
 """
 
-import json
 import logging
 import time
 from typing import Any, Callable
 
 import requests
 
-from .cards import CardContext, create_card, list_card_types
+from .cards import Card, CardContext, create_card, list_card_types
 from .cards.twinklysay import TwinklysayCard
 from .outputs.terminal import animate_frames
 
@@ -26,7 +25,8 @@ DEFAULT_POLL_INTERVAL = 2.0  # seconds
 class MCPClient:
     """Polling client for the Twinkly MCP server.
 
-    Polls the server for commands and executes them locally.
+    Polls the server for commands and can either execute them directly
+    or return cards for the scheduler to play.
     """
 
     def __init__(
@@ -50,6 +50,7 @@ class MCPClient:
         self.output_callback = output_callback
         self.last_command_id: str | None = None
         self._running = False
+        self._pending_commands: list[dict[str, Any]] = []
 
     def _get_headers(self) -> dict[str, str]:
         """Get HTTP headers including auth if configured."""
@@ -108,6 +109,77 @@ class MCPClient:
         except requests.RequestException as e:
             logger.warning(f"Poll failed: {e}")
             return []
+
+    def check_for_commands(self) -> bool:
+        """Check for new commands without blocking.
+
+        This is a non-blocking poll that stores commands in _pending_commands.
+
+        Returns:
+            True if new commands are available
+        """
+        commands = self.poll_commands()
+        if commands:
+            self._pending_commands.extend(commands)
+            return True
+        return False
+
+    def get_next_card(self) -> Card | None:
+        """Get the next card from pending commands.
+
+        Returns:
+            A Card instance to play, or None if no pending commands
+        """
+        if not self._pending_commands:
+            return None
+
+        cmd = self._pending_commands.pop(0)
+        return self.create_card_from_command(cmd)
+
+    def has_pending_commands(self) -> bool:
+        """Check if there are pending commands to process."""
+        return len(self._pending_commands) > 0
+
+    def create_card_from_command(self, cmd: dict[str, Any]) -> Card | None:
+        """Create a card instance from a command.
+
+        Args:
+            cmd: Command dict with type and payload
+
+        Returns:
+            Card instance or None if command is invalid
+        """
+        cmd_type = cmd.get("type")
+        payload = cmd.get("payload", {})
+        cmd_id = cmd.get("id", "unknown")
+
+        logger.info(f"Creating card from command {cmd_id}: {cmd_type}")
+
+        try:
+            if cmd_type == "twinklysay":
+                text = payload.get("text", "")
+                if not text:
+                    logger.warning("twinklysay: empty text")
+                    return None
+                return TwinklysayCard({"text": text})
+
+            elif cmd_type == "run_card":
+                card_id = payload.get("card_id", "")
+                if not card_id:
+                    logger.warning("run_card: empty card_id")
+                    return None
+                card = create_card(card_id, {"duration": 10})
+                if card is None:
+                    logger.warning(f"run_card: unknown card '{card_id}'")
+                return card
+
+            else:
+                logger.warning(f"Unknown command type: {cmd_type}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error creating card from command {cmd_id}: {e}")
+            return None
 
     def execute_command(self, cmd: dict[str, Any], use_terminal: bool = True) -> bool:
         """Execute a single command.
