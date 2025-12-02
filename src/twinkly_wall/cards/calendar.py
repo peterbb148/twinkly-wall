@@ -69,17 +69,11 @@ class CalendarCard(Card):
             draw_text(canvas, x, y, date_str, text_color)
 
         else:  # full
-            # Day name on top, date below
-            # Top line: DAY
-            w1 = text_width(day_name)
-            x1 = (WIDTH - w1) // 2
-            draw_text(canvas, x1, 0, day_name, text_color)
-
-            # Bottom line: DD MMM
-            date_str = f"{day_num} {month_name}"
-            w2 = text_width(date_str)
-            x2 = (WIDTH - w2) // 2
-            draw_text(canvas, x2, 5, date_str, text_color)
+            # Single line: DAY DD MMM (e.g., "TUE 2 DEC")
+            date_str = f"{day_name} {day_num} {month_name}"
+            w = text_width(date_str)
+            x = (WIDTH - w) // 2
+            draw_text(canvas, x, 1, date_str, text_color)
 
         return canvas.copy()
 
