@@ -1,6 +1,5 @@
 """Twinklysay card for remote text messages."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -15,7 +14,7 @@ class TwinklysayCard(Card):
     """Display a remote text message (like cowsay for Twinkly).
 
     This card is designed for one-shot messages sent remotely via the MCP server.
-    It always scrolls the text and has sensible defaults for display.
+    It scrolls the text once across the display and then finishes.
 
     Config options:
         text: The message to display (required)
@@ -33,13 +32,6 @@ class TwinklysayCard(Card):
         self.bgcolor: RGB = tuple(self.config.get("bgcolor", BLACK))  # type: ignore
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
 
-        # Default duration based on text length if not specified
-        if "duration" not in self.config:
-            # Estimate: time for text to scroll across + 2 seconds buffer
-            tw = text_width(self.text) if self.text else 0
-            scroll_time = (tw + WIDTH) / self.scroll_speed
-            self.duration = max(5.0, scroll_time + 2.0)
-
     def _render_frame(self, offset: int) -> Frame:
         """Render a single frame of scrolling text."""
         canvas = Canvas(WIDTH, HEIGHT)
@@ -53,12 +45,12 @@ class TwinklysayCard(Card):
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
-        """Generate scrolling text frames."""
+        """Generate scrolling text frames - scrolls once then finishes."""
         if not self.text:
-            # Empty message - just show blank for a moment
+            # Empty message - just show blank briefly
             canvas = Canvas(WIDTH, HEIGHT)
             canvas.clear(self.bgcolor)
-            yield canvas.copy(), self.duration
+            yield canvas.copy(), 0.5
             return
 
         content_width = text_width(self.text)
@@ -68,22 +60,10 @@ class TwinklysayCard(Card):
         pixels_per_frame = self.scroll_speed / 30.0
         frame_delay = 1.0 / 30.0
 
-        start_time = time.time()
         offset = 0.0
-        scroll_completed = False
 
-        while True:
+        # Scroll until text has completely crossed the display
+        while offset < total_scroll:
             frame = self._render_frame(int(offset))
             yield frame, frame_delay
-
             offset += pixels_per_frame
-
-            # Check if scroll completed
-            if offset >= total_scroll:
-                scroll_completed = True
-                offset = 0.0
-
-            # Exit when scroll completes and duration met
-            elapsed = time.time() - start_time
-            if scroll_completed and elapsed >= self.duration:
-                break

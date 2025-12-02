@@ -203,7 +203,6 @@ def cmd_preview(args: argparse.Namespace) -> int:
             return 1
         card = TwinklysayCard(
             {
-                "duration": duration,
                 "text": args.text,
                 "color": list(color),
             }
