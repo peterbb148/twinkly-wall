@@ -39,6 +39,7 @@ from .starfield import StarfieldCard
 from .test_pattern import TestPatternCard
 from .tetris import TetrisCard
 from .text import TextCard
+from .twinklysay import TwinklysayCard
 from .weather import WeatherCard
 
 __all__ = [
@@ -75,6 +76,7 @@ __all__ = [
     "TestPatternCard",
     "TetrisCard",
     "TextCard",
+    "TwinklysayCard",
     "WeatherCard",
     "create_card",
     "get_card_class",
