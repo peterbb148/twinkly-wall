@@ -305,6 +305,38 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mcp(args: argparse.Namespace) -> int:
+    """Handle the 'mcp' subcommand - start MCP polling client."""
+    from .mcp_client import MCPClient
+
+    import os
+
+    server_url = args.server or os.environ.get("TWINKLY_MCP_URL", "https://twinkly-mcp.onrender.com")
+    api_key = args.api_key or os.environ.get("TWINKLY_API_KEY")
+    poll_interval = args.interval
+
+    print(f"Starting MCP client...")
+    print(f"  Server: {server_url}")
+    print(f"  Poll interval: {poll_interval}s")
+    print(f"  Output: terminal")
+    print()
+    print("Waiting for commands from Claude... (Ctrl+C to stop)")
+    print()
+
+    client = MCPClient(
+        server_url=server_url,
+        poll_interval=poll_interval,
+        api_key=api_key,
+    )
+
+    try:
+        client.run(use_terminal=True)
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+    return 0
+
+
 def cmd_preview(args: argparse.Namespace) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
     card_type = args.card
@@ -354,6 +386,31 @@ def create_parser() -> argparse.ArgumentParser:
         "--playlist",
         type=str,
         help="Path to cards.yaml to show indexed entries",
+    )
+
+    # 'mcp' subcommand - MCP polling client
+    mcp_parser = subparsers.add_parser(
+        "mcp",
+        help="Start MCP polling client for remote control",
+        description="Poll the MCP server for commands from Claude Desktop",
+    )
+    mcp_parser.add_argument(
+        "-s",
+        "--server",
+        type=str,
+        help="MCP server URL (default: $TWINKLY_MCP_URL or https://twinkly-mcp.onrender.com)",
+    )
+    mcp_parser.add_argument(
+        "-i",
+        "--interval",
+        type=float,
+        default=2.0,
+        help="Poll interval in seconds (default: 2)",
+    )
+    mcp_parser.add_argument(
+        "--api-key",
+        type=str,
+        help="API key for authentication (default: $TWINKLY_API_KEY)",
     )
 
     # 'say' subcommand
@@ -612,7 +669,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "list":
         return cmd_list(args)
-    if args.command == "say":
+    elif args.command == "mcp":
+        return cmd_mcp(args)
+    elif args.command == "say":
         return cmd_say(args)
     elif args.command == "preview":
         return cmd_preview(args)
