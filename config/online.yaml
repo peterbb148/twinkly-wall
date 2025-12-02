@@ -16,6 +16,8 @@ cards:
     color: [255, 0, 0]
     scroll: true
     scroll_speed: 30
+    prefix_sprite: tree
+    suffix_sprite: tree
     duration: 8
 
   # Tuborg Snebajer - Driving home for Christmas
