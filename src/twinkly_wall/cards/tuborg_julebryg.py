@@ -106,9 +106,7 @@ class TuborgJulebryg(Card):
         content_width = self._get_content_width()
         total_scroll = content_width + WIDTH
 
-        start_time = time.time()
         offset = 0.0
-        scroll_completed = False
 
         while True:
             frame = self._render_frame(int(offset))
@@ -116,10 +114,6 @@ class TuborgJulebryg(Card):
 
             offset += pixels_per_frame
 
+            # Exit when scroll is complete
             if offset >= total_scroll:
-                scroll_completed = True
-                offset = 0.0
-
-            elapsed = time.time() - start_time
-            if scroll_completed and elapsed >= self.duration:
                 break
