@@ -1,0 +1,99 @@
+# Twinkly Wall Online Playlist
+# For use with internet connection (includes weather)
+
+default_duration: 10
+default_transition: none
+
+cards:
+  # Carlsberg Research Laboratory branding (inverted)
+  - type: carlsberg_lab
+    duration: 12
+    scroll_speed: 25
+
+  # Merry Christmas
+  - type: text
+    text: "Merry Christmas!"
+    color: [255, 0, 0]
+    scroll: true
+    scroll_speed: 30
+    duration: 8
+
+  # Weather with animated icon
+  - type: weather
+    duration: 8
+    show_icon: true
+    show_feels_like: false
+
+  # Ocean waves
+  - type: ocean
+    duration: 8
+    wave_speed: 1.0
+
+  # Date and Time
+  - type: calendar
+    duration: 5
+
+  - type: clock
+    duration: 5
+    color: [255, 255, 255]
+    format_24h: true
+    blink_colon: true
+
+  # Beer pouring
+  - type: beer
+    duration: 10
+
+  # Countdown to Christmas
+  - type: countdown
+    target: "2025-12-25"
+    label: "XMAS"
+    color: [255, 0, 0]
+    duration: 8
+
+  # Matrix rain
+  - type: matrix
+    duration: 8
+    density: 15
+
+  # Weather with scrolling condition text
+  - type: weather
+    duration: 10
+    show_icon: false
+    show_condition: true
+
+  # Pac-Man being chased by ghosts
+  - type: pacman_chase
+    duration: 10
+    num_ghosts: 3
+    speed: 20
+
+  # Rainbow
+  - type: rainbow
+    duration: 8
+    mode: rainbow
+    speed: 1.0
+
+  # Time for coffee
+  - type: coffee
+    duration: 8
+
+  # Lava lamp
+  - type: lava
+    duration: 8
+    num_blobs: 5
+
+  # Pac-Man eating the monsters (revenge!)
+  - type: pacman
+    duration: 10
+    theme: ghosts
+    speed: 20
+
+  # Friday detector
+  - type: friday
+    duration: 5
+
+  # Plasma effect
+  - type: rainbow
+    duration: 8
+    mode: plasma
+    speed: 1.5
