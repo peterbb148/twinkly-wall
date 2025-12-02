@@ -29,6 +29,8 @@ class CalendarCard(Card):
         color: RGB color for text (default: white)
         highlight_weekend: Highlight weekends in different color (default: true)
         weekend_color: Color for weekends (default: orange)
+        scroll: Enable scrolling (default: auto - scrolls if text wider than display)
+        scroll_speed: Pixels per second for scrolling (default: 30)
     """
 
     card_type = "calendar"
@@ -39,50 +41,90 @@ class CalendarCard(Card):
         self.color: RGB = tuple(self.config.get("color", (255, 255, 255)))  # type: ignore
         self.highlight_weekend: bool = self.config.get("highlight_weekend", True)
         self.weekend_color: RGB = tuple(self.config.get("weekend_color", (255, 165, 0)))  # type: ignore
+        self.scroll: bool | str = self.config.get("scroll", "auto")
+        self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
 
-    def _render_frame(self, now: datetime) -> Frame:
+    def _get_date_text(self, now: datetime) -> str:
+        """Get the date text based on format."""
+        day_name = DAYS[now.weekday()]
+        month_name = MONTHS[now.month - 1]
+        day_num = now.day
+
+        if self.format == "day":
+            return day_name
+        elif self.format == "date":
+            return str(day_num)
+        else:  # full
+            return f"{day_name} {day_num} {month_name}"
+
+    def _should_scroll(self, date_text: str) -> bool:
+        """Determine if text should scroll."""
+        if self.scroll == "auto":
+            return text_width(date_text) > WIDTH
+        return bool(self.scroll)
+
+    def _render_frame(self, now: datetime, offset: int = 0) -> Frame:
         """Render the calendar display."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
 
-        day_name = DAYS[now.weekday()]
-        month_name = MONTHS[now.month - 1]
-        day_num = now.day
+        date_text = self._get_date_text(now)
+        content_width = text_width(date_text)
 
         # Choose color based on weekend
         is_weekend = now.weekday() >= 5  # Saturday=5, Sunday=6
         text_color = self.weekend_color if (is_weekend and self.highlight_weekend) else self.color
 
-        if self.format == "day":
-            # Just the day name
-            w = text_width(day_name)
-            x = (WIDTH - w) // 2
-            y = (HEIGHT - 5) // 2
-            draw_text(canvas, x, y, day_name, text_color)
+        if offset > 0:
+            # Scrolling mode
+            x = WIDTH - offset
+        else:
+            # Centered mode
+            x = (WIDTH - content_width) // 2
 
-        elif self.format == "date":
-            # Just the date number
-            date_str = str(day_num)
-            w = text_width(date_str)
-            x = (WIDTH - w) // 2
-            y = (HEIGHT - 5) // 2
-            draw_text(canvas, x, y, date_str, text_color)
-
-        else:  # full
-            # Single line: DAY DD MMM (e.g., "TUE 2 DEC")
-            date_str = f"{day_name} {day_num} {month_name}"
-            w = text_width(date_str)
-            x = (WIDTH - w) // 2
-            draw_text(canvas, x, 1, date_str, text_color)
+        y = 1  # Vertically centered
+        draw_text(canvas, x, y, date_text, text_color)
 
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate calendar frames."""
-        start_time = time.time()
-        frame_delay = 1.0  # Update once per second
+        now = datetime.now()
+        date_text = self._get_date_text(now)
 
-        while time.time() - start_time < self.duration:
-            now = datetime.now()
-            frame = self._render_frame(now)
-            yield frame, frame_delay
+        if self._should_scroll(date_text):
+            # Scrolling mode
+            pixels_per_frame = self.scroll_speed / 30.0
+            frame_delay = 1.0 / 30.0
+
+            start_time = time.time()
+            offset = 0.0
+            scroll_completed = False
+
+            while True:
+                now = datetime.now()
+                date_text = self._get_date_text(now)
+                content_width = text_width(date_text)
+                total_scroll = content_width + WIDTH
+
+                frame = self._render_frame(now, int(offset))
+                yield frame, frame_delay
+
+                offset += pixels_per_frame
+
+                if offset >= total_scroll:
+                    scroll_completed = True
+                    offset = 0.0
+
+                elapsed = time.time() - start_time
+                if scroll_completed and elapsed >= self.duration:
+                    break
+        else:
+            # Static mode
+            start_time = time.time()
+            frame_delay = 1.0  # Update once per second
+
+            while time.time() - start_time < self.duration:
+                now = datetime.now()
+                frame = self._render_frame(now)
+                yield frame, frame_delay

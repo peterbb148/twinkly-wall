@@ -30,6 +30,8 @@ cards:
   # Date and Time
   - type: calendar
     duration: 5
+    scroll: true
+    scroll_speed: 30
 
   - type: clock
     duration: 5
