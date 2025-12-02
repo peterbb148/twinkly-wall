@@ -10,6 +10,27 @@ from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
+# Small Christmas tree sprite (5x7) - fits in 10px display
+SPRITE_TREE: list[list[int]] = [
+    [0, 0, 3, 0, 0],  # 3 = gold star
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 1, 1, 1],
+    [0, 0, 2, 0, 0],  # 2 = brown trunk
+    [0, 0, 2, 0, 0],
+]
+
+TREE_COLORS: dict[int, RGB] = {
+    1: (0, 180, 0),    # Green tree
+    2: (139, 69, 19),  # Brown trunk
+    3: (255, 215, 0),  # Gold star
+}
+
+AVAILABLE_SPRITES: dict[str, tuple[list[list[int]], dict[int, RGB]]] = {
+    "tree": (SPRITE_TREE, TREE_COLORS),
+}
+
 
 @register_card
 class CountdownCard(Card):
@@ -22,6 +43,8 @@ class CountdownCard(Card):
         show_seconds: Show seconds in countdown (default: false for days, true for hours)
         scroll: Enable scrolling (default: auto - scrolls if text wider than display)
         scroll_speed: Pixels per second for scrolling (default: 30)
+        prefix_sprite: Sprite to show before text - tree (default: none)
+        suffix_sprite: Sprite to show after text - tree (default: none)
     """
 
     card_type = "countdown"
@@ -34,6 +57,8 @@ class CountdownCard(Card):
         self.show_seconds: bool | None = self.config.get("show_seconds", None)
         self.scroll: bool | str = self.config.get("scroll", "auto")
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.prefix_sprite: str | None = self.config.get("prefix_sprite", None)
+        self.suffix_sprite: str | None = self.config.get("suffix_sprite", None)
 
         # Parse target date
         self.target: datetime | None = None
@@ -80,10 +105,52 @@ class CountdownCard(Card):
             return f"{self.label} {countdown_text}"
         return countdown_text
 
+    def _get_sprite(self, name: str) -> tuple[list[list[int]], dict[int, RGB]] | None:
+        """Get sprite data by name."""
+        return AVAILABLE_SPRITES.get(name)
+
+    def _get_sprite_width(self, name: str | None) -> int:
+        """Get width of a sprite (including spacing)."""
+        if not name:
+            return 0
+        sprite_data = self._get_sprite(name)
+        if not sprite_data:
+            return 0
+        sprite, _ = sprite_data
+        return len(sprite[0]) + 2  # sprite width + spacing
+
+    def _get_content_width(self, countdown_text: str) -> int:
+        """Get total width of content including sprites."""
+        width = text_width(self._get_display_text(countdown_text))
+        width += self._get_sprite_width(self.prefix_sprite)
+        width += self._get_sprite_width(self.suffix_sprite)
+        return width
+
+    def _draw_sprite(
+        self, canvas: Canvas, x: int, sprite: list[list[int]], colors: dict[int, RGB]
+    ) -> int:
+        """Draw a sprite on the canvas, return width drawn."""
+        sprite_height = len(sprite)
+        sprite_width = len(sprite[0]) if sprite else 0
+
+        # Center vertically
+        y_offset = (HEIGHT - sprite_height) // 2
+
+        for row_idx, row in enumerate(sprite):
+            for col_idx, pixel in enumerate(row):
+                if pixel != 0:
+                    color = colors.get(pixel, (255, 255, 255))
+                    px = x + col_idx
+                    py = y_offset + row_idx
+                    if 0 <= px < WIDTH and 0 <= py < HEIGHT:
+                        canvas.set_pixel(px, py, color)
+
+        return sprite_width
+
     def _should_scroll(self, countdown_text: str) -> bool:
         """Determine if text should scroll."""
         if self.scroll == "auto":
-            return text_width(self._get_display_text(countdown_text)) > WIDTH
+            return self._get_content_width(countdown_text) > WIDTH
         return bool(self.scroll)
 
     def _render_frame(self, countdown_text: str, offset: int = 0) -> Frame:
@@ -91,15 +158,22 @@ class CountdownCard(Card):
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
 
-        display_text = self._get_display_text(countdown_text)
-        tw = text_width(display_text)
+        content_width = self._get_content_width(countdown_text)
 
         if offset > 0:
             # Scrolling mode
             x = WIDTH - offset
         else:
             # Centered mode
-            x = (WIDTH - tw) // 2
+            x = (WIDTH - content_width) // 2
+
+        # Draw prefix sprite
+        if self.prefix_sprite:
+            sprite_data = self._get_sprite(self.prefix_sprite)
+            if sprite_data:
+                sprite, colors = sprite_data
+                sprite_w = self._draw_sprite(canvas, x, sprite, colors)
+                x += sprite_w + 2  # sprite + spacing
 
         y = 1  # Vertically centered
 
@@ -108,8 +182,18 @@ class CountdownCard(Card):
             draw_text(canvas, x, y, self.label, (150, 150, 150))
             label_w = text_width(self.label + " ")
             draw_text(canvas, x + label_w, y, countdown_text, self.color)
+            x += text_width(self._get_display_text(countdown_text))
         else:
             draw_text(canvas, x, y, countdown_text, self.color)
+            x += text_width(countdown_text)
+
+        # Draw suffix sprite
+        if self.suffix_sprite:
+            sprite_data = self._get_sprite(self.suffix_sprite)
+            if sprite_data:
+                sprite, colors = sprite_data
+                x += 2  # spacing before sprite
+                self._draw_sprite(canvas, x, sprite, colors)
 
         return canvas.copy()
 
@@ -144,7 +228,7 @@ class CountdownCard(Card):
                 remaining = (self.target - now).total_seconds()
                 countdown_text = self._format_countdown(remaining)
 
-                content_width = text_width(self._get_display_text(countdown_text))
+                content_width = self._get_content_width(countdown_text)
                 total_scroll = content_width + WIDTH
 
                 frame = self._render_frame(countdown_text, int(offset))
