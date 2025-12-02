@@ -4,12 +4,15 @@ import logging
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-from .cards import CardContext, create_card
+from .cards import Card, CardContext, create_card
 from .config import CardConfig, PlaylistConfig
 from .effects import crossfade
 from .types import Frame
+
+if TYPE_CHECKING:
+    from .mcp_client import MCPClient
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,7 @@ class SchedulerState:
     cards_played: int = 0
     last_frame: Frame | None = None
     running: bool = False
+    mcp_interrupt: bool = False  # Flag to interrupt current card for MCP
 
 
 class Scheduler:
@@ -49,6 +53,7 @@ class Scheduler:
         playlist: PlaylistConfig,
         context: CardContext | None = None,
         outputs: list[Output] | None = None,
+        mcp_client: "MCPClient | None" = None,
     ):
         """Initialize the scheduler.
 
@@ -56,12 +61,16 @@ class Scheduler:
             playlist: Playlist configuration with cards
             context: Optional shared context for cards
             outputs: Optional list of output targets
+            mcp_client: Optional MCP client for remote control
         """
         self.playlist = playlist
         self.context = context or CardContext()
         self.outputs = outputs or []
+        self.mcp_client = mcp_client
         self.state = SchedulerState()
         self._transition_steps = 15  # Steps for crossfade transitions
+        self._last_mcp_poll = 0.0  # Track last MCP poll time
+        self._mcp_poll_interval = 2.0  # Seconds between MCP polls
 
     def _create_card_from_config(self, card_config: CardConfig) -> Any:
         """Create a card instance from configuration.
@@ -116,6 +125,65 @@ class Scheduler:
             # Unknown transition, just switch
             yield to_frame
 
+    def _check_mcp_commands(self) -> bool:
+        """Check for MCP commands if client is configured.
+
+        Returns:
+            True if there are pending MCP commands to execute
+        """
+        if not self.mcp_client:
+            return False
+
+        now = time.time()
+        if now - self._last_mcp_poll < self._mcp_poll_interval:
+            return self.mcp_client.has_pending_commands()
+
+        self._last_mcp_poll = now
+        self.mcp_client.check_for_commands()
+        return self.mcp_client.has_pending_commands()
+
+    def _play_mcp_cards(self) -> None:
+        """Play all pending MCP cards."""
+        if not self.mcp_client:
+            return
+
+        while self.mcp_client.has_pending_commands() and self.state.running:
+            card = self.mcp_client.get_next_card()
+            if card is None:
+                continue
+
+            logger.info(f"Playing MCP card: {card.card_type}")
+            self._play_card_instance(card)
+
+    def _play_card_instance(self, card: Card) -> None:
+        """Play a card instance directly.
+
+        Args:
+            card: Card instance to play
+        """
+        try:
+            first_frame = True
+            for frame, delay in card.frames(self.context):
+                if not self.state.running:
+                    break
+
+                # Apply transition for first frame
+                if first_frame:
+                    for t_frame in self._apply_transition(
+                        self.state.last_frame, frame, "crossfade"
+                    ):
+                        self._send_frame(t_frame)
+                        time.sleep(0.03)  # ~30fps for transitions
+                    first_frame = False
+                else:
+                    self._send_frame(frame)
+
+                if delay > 0:
+                    time.sleep(delay)
+
+        except Exception as e:
+            logger.error(f"Error playing card: {e}")
+
     def run_once(self) -> None:
         """Run through the playlist once."""
         if not self.playlist.cards:
@@ -164,11 +232,20 @@ class Scheduler:
             return
 
         logger.info(f"Playing card: {card_config.type} for {card_config.duration}s")
+        self.state.mcp_interrupt = False
 
         try:
             first_frame = True
             for frame, delay in card.frames(self.context):
                 if not self.state.running:
+                    break
+
+                # Check for MCP commands - interrupt current card if any
+                if self._check_mcp_commands():
+                    logger.info(f"MCP command received, interrupting {card_config.type}")
+                    self.state.mcp_interrupt = True
+                    self._play_mcp_cards()
+                    # After MCP cards, break out to resume playlist
                     break
 
                 # Apply transition for first frame

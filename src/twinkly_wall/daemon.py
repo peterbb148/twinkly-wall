@@ -2,12 +2,14 @@
 
 import argparse
 import logging
+import os
 import signal
 import sys
 from pathlib import Path
 
 from .cards import CardContext
 from .config import load_playlist, load_settings
+from .mcp_client import DEFAULT_SERVER_URL, MCPClient
 from .scheduler import Scheduler
 
 # Configure logging
@@ -30,6 +32,9 @@ class TwinklyDaemon:
         settings_path: Path | None = None,
         cards_path: Path | None = None,
         terminal_output: bool = False,
+        mcp_enabled: bool = False,
+        mcp_server: str | None = None,
+        mcp_api_key: str | None = None,
     ):
         """Initialize the daemon.
 
@@ -37,6 +42,9 @@ class TwinklyDaemon:
             settings_path: Path to settings.yaml
             cards_path: Path to cards.yaml
             terminal_output: If True, output to terminal instead of Twinkly device
+            mcp_enabled: If True, enable MCP remote control
+            mcp_server: MCP server URL (default from env or hardcoded)
+            mcp_api_key: MCP API key (default from env)
         """
         self.settings = load_settings(settings_path)
         self.playlist = load_playlist(cards_path)
@@ -44,9 +52,13 @@ class TwinklyDaemon:
         from .outputs.twinkly import TwinklyOutput
 
         self.terminal_output = terminal_output
+        self.mcp_enabled = mcp_enabled
+        self.mcp_server = mcp_server
+        self.mcp_api_key = mcp_api_key
         self.scheduler: Scheduler | None = None
         self._terminal: TerminalOutput | None = None
         self._twinkly: TwinklyOutput | None = None
+        self._mcp_client: MCPClient | None = None
         self._setup_signals()
 
     def _setup_signals(self) -> None:
@@ -75,8 +87,8 @@ class TwinklyDaemon:
             outputs.append(self._terminal)
             logger.info("Terminal output enabled")
 
-        # Add Twinkly output if configured
-        if self.settings.twinkly.host:
+        # Add Twinkly output if configured (skip if terminal-only mode)
+        if self.settings.twinkly.host and not self.terminal_output:
             from .outputs.twinkly import TwinklyOutput
 
             self._twinkly = TwinklyOutput(
@@ -114,6 +126,33 @@ class TwinklyDaemon:
 
         return CardContext(datasources=datasources)
 
+    def _create_mcp_client(self) -> MCPClient | None:
+        """Create MCP client if enabled.
+
+        Returns:
+            MCPClient instance or None if MCP is disabled
+        """
+        if not self.mcp_enabled:
+            return None
+
+        server_url = (
+            self.mcp_server
+            or os.environ.get("TWINKLY_MCP_URL")
+            or DEFAULT_SERVER_URL
+        )
+        api_key = self.mcp_api_key or os.environ.get("TWINKLY_API_KEY")
+
+        client = MCPClient(
+            server_url=server_url,
+            api_key=api_key,
+        )
+
+        # Register cards with the server
+        client.register_cards()
+
+        logger.info(f"MCP client enabled, polling {server_url}")
+        return client
+
     def run(self) -> None:
         """Run the daemon."""
         if not self.playlist.cards:
@@ -124,11 +163,13 @@ class TwinklyDaemon:
 
         outputs = self._create_outputs()
         context = self._create_context()
+        self._mcp_client = self._create_mcp_client()
 
         self.scheduler = Scheduler(
             playlist=self.playlist,
             context=context,
             outputs=outputs,
+            mcp_client=self._mcp_client,
         )
 
         # Start outputs
@@ -186,6 +227,21 @@ def create_parser() -> argparse.ArgumentParser:
         help="Enable verbose logging",
     )
     parser.add_argument(
+        "--mcp",
+        action="store_true",
+        help="Enable MCP remote control (polls MCP server for commands)",
+    )
+    parser.add_argument(
+        "--mcp-server",
+        type=str,
+        help="MCP server URL (default: $TWINKLY_MCP_URL or https://twinkly-mcp.onrender.com)",
+    )
+    parser.add_argument(
+        "--mcp-api-key",
+        type=str,
+        help="MCP API key (default: $TWINKLY_API_KEY)",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version="%(prog)s 0.1.0",
@@ -205,6 +261,9 @@ def main(argv: list[str] | None = None) -> int:
         settings_path=args.settings,
         cards_path=args.cards,
         terminal_output=args.terminal,
+        mcp_enabled=args.mcp,
+        mcp_server=args.mcp_server,
+        mcp_api_key=args.mcp_api_key,
     )
 
     try:
