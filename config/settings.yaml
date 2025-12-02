@@ -1,9 +1,9 @@
 # Twinkly Wall Settings
 
 twinkly:
-  host: "192.168.1.138"
+  host: "192.168.0.192"
   port: 80
-  mirror_h: true
+  mirror_h: false
   mirror_v: true
 
 weather:

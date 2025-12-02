@@ -36,6 +36,12 @@ uv run twinklysay --help
 
 The `twinklysay` command provides two subcommands for terminal preview and testing.
 
+- List registered cards (and optionally the playlist with ids):
+
+```bash
+uv run twinklysay list --playlist config/cards.yaml
+```
+
 ### Display Text (`say`)
 
 Render a static text message in your terminal:
@@ -90,6 +96,12 @@ uv run twinklysay preview rainbow --mode plasma
 
 # Twinklysay (scrolling message, used for remote messages)
 uv run twinklysay preview twinklysay --text "Remote message!" --color gold
+
+# Send a card to the LED device (one-shot)
+uv run twinklysay card twinklysay --text "Hello LED!" --color gold
+
+# Send a playlist card by id (uses cards.yaml)
+uv run twinklysay card --id 3 --playlist config/cards.yaml
 ```
 
 **Available cards:** clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay
