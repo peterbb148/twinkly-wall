@@ -20,6 +20,8 @@ class CountdownCard(Card):
         label: Short label to display (default: none)
         color: RGB color for numbers (default: white)
         show_seconds: Show seconds in countdown (default: false for days, true for hours)
+        scroll: Enable scrolling (default: auto - scrolls if text wider than display)
+        scroll_speed: Pixels per second for scrolling (default: 30)
     """
 
     card_type = "countdown"
@@ -30,6 +32,8 @@ class CountdownCard(Card):
         self.label: str = self.config.get("label", "")
         self.color: RGB = tuple(self.config.get("color", (255, 255, 255)))  # type: ignore
         self.show_seconds: bool | None = self.config.get("show_seconds", None)
+        self.scroll: bool | str = self.config.get("scroll", "auto")
+        self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
 
         # Parse target date
         self.target: datetime | None = None
@@ -70,27 +74,42 @@ class CountdownCard(Card):
                 return f"{minutes}:{secs:02d}"
             return f"{minutes}M"
 
-    def _render_frame(self, countdown_text: str) -> Frame:
+    def _get_display_text(self, countdown_text: str) -> str:
+        """Get full display text with label."""
+        if self.label:
+            return f"{self.label} {countdown_text}"
+        return countdown_text
+
+    def _should_scroll(self, countdown_text: str) -> bool:
+        """Determine if text should scroll."""
+        if self.scroll == "auto":
+            return text_width(self._get_display_text(countdown_text)) > WIDTH
+        return bool(self.scroll)
+
+    def _render_frame(self, countdown_text: str, offset: int = 0) -> Frame:
         """Render the countdown display."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
 
-        if self.label:
-            # Combine label and countdown on one line
-            display_text = f"{self.label} {countdown_text}"
-            tw = text_width(display_text)
-            x = (WIDTH - tw) // 2
-            y = 1  # Vertically centered
+        display_text = self._get_display_text(countdown_text)
+        tw = text_width(display_text)
 
+        if offset > 0:
+            # Scrolling mode
+            x = WIDTH - offset
+        else:
+            # Centered mode
+            x = (WIDTH - tw) // 2
+
+        y = 1  # Vertically centered
+
+        if self.label:
             # Draw label in gray, countdown in color
             draw_text(canvas, x, y, self.label, (150, 150, 150))
             label_w = text_width(self.label + " ")
             draw_text(canvas, x + label_w, y, countdown_text, self.color)
         else:
-            # Center countdown vertically
-            count_w = text_width(countdown_text)
-            count_x = (WIDTH - count_w) // 2
-            draw_text(canvas, count_x, 1, countdown_text, self.color)
+            draw_text(canvas, x, y, countdown_text, self.color)
 
         return canvas.copy()
 
@@ -106,13 +125,49 @@ class CountdownCard(Card):
                 yield frame, 1.0
             return
 
-        start_time = time.time()
-        frame_delay = 0.5  # Update twice per second
+        # Get initial countdown to check if scrolling needed
+        now = datetime.now()
+        remaining = (self.target - now).total_seconds()
+        countdown_text = self._format_countdown(remaining)
 
-        while time.time() - start_time < self.duration:
-            now = datetime.now()
-            remaining = (self.target - now).total_seconds()
+        if self._should_scroll(countdown_text):
+            # Scrolling mode
+            pixels_per_frame = self.scroll_speed / 30.0
+            frame_delay = 1.0 / 30.0
 
-            countdown_text = self._format_countdown(remaining)
-            frame = self._render_frame(countdown_text)
-            yield frame, frame_delay
+            start_time = time.time()
+            offset = 0.0
+            scroll_completed = False
+
+            while True:
+                now = datetime.now()
+                remaining = (self.target - now).total_seconds()
+                countdown_text = self._format_countdown(remaining)
+
+                content_width = text_width(self._get_display_text(countdown_text))
+                total_scroll = content_width + WIDTH
+
+                frame = self._render_frame(countdown_text, int(offset))
+                yield frame, frame_delay
+
+                offset += pixels_per_frame
+
+                if offset >= total_scroll:
+                    scroll_completed = True
+                    offset = 0.0
+
+                elapsed = time.time() - start_time
+                if scroll_completed and elapsed >= self.duration:
+                    break
+        else:
+            # Static mode
+            start_time = time.time()
+            frame_delay = 0.5  # Update twice per second
+
+            while time.time() - start_time < self.duration:
+                now = datetime.now()
+                remaining = (self.target - now).total_seconds()
+
+                countdown_text = self._format_countdown(remaining)
+                frame = self._render_frame(countdown_text)
+                yield frame, frame_delay

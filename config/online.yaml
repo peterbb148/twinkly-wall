@@ -46,7 +46,9 @@ cards:
     target: "2025-12-24"
     label: "XMAS"
     color: [255, 0, 0]
-    duration: 8
+    scroll: true
+    scroll_speed: 30
+    duration: 10
 
   # Matrix rain
   - type: matrix
