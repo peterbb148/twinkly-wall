@@ -41,6 +41,16 @@ cards:
   - type: beer
     duration: 10
 
+  # Free AI Training (1st showing)
+  - type: text
+    text: "FREE AI TRAINING - CONTACT PETER :-)"
+    color: [0, 255, 0]
+    scroll: true
+    scroll_speed: 30
+    prefix_sprite: tree
+    suffix_sprite: tree
+    duration: 15
+
   # Countdown to Christmas (Dec 24 in Denmark)
   - type: countdown
     target: "2025-12-24"
@@ -133,7 +143,7 @@ cards:
     mode: wave
     speed: 1.0
 
-  # Free AI Training
+  # Free AI Training (2nd showing)
   - type: text
     text: "FREE AI TRAINING - CONTACT PETER :-)"
     color: [0, 255, 0]
