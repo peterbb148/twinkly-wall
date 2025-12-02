@@ -9,6 +9,27 @@ from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
+# Small Christmas tree sprite (5x7) - fits in 10px display
+SPRITE_TREE: list[list[int]] = [
+    [0, 0, 3, 0, 0],  # 3 = gold star
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 1, 1, 1],
+    [0, 0, 2, 0, 0],  # 2 = brown trunk
+    [0, 0, 2, 0, 0],
+]
+
+TREE_COLORS: dict[int, RGB] = {
+    1: (0, 180, 0),    # Green tree
+    2: (139, 69, 19),  # Brown trunk
+    3: (255, 215, 0),  # Gold star
+}
+
+AVAILABLE_SPRITES: dict[str, tuple[list[list[int]], dict[int, RGB]]] = {
+    "tree": (SPRITE_TREE, TREE_COLORS),
+}
+
 
 @register_card
 class TextCard(Card):
@@ -22,6 +43,8 @@ class TextCard(Card):
         scroll_speed: Pixels per second for scrolling (default: 30)
         scroll_complete: Wait for text to fully scroll before ending (default: true)
         align: Text alignment - left, center, right (default: center)
+        prefix_sprite: Sprite to show before text - tree (default: none)
+        suffix_sprite: Sprite to show after text - tree (default: none)
     """
 
     card_type = "text"
@@ -35,12 +58,56 @@ class TextCard(Card):
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.scroll_complete: bool = self.config.get("scroll_complete", True)
         self.align: str = self.config.get("align", "center")
+        self.prefix_sprite: str | None = self.config.get("prefix_sprite", None)
+        self.suffix_sprite: str | None = self.config.get("suffix_sprite", None)
 
     def _should_scroll(self) -> bool:
         """Determine if text should scroll."""
         if self.scroll == "auto":
-            return text_width(self.text) > WIDTH
+            return self._get_content_width() > WIDTH
         return bool(self.scroll)
+
+    def _get_sprite(self, name: str) -> tuple[list[list[int]], dict[int, RGB]] | None:
+        """Get sprite data by name."""
+        return AVAILABLE_SPRITES.get(name)
+
+    def _get_sprite_width(self, name: str | None) -> int:
+        """Get width of a sprite (including spacing)."""
+        if not name:
+            return 0
+        sprite_data = self._get_sprite(name)
+        if not sprite_data:
+            return 0
+        sprite, _ = sprite_data
+        return len(sprite[0]) + 2  # sprite width + spacing
+
+    def _get_content_width(self) -> int:
+        """Get total width of content including sprites."""
+        width = text_width(self.text)
+        width += self._get_sprite_width(self.prefix_sprite)
+        width += self._get_sprite_width(self.suffix_sprite)
+        return width
+
+    def _draw_sprite(
+        self, canvas: Canvas, x: int, sprite: list[list[int]], colors: dict[int, RGB]
+    ) -> int:
+        """Draw a sprite on the canvas, return width drawn."""
+        sprite_height = len(sprite)
+        sprite_width = len(sprite[0]) if sprite else 0
+
+        # Center vertically
+        y_offset = (HEIGHT - sprite_height) // 2
+
+        for row_idx, row in enumerate(sprite):
+            for col_idx, pixel in enumerate(row):
+                if pixel != 0:
+                    color = colors.get(pixel, (255, 255, 255))
+                    px = x + col_idx
+                    py = y_offset + row_idx
+                    if 0 <= px < WIDTH and 0 <= py < HEIGHT:
+                        canvas.set_pixel(px, py, color)
+
+        return sprite_width
 
     def _render_static(self) -> Frame:
         """Render static (non-scrolling) text."""
@@ -73,15 +140,30 @@ class TextCard(Card):
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(self.bgcolor)
 
-        # Text starts off-screen to the right, scrolls left
-        # offset=0 means text is just off the right edge
-        # offset=content_width+WIDTH means text has scrolled completely off left
+        # Content starts off-screen to the right, scrolls left
         x = WIDTH - offset
 
-        # Center vertically
-        y = 1
+        # Draw prefix sprite
+        if self.prefix_sprite:
+            sprite_data = self._get_sprite(self.prefix_sprite)
+            if sprite_data:
+                sprite, colors = sprite_data
+                sprite_w = self._draw_sprite(canvas, x, sprite, colors)
+                x += sprite_w + 2  # sprite + spacing
 
+        # Draw text (center vertically)
+        y = 1
         draw_text(canvas, x, y, self.text, self.color)
+        x += text_width(self.text)
+
+        # Draw suffix sprite
+        if self.suffix_sprite:
+            sprite_data = self._get_sprite(self.suffix_sprite)
+            if sprite_data:
+                sprite, colors = sprite_data
+                x += 2  # spacing before sprite
+                self._draw_sprite(canvas, x, sprite, colors)
+
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
@@ -94,7 +176,7 @@ class TextCard(Card):
                 yield frame, 0.5  # Update every 0.5s for static
         else:
             # Scrolling display
-            content_width = text_width(self.text)
+            content_width = self._get_content_width()
             total_scroll = content_width + WIDTH  # Full scroll distance
 
             # Calculate frame timing

@@ -128,3 +128,13 @@ cards:
     duration: 8
     mode: wave
     speed: 1.0
+
+  # Free AI Training
+  - type: text
+    text: "FREE AI TRAINING - CONTACT PETER :-)"
+    color: [0, 255, 0]
+    scroll: true
+    scroll_speed: 30
+    prefix_sprite: tree
+    suffix_sprite: tree
+    duration: 15
