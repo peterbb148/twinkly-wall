@@ -114,15 +114,70 @@ uv run twinklysay card --id 3 --playlist config/cards.yaml
 | `-c, --color` | Text color (name, hex, or R,G,B) |
 | `--no-color` | Grayscale output |
 
-## Remote Messages (via MCP Server)
+## Remote Control (MCP Integration)
 
-The `twinklysay` card is designed for remote messages sent via the [twinkly-mcp](https://github.com/peterbb148/twinkly-mcp) server. When a message is received:
+The daemon supports remote control via the [twinkly-mcp](https://github.com/peterbb148/twinkly-mcp) server. When enabled, Claude Desktop can send commands to display messages or run cards on the LED wall.
 
-1. The current card is interrupted
-2. The message scrolls across the display once
-3. The previous card resumes
+### Architecture
 
-This enables sending messages to the LED wall from Claude Desktop or other MCP clients.
+```
+┌─────────────────┐     MCP Protocol      ┌──────────────────┐
+│  Claude Desktop │ ◄──────────────────► │  Twinkly MCP     │
+│  (MCP Client)   │                       │  Server (Render) │
+└─────────────────┘                       └────────┬─────────┘
+                                                   │
+                                          HTTP Polling
+                                                   │
+                                                   ▼
+                                          ┌──────────────────┐
+                                          │  Raspberry Pi    │
+                                          │  (twinkly-wall)  │
+                                          └──────────────────┘
+```
+
+### Running with MCP
+
+```bash
+# Run daemon with MCP enabled (on Raspberry Pi)
+twinkly-wall --mcp
+
+# Run in terminal mode for testing (no LED hardware)
+twinkly-wall -t --mcp
+
+# Custom MCP server
+twinkly-wall --mcp --mcp-server https://your-server.com
+
+# With API key authentication
+twinkly-wall --mcp --mcp-api-key YOUR_KEY
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `TWINKLY_MCP_URL` | MCP server URL (default: https://twinkly-mcp.onrender.com) |
+| `TWINKLY_API_KEY` | API key for MCP server authentication |
+
+### How It Works
+
+1. The daemon polls the MCP server every 2 seconds
+2. When a command arrives (e.g., `twinklysay` or `run_card`):
+   - Current card is interrupted
+   - MCP command is executed immediately
+   - Playlist resumes from the next card
+3. Available cards are registered with the server on startup
+
+### Standalone MCP Client
+
+For testing without the full daemon:
+
+```bash
+# Start MCP polling client (terminal output only)
+uv run twinklysay mcp
+
+# Custom poll interval
+uv run twinklysay mcp -i 5
+```
 
 ## Development
 
@@ -147,9 +202,13 @@ twinkly-wall/
 │   ├── effects.py      # Scroll, fade, transitions
 │   ├── cards/          # Display card implementations
 │   ├── outputs/        # Terminal and Twinkly renderers
-│   └── cli.py          # CLI entry point
+│   ├── cli.py          # CLI entry point (twinklysay)
+│   ├── daemon.py       # Main daemon (twinkly-wall)
+│   ├── scheduler.py    # Card playlist scheduler
+│   └── mcp_client.py   # MCP server polling client
 ├── config/
-│   └── cards.yaml      # Card playlist configuration
+│   ├── cards.yaml      # Card playlist configuration
+│   └── settings.yaml   # Device and API settings
 └── tests/
 ```
 
