@@ -18,6 +18,12 @@ cards:
     scroll_speed: 30
     duration: 8
 
+  # Tuborg Snebajer - Driving home for Christmas
+  - type: tuborg_julebryg
+    duration: 15
+    scroll_speed: 30
+    num_santas: 3
+
   # Weather forecast
   - type: weather
     duration: 8
