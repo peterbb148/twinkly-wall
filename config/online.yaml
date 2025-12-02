@@ -18,11 +18,9 @@ cards:
     scroll_speed: 30
     duration: 8
 
-  # Weather with animated icon
+  # Weather forecast
   - type: weather
     duration: 8
-    show_icon: true
-    show_feels_like: false
 
   # Ocean waves
   - type: ocean
@@ -54,12 +52,6 @@ cards:
   - type: matrix
     duration: 8
     density: 15
-
-  # Weather with scrolling condition text
-  - type: weather
-    duration: 10
-    show_icon: false
-    show_condition: true
 
   # Pac-Man being chased by ghosts
   - type: pacman_chase
