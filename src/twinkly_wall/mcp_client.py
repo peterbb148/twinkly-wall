@@ -59,6 +59,34 @@ class MCPClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
+    def sync_command_id(self) -> None:
+        """Sync the last command ID without processing old commands.
+
+        This should be called on startup to skip any commands that were
+        sent before the client started. Only new commands after this
+        point will be processed.
+        """
+        url = f"{self.server_url}/api/commands/poll"
+        try:
+            response = requests.get(
+                url,
+                headers=self._get_headers(),
+                timeout=10,
+            )
+            response.raise_for_status()
+            data = response.json()
+            commands = data.get("commands", [])
+
+            # Set last_command_id to the most recent command (if any)
+            if commands:
+                self.last_command_id = commands[-1]["id"]
+                logger.info(f"Synced to command ID {self.last_command_id}, skipping {len(commands)} old commands")
+            else:
+                logger.info("No existing commands in queue")
+
+        except requests.RequestException as e:
+            logger.warning(f"Failed to sync command ID: {e}")
+
     def register_cards(self) -> bool:
         """Register available cards with the MCP server.
 
@@ -76,6 +104,10 @@ class MCPClient:
             response.raise_for_status()
             data = response.json()
             logger.info(f"Registered {data.get('count', len(cards))} cards with MCP server")
+
+            # Sync command ID to skip old commands on startup
+            self.sync_command_id()
+
             return True
         except requests.RequestException as e:
             logger.warning(f"Failed to register cards: {e}")
