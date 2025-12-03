@@ -15,6 +15,7 @@ from .clock import ClockCard
 from .coffee import CoffeeCard
 from .confetti import ConfettiCard
 from .countdown import CountdownCard
+from .dna import DNACard
 from .fire import FireCard
 from .fireworks import FireworksCard
 from .friday import FridayCard
@@ -53,6 +54,7 @@ __all__ = [
     "CoffeeCard",
     "ConfettiCard",
     "CountdownCard",
+    "DNACard",
     "FireCard",
     "FireworksCard",
     "FridayCard",
