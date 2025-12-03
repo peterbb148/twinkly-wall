@@ -72,6 +72,11 @@ cards:
     suffix_sprite: tree
     duration: 12
 
+  # DNA helix (Carlsberg Research Lab theme)
+  - type: dna
+    duration: 10
+    speed: 1.0
+
   # Matrix rain
   - type: matrix
     duration: 8
