@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
 from .cards import Card, CardContext, create_card
-from .config import CardConfig, PlaylistConfig
+from .config import CardConfig, OperatingHoursConfig, PlaylistConfig, is_within_operating_hours
 from .effects import crossfade
-from .types import Frame
+from .types import HEIGHT, WIDTH, Frame
 
 if TYPE_CHECKING:
     from .mcp_client import MCPClient
@@ -54,6 +54,7 @@ class Scheduler:
         context: CardContext | None = None,
         outputs: list[Output] | None = None,
         mcp_client: "MCPClient | None" = None,
+        operating_hours: OperatingHoursConfig | None = None,
     ):
         """Initialize the scheduler.
 
@@ -62,15 +63,19 @@ class Scheduler:
             context: Optional shared context for cards
             outputs: Optional list of output targets
             mcp_client: Optional MCP client for remote control
+            operating_hours: Optional operating hours configuration
         """
         self.playlist = playlist
         self.context = context or CardContext()
         self.outputs = outputs or []
         self.mcp_client = mcp_client
+        self.operating_hours = operating_hours or OperatingHoursConfig()
         self.state = SchedulerState()
         self._transition_steps = 15  # Steps for crossfade transitions
         self._last_mcp_poll = 0.0  # Track last MCP poll time
         self._mcp_poll_interval = 2.0  # Seconds between MCP polls
+        self._blank_frame: Frame = [[(0, 0, 0) for _ in range(WIDTH)] for _ in range(HEIGHT)]
+        self._outside_hours_logged = False  # Avoid log spam
 
     def _create_card_from_config(self, card_config: CardConfig) -> Any:
         """Create a card instance from configuration.
@@ -212,9 +217,28 @@ class Scheduler:
         self.state.running = True
 
         while self.state.running:
+            # Check operating hours
+            if not is_within_operating_hours(self.operating_hours):
+                if not self._outside_hours_logged:
+                    logger.info("Outside operating hours - display off")
+                    self._outside_hours_logged = True
+                # Send blank frame and sleep
+                self._send_frame(self._blank_frame)
+                time.sleep(60)  # Check every minute
+                continue
+
+            # We're within operating hours
+            if self._outside_hours_logged:
+                logger.info("Within operating hours - resuming display")
+                self._outside_hours_logged = False
+
             for i, card_config in enumerate(self.playlist.cards):
                 if not self.state.running:
                     break
+
+                # Re-check operating hours before each card
+                if not is_within_operating_hours(self.operating_hours):
+                    break  # Exit inner loop, will be caught by outer loop
 
                 self.state.current_card_index = i
                 self._play_card(card_config)
