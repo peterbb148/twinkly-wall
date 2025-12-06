@@ -20,3 +20,13 @@ leaderboard:
   api_key: ""
   # Cache TTL in seconds
   cache_ttl: 60
+
+operating_hours:
+  # Enable operating hours restriction (default: false)
+  enabled: false
+  # Start hour (0-23), display turns on at this hour
+  start_hour: 8
+  # End hour (0-23), display turns off at this hour
+  end_hour: 18
+  # Only run on weekdays Monday-Friday (default: true)
+  weekdays_only: true

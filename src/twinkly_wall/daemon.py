@@ -170,6 +170,7 @@ class TwinklyDaemon:
             context=context,
             outputs=outputs,
             mcp_client=self._mcp_client,
+            operating_hours=self.settings.operating_hours,
         )
 
         # Start outputs

@@ -3,6 +3,7 @@
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,11 +30,27 @@ class WeatherConfig:
 
 
 @dataclass
+class OperatingHoursConfig:
+    """Operating hours configuration.
+
+    When enabled, the display only shows content during specified hours.
+    Outside operating hours, the display is blank (or shows standby card).
+    """
+
+    enabled: bool = False
+    start_hour: int = 8  # 08:00
+    end_hour: int = 18  # 18:00 (6 PM)
+    weekdays_only: bool = True  # Monday-Friday only
+    timezone: str = "local"  # Use local timezone
+
+
+@dataclass
 class Settings:
     """Application settings loaded from settings.yaml."""
 
     twinkly: TwinklyConfig = field(default_factory=TwinklyConfig)
     weather: WeatherConfig = field(default_factory=WeatherConfig)
+    operating_hours: OperatingHoursConfig = field(default_factory=OperatingHoursConfig)
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -132,9 +149,19 @@ def load_settings(path: Path | str | None = None) -> Settings:
             cache_duration=w.get("cache_duration", 600),
         )
 
+    if "operating_hours" in data:
+        oh = data["operating_hours"]
+        settings.operating_hours = OperatingHoursConfig(
+            enabled=oh.get("enabled", False),
+            start_hour=oh.get("start_hour", 8),
+            end_hour=oh.get("end_hour", 18),
+            weekdays_only=oh.get("weekdays_only", True),
+            timezone=oh.get("timezone", "local"),
+        )
+
     # Store any extra config
     for key in data:
-        if key not in ("twinkly", "weather"):
+        if key not in ("twinkly", "weather", "operating_hours"):
             settings.extra[key] = data[key]
 
     return settings
@@ -197,3 +224,30 @@ def load_playlist(path: Path | str | None = None) -> PlaylistConfig:
             )
 
     return playlist
+
+
+def is_within_operating_hours(config: OperatingHoursConfig) -> bool:
+    """Check if current time is within configured operating hours.
+
+    Args:
+        config: Operating hours configuration.
+
+    Returns:
+        True if operating hours are disabled OR current time is within hours.
+        False if outside operating hours.
+    """
+    if not config.enabled:
+        return True
+
+    now = datetime.now()
+
+    # Check weekday (Monday=0, Sunday=6)
+    if config.weekdays_only and now.weekday() >= 5:  # Saturday or Sunday
+        return False
+
+    # Check hour range
+    current_hour = now.hour
+    if current_hour < config.start_hour or current_hour >= config.end_hour:
+        return False
+
+    return True

@@ -11,3 +11,9 @@ weather:
   latitude: 55.6761
   longitude: 12.5683
   cache_duration: 600
+
+operating_hours:
+  enabled: true
+  start_hour: 8
+  end_hour: 18
+  weekdays_only: true
