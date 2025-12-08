@@ -77,6 +77,11 @@ cards:
     duration: 10
     speed: 1.0
 
+  # Danish Superliga standings
+  - type: superliga
+    duration: 15
+    scroll_speed: 30
+
   # Matrix rain
   - type: matrix
     duration: 8
