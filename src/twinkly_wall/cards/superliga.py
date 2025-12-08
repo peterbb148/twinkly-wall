@@ -80,7 +80,7 @@ class SuperligaCard(Card):
 
     Config options:
         season: Season to display (e.g., "2024-2025"). Default: current season.
-        max_teams: Maximum teams to show (default: 12 for full league).
+        max_teams: Maximum teams to show (default: 3 for top teams).
         scroll_speed: Pixels per second (default: 30).
         show_points: Show points after team name (default: true).
         separator: Text between entries (default: " ").
@@ -92,7 +92,7 @@ class SuperligaCard(Card):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.season: str | None = self.config.get("season")
-        self.max_teams: int = self.config.get("max_teams", 12)
+        self.max_teams: int = self.config.get("max_teams", 3)
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.show_points: bool = self.config.get("show_points", True)
         self.separator: str = self.config.get("separator", " ")
