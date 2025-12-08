@@ -80,22 +80,19 @@ class FridayCard(Card):
 
         return canvas.copy()
 
-    def _render_countdown(self, days: int) -> Frame:
-        """Render countdown to Friday."""
+    def _render_countdown(self, days: int, offset: int) -> Frame:
+        """Render countdown to Friday as scrolling text."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
 
-        # Top line: days number
-        days_str = str(days)
-        days_w = text_width(days_str)
-        days_x = (WIDTH - days_w) // 2
-        draw_text(canvas, days_x, 0, days_str, (255, 255, 0))
+        # Single line scrolling message
+        if days == 1:
+            msg = "1 DAY TO FRIDAY"
+        else:
+            msg = f"{days} DAYS TO FRIDAY"
 
-        # Bottom line: "TO FRI"
-        msg = "TO FRI"
-        msg_w = text_width(msg)
-        msg_x = (WIDTH - msg_w) // 2
-        draw_text(canvas, msg_x, 5, msg, (150, 150, 150))
+        x_pos = WIDTH - offset
+        draw_text(canvas, x_pos, 1, msg, (255, 255, 0))
 
         return canvas.copy()
 
@@ -111,8 +108,20 @@ class FridayCard(Card):
                 yield frame, frame_delay
                 frame_num += 1
         else:
-            frame_delay = 1.0  # Slow for static display
+            # Scrolling countdown
             days = self._days_until_friday()
+            if days == 1:
+                msg = "1 DAY TO FRIDAY"
+            else:
+                msg = f"{days} DAYS TO FRIDAY"
+            total_scroll = text_width(msg) + WIDTH
+            scroll_speed = 30.0
+            frame_delay = 1.0 / 30.0
+            offset = 0.0
+
             while time.time() - start_time < self.duration:
-                frame = self._render_countdown(days)
+                frame = self._render_countdown(days, int(offset))
                 yield frame, frame_delay
+                offset += scroll_speed * frame_delay
+                if offset >= total_scroll:
+                    offset = 0
