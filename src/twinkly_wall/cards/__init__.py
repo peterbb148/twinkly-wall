@@ -36,6 +36,7 @@ from .santa import SantaCard
 from .snake import SnakeCard
 from .snow import SnowCard
 from .space_invaders import SpaceInvadersCard
+from .superliga import SuperligaCard
 from .starfield import StarfieldCard
 from .test_pattern import TestPatternCard
 from .tetris import TetrisCard
@@ -75,6 +76,7 @@ __all__ = [
     "SnakeCard",
     "SnowCard",
     "SpaceInvadersCard",
+    "SuperligaCard",
     "StarfieldCard",
     "TestPatternCard",
     "TetrisCard",
