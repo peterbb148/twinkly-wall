@@ -131,4 +131,4 @@ class PulseCard(Card):
             if self.text:
                 text_offset += self.scroll_speed * frame_delay
                 if text_offset >= total_scroll:
-                    text_offset = 0  # Loop
+                    break  # End after single scroll
