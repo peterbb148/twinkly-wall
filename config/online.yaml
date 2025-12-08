@@ -20,11 +20,10 @@ cards:
     suffix_sprite: tree
     duration: 8
 
-  # Tuborg Snebajer - Driving home for Christmas
-  - type: tuborg_julebryg
-    duration: 15
-    scroll_speed: 30
-    num_santas: 3
+  # Tuborg Christmas sleigh - Santa and reindeer
+  - type: tuborg_sleigh
+    duration: 12
+    speed: 20
 
   # Weather forecast
   - type: weather
@@ -76,6 +75,11 @@ cards:
   - type: dna
     duration: 10
     speed: 1.0
+
+  # Danish Superliga standings
+  - type: superliga
+    duration: 15
+    scroll_speed: 30
 
   # Matrix rain
   - type: matrix

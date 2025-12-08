@@ -36,11 +36,13 @@ from .santa import SantaCard
 from .snake import SnakeCard
 from .snow import SnowCard
 from .space_invaders import SpaceInvadersCard
+from .superliga import SuperligaCard
 from .starfield import StarfieldCard
 from .test_pattern import TestPatternCard
 from .tetris import TetrisCard
 from .text import TextCard
 from .tuborg_julebryg import TuborgJulebryg
+from .tuborg_sleigh import TuborgSleighCard
 from .twinklysay import TwinklysayCard
 from .weather import WeatherCard
 
@@ -75,11 +77,13 @@ __all__ = [
     "SnakeCard",
     "SnowCard",
     "SpaceInvadersCard",
+    "SuperligaCard",
     "StarfieldCard",
     "TestPatternCard",
     "TetrisCard",
     "TextCard",
     "TuborgJulebryg",
+    "TuborgSleighCard",
     "TwinklysayCard",
     "WeatherCard",
     "create_card",
