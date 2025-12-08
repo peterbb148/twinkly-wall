@@ -261,6 +261,24 @@ class TwinklyOutput:
             pass
         logger.info("Twinkly disconnected")
 
+    def turn_off(self) -> None:
+        """Turn off the LEDs (set mode to off)."""
+        try:
+            self.client.ensure_auth()
+            self.client.set_mode("off")
+            logger.info("Twinkly LEDs turned off")
+        except TwinklyAPIError as e:
+            logger.warning(f"Failed to turn off Twinkly: {e}")
+
+    def turn_on(self) -> None:
+        """Turn on the LEDs (set mode to realtime)."""
+        try:
+            self.client.ensure_auth()
+            self.client.set_mode("rt")
+            logger.info("Twinkly set to realtime mode")
+        except TwinklyAPIError as e:
+            logger.warning(f"Failed to turn on Twinkly: {e}")
+
     def _frame_to_bytes(self, frame: Frame) -> bytes:
         """Convert a frame to Twinkly binary format.
 
