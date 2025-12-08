@@ -222,6 +222,9 @@ class Scheduler:
                 if not self._outside_hours_logged:
                     logger.info("Outside operating hours - display off")
                     self._outside_hours_logged = True
+                    # Clear any pending MCP commands when going outside hours
+                    if self.mcp_client:
+                        self.mcp_client._pending_commands.clear()
                 # Send blank frame and sleep
                 self._send_frame(self._blank_frame)
                 time.sleep(60)  # Check every minute
