@@ -342,6 +342,10 @@ def cmd_preview(args: argparse.Namespace) -> int:
     card_type = args.card
     duration = args.duration
 
+    # If playlist provided without --id or card type, play entire playlist
+    if args.playlist and not args.id and not card_type:
+        return _preview_playlist(args)
+
     if not args.id and not card_type:
         print("Please provide a card type or --id from playlist", file=sys.stderr)
         return 1
@@ -364,6 +368,42 @@ def cmd_preview(args: argparse.Namespace) -> int:
         use_half_blocks=True,
         clear_between=False,
     )
+
+    return 0
+
+
+def _preview_playlist(args: argparse.Namespace) -> int:
+    """Preview an entire playlist in the terminal."""
+    playlist = load_playlist(args.playlist)
+    if not playlist.cards:
+        print(f"No cards found in playlist: {args.playlist}", file=sys.stderr)
+        return 1
+
+    ctx = CardContext()
+    total_cards = len(playlist.cards)
+
+    print(f"Previewing playlist: {args.playlist} ({total_cards} cards)")
+    print("Press Ctrl+C to stop")
+    print()
+
+    try:
+        while True:  # Loop playlist
+            for idx, cfg in enumerate(playlist.cards, start=1):
+                card = create_card(cfg.type, {**cfg.config, "duration": cfg.duration})
+                if card is None:
+                    print(f"Skipping unknown card type: {cfg.type}")
+                    continue
+
+                print(f"[{idx}/{total_cards}] {cfg.type} ({cfg.duration}s)")
+
+                animate_frames(
+                    card.frames(ctx),
+                    color_mode=not args.no_color,
+                    use_half_blocks=True,
+                    clear_between=False,
+                )
+    except KeyboardInterrupt:
+        print("\nStopped.")
 
     return 0
 
@@ -460,7 +500,7 @@ def create_parser() -> argparse.ArgumentParser:
     preview_parser.add_argument(
         "--playlist",
         type=str,
-        help="Path to cards.yaml for --id (default: config/cards.yaml)",
+        help="Path to playlist yaml. Use alone to preview entire playlist, or with --id for single card",
     )
     preview_parser.add_argument(
         "-d",
