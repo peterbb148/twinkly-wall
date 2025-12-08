@@ -1,0 +1,107 @@
+"""Pulsating color effect card."""
+
+import math
+import time
+from collections.abc import Iterator
+from typing import Any
+
+from ..canvas import Canvas
+from ..types import HEIGHT, RGB, WIDTH, Frame
+from .base import Card, CardContext, register_card
+
+
+@register_card
+class PulseCard(Card):
+    """Pulsating single-color effect.
+
+    Config options:
+        color: RGB color to pulse (default: [255, 0, 0] red)
+        speed: Pulse speed multiplier (default: 1.0)
+        mode: Pulse mode - breathing, heartbeat, strobe (default: breathing)
+        min_brightness: Minimum brightness 0-1 (default: 0.1)
+        max_brightness: Maximum brightness 0-1 (default: 1.0)
+    """
+
+    card_type = "pulse"
+
+    def __init__(self, config: dict[str, Any] | None = None):
+        super().__init__(config)
+        color = self.config.get("color", [255, 0, 0])
+        self.color: RGB = tuple(color) if isinstance(color, list) else color
+        self.speed: float = self.config.get("speed", 1.0)
+        self.mode: str = self.config.get("mode", "breathing")
+        self.min_brightness: float = self.config.get("min_brightness", 0.1)
+        self.max_brightness: float = self.config.get("max_brightness", 1.0)
+
+    def _apply_brightness(self, brightness: float) -> RGB:
+        """Apply brightness to the base color."""
+        r, g, b = self.color
+        return (
+            int(r * brightness),
+            int(g * brightness),
+            int(b * brightness),
+        )
+
+    def _breathing_brightness(self, t: float) -> float:
+        """Smooth sine wave breathing pattern."""
+        # Sine wave oscillates between min and max brightness
+        wave = (math.sin(t * self.speed * 2) + 1) / 2  # 0 to 1
+        return self.min_brightness + wave * (self.max_brightness - self.min_brightness)
+
+    def _heartbeat_brightness(self, t: float) -> float:
+        """Double-pulse heartbeat pattern."""
+        # Heartbeat cycle is about 0.8 seconds
+        cycle_time = 0.8 / self.speed
+        cycle_pos = (t % cycle_time) / cycle_time  # 0 to 1 within cycle
+
+        # Two quick pulses followed by a pause
+        if cycle_pos < 0.15:
+            # First beat up
+            wave = cycle_pos / 0.15
+        elif cycle_pos < 0.25:
+            # First beat down
+            wave = 1 - (cycle_pos - 0.15) / 0.10
+        elif cycle_pos < 0.35:
+            # Second beat up
+            wave = (cycle_pos - 0.25) / 0.10
+        elif cycle_pos < 0.50:
+            # Second beat down
+            wave = 1 - (cycle_pos - 0.35) / 0.15
+        else:
+            # Rest period
+            wave = 0
+
+        return self.min_brightness + wave * (self.max_brightness - self.min_brightness)
+
+    def _strobe_brightness(self, t: float) -> float:
+        """Sharp on/off strobe pattern."""
+        # Strobe frequency based on speed
+        frequency = 4 * self.speed  # flashes per second
+        on = (t * frequency) % 1 < 0.5
+        return self.max_brightness if on else self.min_brightness
+
+    def _render_frame(self, brightness: float) -> Frame:
+        """Render a frame with the given brightness."""
+        canvas = Canvas(WIDTH, HEIGHT)
+        color = self._apply_brightness(brightness)
+        for y in range(HEIGHT):
+            for x in range(WIDTH):
+                canvas.set_pixel(x, y, color)
+        return canvas.copy()
+
+    def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
+        """Generate pulsing animation frames."""
+        brightness_fn = {
+            "breathing": self._breathing_brightness,
+            "heartbeat": self._heartbeat_brightness,
+            "strobe": self._strobe_brightness,
+        }.get(self.mode, self._breathing_brightness)
+
+        start_time = time.time()
+        frame_delay = 1.0 / 30.0  # 30 FPS
+
+        while time.time() - start_time < self.duration:
+            t = time.time() - start_time
+            brightness = brightness_fn(t)
+            frame = self._render_frame(brightness)
+            yield frame, frame_delay
