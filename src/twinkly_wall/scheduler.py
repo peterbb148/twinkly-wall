@@ -225,8 +225,11 @@ class Scheduler:
                     # Clear any pending MCP commands when going outside hours
                     if self.mcp_client:
                         self.mcp_client._pending_commands.clear()
-                # Send blank frame and sleep
-                self._send_frame(self._blank_frame)
+                    # Turn off Twinkly devices properly (not just blank frame)
+                    for output in self.outputs:
+                        if hasattr(output, "turn_off"):
+                            output.turn_off()
+                # Sleep until next check
                 time.sleep(60)  # Check every minute
                 continue
 
@@ -234,6 +237,10 @@ class Scheduler:
             if self._outside_hours_logged:
                 logger.info("Within operating hours - resuming display")
                 self._outside_hours_logged = False
+                # Turn Twinkly devices back on (realtime mode)
+                for output in self.outputs:
+                    if hasattr(output, "turn_on"):
+                        output.turn_on()
 
             for i, card_config in enumerate(self.playlist.cards):
                 if not self.state.running:
