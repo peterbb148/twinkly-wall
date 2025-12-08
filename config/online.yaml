@@ -20,12 +20,6 @@ cards:
     suffix_sprite: tree
     duration: 8
 
-  # Tuborg Snebajer - Driving home for Christmas
-  - type: tuborg_julebryg
-    duration: 15
-    scroll_speed: 30
-    num_santas: 3
-
   # Tuborg Christmas sleigh - Santa and reindeer
   - type: tuborg_sleigh
     duration: 12
