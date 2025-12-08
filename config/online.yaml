@@ -76,6 +76,16 @@ cards:
     duration: 10
     speed: 1.0
 
+  # Rubedo artwork announcement
+  - type: pulse
+    duration: 15
+    config:
+      color: [255, 0, 0]
+      mode: breathing
+      text: "Rubedo by Zoran Gojkovic"
+      text_color: [255, 255, 255]
+      scroll_speed: 30
+
   # Danish Superliga standings (top 3)
   - type: superliga
     duration: 15
