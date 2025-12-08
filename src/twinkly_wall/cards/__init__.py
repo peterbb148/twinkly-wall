@@ -30,6 +30,7 @@ from .pacman import PacmanCard
 from .pacman_chase import PacmanChaseCard
 from .pong import PongCard
 from .pomodoro import PomodoroCard
+from .pulse import PulseCard
 from .quote import QuoteCard
 from .rainbow import RainbowCard
 from .santa import SantaCard
@@ -71,6 +72,7 @@ __all__ = [
     "PacmanChaseCard",
     "PomodoroCard",
     "PongCard",
+    "PulseCard",
     "QuoteCard",
     "RainbowCard",
     "SantaCard",
