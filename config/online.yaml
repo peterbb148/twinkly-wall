@@ -26,6 +26,11 @@ cards:
     scroll_speed: 30
     num_santas: 3
 
+  # Tuborg Christmas sleigh - Santa and reindeer
+  - type: tuborg_sleigh
+    duration: 12
+    speed: 20
+
   # Weather forecast
   - type: weather
     duration: 8

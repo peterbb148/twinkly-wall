@@ -42,6 +42,7 @@ from .test_pattern import TestPatternCard
 from .tetris import TetrisCard
 from .text import TextCard
 from .tuborg_julebryg import TuborgJulebryg
+from .tuborg_sleigh import TuborgSleighCard
 from .twinklysay import TwinklysayCard
 from .weather import WeatherCard
 
@@ -82,6 +83,7 @@ __all__ = [
     "TetrisCard",
     "TextCard",
     "TuborgJulebryg",
+    "TuborgSleighCard",
     "TwinklysayCard",
     "WeatherCard",
     "create_card",
