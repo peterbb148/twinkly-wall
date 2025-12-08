@@ -84,6 +84,7 @@ class SuperligaCard(Card):
         scroll_speed: Pixels per second (default: 30).
         show_points: Show points after team name (default: true).
         separator: Text between entries (default: " ").
+        scroll_complete: Wait for full scroll before ending (default: true).
     """
 
     card_type = "superliga"
@@ -95,6 +96,7 @@ class SuperligaCard(Card):
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.show_points: bool = self.config.get("show_points", True)
         self.separator: str = self.config.get("separator", " ")
+        self.scroll_complete: bool = self.config.get("scroll_complete", True)
         self._datasource: SuperligaDataSource | None = None
 
     def _get_datasource(self, ctx: CardContext) -> SuperligaDataSource:
@@ -215,5 +217,11 @@ class SuperligaCard(Card):
                 offset = 0.0
 
             elapsed = time.time() - start_time
-            if scroll_completed and elapsed >= self.duration:
-                break
+            if self.scroll_complete:
+                # Wait for at least one complete scroll AND duration
+                if scroll_completed and elapsed >= self.duration:
+                    break
+            else:
+                # Just respect duration
+                if elapsed >= self.duration:
+                    break
