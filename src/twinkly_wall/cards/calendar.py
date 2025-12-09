@@ -43,6 +43,7 @@ class CalendarCard(Card):
         self.weekend_color: RGB = tuple(self.config.get("weekend_color", (255, 165, 0)))  # type: ignore
         self.scroll: bool | str = self.config.get("scroll", "auto")
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.repeats: int = self.config.get("repeats", 1)
 
     def _get_date_text(self, now: datetime) -> str:
         """Get the date text based on format."""
@@ -97,11 +98,10 @@ class CalendarCard(Card):
             pixels_per_frame = self.scroll_speed / 30.0
             frame_delay = 1.0 / 30.0
 
-            start_time = time.time()
             offset = 0.0
-            scroll_completed = False
+            scrolls_done = 0
 
-            while True:
+            while scrolls_done < self.repeats:
                 now = datetime.now()
                 date_text = self._get_date_text(now)
                 content_width = text_width(date_text)
@@ -113,12 +113,8 @@ class CalendarCard(Card):
                 offset += pixels_per_frame
 
                 if offset >= total_scroll:
-                    scroll_completed = True
+                    scrolls_done += 1
                     offset = 0.0
-
-                elapsed = time.time() - start_time
-                if scroll_completed and elapsed >= self.duration:
-                    break
         else:
             # Static mode
             start_time = time.time()

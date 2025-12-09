@@ -61,6 +61,7 @@ class CarlsbergLabCard(Card):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.repeats: int = self.config.get("repeats", 1)
         self.text_color: RGB = tuple(self.config.get("text_color", BLACK))  # type: ignore
         self.bg_color: RGB = tuple(self.config.get("bg_color", WHITE))  # type: ignore
         self.hop_color: RGB = tuple(self.config.get("hop_color", BLACK))  # type: ignore
@@ -105,20 +106,15 @@ class CarlsbergLabCard(Card):
         frame_delay = 1.0 / 30.0  # 30 FPS
         pixels_per_frame = self.scroll_speed / 30.0
 
-        start_time = time.time()
         offset = 0.0
-        scroll_completed = False
+        scrolls_done = 0
 
-        while True:
+        while scrolls_done < self.repeats:
             frame = self._render_frame(int(offset), total_text_width)
             yield frame, frame_delay
 
             offset += pixels_per_frame
 
             if offset >= total_scroll:
-                scroll_completed = True
+                scrolls_done += 1
                 offset = 0.0
-
-            elapsed = time.time() - start_time
-            if scroll_completed and elapsed >= self.duration:
-                break

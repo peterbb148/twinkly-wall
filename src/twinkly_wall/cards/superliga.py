@@ -96,7 +96,7 @@ class SuperligaCard(Card):
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.show_points: bool = self.config.get("show_points", True)
         self.separator: str = self.config.get("separator", " ")
-        self.scroll_complete: bool = self.config.get("scroll_complete", True)
+        self.repeats: int = self.config.get("repeats", 1)
         self._datasource: SuperligaDataSource | None = None
 
     def _get_datasource(self, ctx: CardContext) -> SuperligaDataSource:
@@ -202,26 +202,15 @@ class SuperligaCard(Card):
         pixels_per_frame = self.scroll_speed / 30.0
         frame_delay = 1.0 / 30.0
 
-        start_time = time.time()
         offset = 0.0
-        scroll_completed = False
+        scrolls_done = 0
 
-        while True:
+        while scrolls_done < self.repeats:
             frame = self._render_frame(int(offset), entries)
             yield frame, frame_delay
 
             offset += pixels_per_frame
 
             if offset >= total_scroll:
-                scroll_completed = True
+                scrolls_done += 1
                 offset = 0.0
-
-            elapsed = time.time() - start_time
-            if self.scroll_complete:
-                # Wait for at least one complete scroll AND duration
-                if scroll_completed and elapsed >= self.duration:
-                    break
-            else:
-                # Just respect duration
-                if elapsed >= self.duration:
-                    break
