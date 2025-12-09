@@ -67,7 +67,7 @@ class TuborgSleighCard(Card):
         self.speed: float = self.config.get("speed", 20.0)
         self.snow_density: int = self.config.get("snow_density", 15)
         self.snow_accumulation: bool = self.config.get("snow_accumulation", True)
-        self.scroll_complete: bool = self.config.get("scroll_complete", True)
+        self.repeats: int = self.config.get("repeats", 1)
         self._snowflakes: list[tuple[float, float, float]] = []  # x, y, speed
 
     def _init_snowflakes(self) -> None:
@@ -144,14 +144,13 @@ class TuborgSleighCard(Card):
         self._init_snowflakes()
 
         sprite_width = len(TUBORG_SLEIGH[0])
-        sleigh_x = WIDTH  # Start off-screen right
+        sleigh_x = float(WIDTH)  # Start off-screen right
         target_x = -sprite_width  # End off-screen left
 
         frame_delay = 1.0 / 30.0
-        start_time = time.time()
-        scroll_completed = False
+        cycles_done = 0
 
-        while True:
+        while cycles_done < self.repeats:
             frame = self._render_frame(int(sleigh_x))
             yield frame, frame_delay
 
@@ -161,15 +160,7 @@ class TuborgSleighCard(Card):
             # Update snow
             self._update_snowflakes(frame_delay)
 
-            # Check if scroll completed
+            # Check if cycle completed
             if sleigh_x <= target_x:
-                scroll_completed = True
-                sleigh_x = WIDTH  # Loop back
-
-            elapsed = time.time() - start_time
-            if self.scroll_complete:
-                if scroll_completed and elapsed >= self.duration:
-                    break
-            else:
-                if elapsed >= self.duration:
-                    break
+                cycles_done += 1
+                sleigh_x = float(WIDTH)  # Loop back

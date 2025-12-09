@@ -20,7 +20,6 @@ cards:
 
   # Tuborg Christmas sleigh - Santa and reindeer
   - type: tuborg_sleigh
-    duration: 12
     speed: 20
 
   # Weather forecast
@@ -91,7 +90,6 @@ cards:
 
   # Pac-Man being chased by ghosts
   - type: pacman_chase
-    duration: 10
     num_ghosts: 3
     speed: 20
 
@@ -112,7 +110,6 @@ cards:
 
   # Pac-Man eating the monsters (revenge!)
   - type: pacman
-    duration: 10
     theme: ghosts
     speed: 20
 

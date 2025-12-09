@@ -1,6 +1,5 @@
 """Pac-Man being chased by ghosts animation card."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -48,7 +47,7 @@ class PacmanChaseCard(Card):
         self.num_ghosts: int = min(4, max(1, self.config.get("num_ghosts", 3)))
         self.speed: float = self.config.get("speed", 20.0)
         self.ghost_spacing: int = self.config.get("ghost_spacing", 12)
-        self.animation_complete: bool = self.config.get("animation_complete", True)
+        self.repeats: int = self.config.get("repeats", 1)
 
         # Ghost colors - default to classic arcade colors (all variations of red)
         default_colors = [GHOST_RED, GHOST_PINK, GHOST_CYAN, GHOST_ORANGE]
@@ -94,12 +93,11 @@ class PacmanChaseCard(Card):
 
         mouth_open = True
         mouth_timer = 0.0
-        animation_completed = False
+        cycles_done = 0
 
-        start_time = time.time()
         frame_delay = 1.0 / 30.0  # 30 FPS
 
-        while True:
+        while cycles_done < self.repeats:
             # Render frame
             frame = self._render_frame(pacman_x, ghost_positions, mouth_open)
             yield frame, frame_delay
@@ -111,21 +109,13 @@ class PacmanChaseCard(Card):
 
             # Loop when everything is off-screen left
             if ghost_positions[-1] < -10:
-                animation_completed = True
-                pacman_x = float(WIDTH)
-                ghost_positions = [
-                    float(WIDTH + 10 + i * self.ghost_spacing)
-                    for i in range(self.num_ghosts)
-                ]
-
-            # Check exit conditions
-            elapsed = time.time() - start_time
-            if self.animation_complete:
-                if animation_completed and elapsed >= self.duration:
-                    break
-            else:
-                if elapsed >= self.duration:
-                    break
+                cycles_done += 1
+                if cycles_done < self.repeats:
+                    pacman_x = float(WIDTH)
+                    ghost_positions = [
+                        float(WIDTH + 10 + i * self.ghost_spacing)
+                        for i in range(self.num_ghosts)
+                    ]
 
             # Animate mouth (toggle every 0.12s - faster when running!)
             mouth_timer += frame_delay
