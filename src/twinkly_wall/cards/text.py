@@ -57,6 +57,7 @@ class TextCard(Card):
         self.scroll: bool | str = self.config.get("scroll", "auto")
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.scroll_complete: bool = self.config.get("scroll_complete", True)
+        self.repeats: int = self.config.get("repeats", 1)
         self.align: str = self.config.get("align", "center")
         self.prefix_sprite: str | None = self.config.get("prefix_sprite", None)
         self.suffix_sprite: str | None = self.config.get("suffix_sprite", None)
@@ -183,11 +184,10 @@ class TextCard(Card):
             pixels_per_frame = self.scroll_speed / 30.0  # ~30 FPS target
             frame_delay = 1.0 / 30.0
 
-            start_time = time.time()
             offset = 0.0
-            scroll_completed = False
+            scrolls_done = 0
 
-            while True:
+            while scrolls_done < self.repeats:
                 frame = self._render_scrolling_frame(int(offset), content_width)
                 yield frame, frame_delay
 
@@ -195,16 +195,5 @@ class TextCard(Card):
 
                 # Check if scroll completed
                 if offset >= total_scroll:
-                    scroll_completed = True
+                    scrolls_done += 1
                     offset = 0.0
-
-                # Exit conditions
-                elapsed = time.time() - start_time
-                if self.scroll_complete:
-                    # Wait for at least one complete scroll AND duration
-                    if scroll_completed and elapsed >= self.duration:
-                        break
-                else:
-                    # Just respect duration
-                    if elapsed >= self.duration:
-                        break

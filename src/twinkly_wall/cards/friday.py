@@ -40,6 +40,7 @@ class FridayCard(Card):
         super().__init__(config)
         self.always_friday: bool = self.config.get("always_friday", False)
         self.message: str = self.config.get("message", "FRIDAY!")
+        self.repeats: int = self.config.get("repeats", 1)
 
     def _is_friday(self) -> bool:
         """Check if today is Friday."""
@@ -118,10 +119,12 @@ class FridayCard(Card):
             scroll_speed = 30.0
             frame_delay = 1.0 / 30.0
             offset = 0.0
+            scrolls_done = 0
 
-            while time.time() - start_time < self.duration:
+            while scrolls_done < self.repeats:
                 frame = self._render_countdown(days, int(offset))
                 yield frame, frame_delay
                 offset += scroll_speed * frame_delay
                 if offset >= total_scroll:
+                    scrolls_done += 1
                     offset = 0

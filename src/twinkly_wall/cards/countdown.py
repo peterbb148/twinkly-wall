@@ -57,6 +57,7 @@ class CountdownCard(Card):
         self.show_seconds: bool | None = self.config.get("show_seconds", None)
         self.scroll: bool | str = self.config.get("scroll", "auto")
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.repeats: int = self.config.get("repeats", 1)
         self.prefix_sprite: str | None = self.config.get("prefix_sprite", None)
         self.suffix_sprite: str | None = self.config.get("suffix_sprite", None)
 
@@ -219,11 +220,10 @@ class CountdownCard(Card):
             pixels_per_frame = self.scroll_speed / 30.0
             frame_delay = 1.0 / 30.0
 
-            start_time = time.time()
             offset = 0.0
-            scroll_completed = False
+            scrolls_done = 0
 
-            while True:
+            while scrolls_done < self.repeats:
                 now = datetime.now()
                 remaining = (self.target - now).total_seconds()
                 countdown_text = self._format_countdown(remaining)
@@ -237,12 +237,8 @@ class CountdownCard(Card):
                 offset += pixels_per_frame
 
                 if offset >= total_scroll:
-                    scroll_completed = True
+                    scrolls_done += 1
                     offset = 0.0
-
-                elapsed = time.time() - start_time
-                if scroll_completed and elapsed >= self.duration:
-                    break
         else:
             # Static mode
             start_time = time.time()

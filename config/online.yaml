@@ -7,7 +7,6 @@ default_transition: none
 cards:
   # Carlsberg Research Laboratory branding (inverted)
   - type: carlsberg_lab
-    duration: 12
     scroll_speed: 25
 
   # Merry Christmas
@@ -18,7 +17,6 @@ cards:
     scroll_speed: 30
     prefix_sprite: tree
     suffix_sprite: tree
-    duration: 8
 
   # Tuborg Christmas sleigh - Santa and reindeer
   - type: tuborg_sleigh
@@ -36,7 +34,6 @@ cards:
 
   # Date and Time
   - type: calendar
-    duration: 5
     scroll: true
     scroll_speed: 30
 
@@ -58,7 +55,6 @@ cards:
     scroll_speed: 30
     prefix_sprite: tree
     suffix_sprite: tree
-    duration: 15
 
   # Countdown to Christmas (Dec 24 in Denmark)
   - type: countdown
@@ -69,7 +65,6 @@ cards:
     scroll_speed: 30
     prefix_sprite: tree
     suffix_sprite: tree
-    duration: 12
 
   # DNA helix (Carlsberg Research Lab theme)
   - type: dna
@@ -78,7 +73,6 @@ cards:
 
   # Rubedo artwork announcement
   - type: pulse
-    duration: 15
     color: [255, 0, 0]
     mode: breathing
     text: "Rubedo by Zoran Gojkovic"
@@ -87,7 +81,6 @@ cards:
 
   # Danish Superliga standings (top 3)
   - type: superliga
-    duration: 15
     scroll_speed: 30
     max_teams: 3
 
@@ -125,7 +118,6 @@ cards:
 
   # Friday detector
   - type: friday
-    duration: 5
 
   # Plasma effect
   - type: rainbow
@@ -135,7 +127,6 @@ cards:
 
   # ChatGPT Leaderboard
   - type: leaderboard
-    duration: 30
     title: "ChatGPT Top 10"
     scroll_speed: 25
     entries:
@@ -180,4 +171,3 @@ cards:
     scroll_speed: 30
     prefix_sprite: tree
     suffix_sprite: tree
-    duration: 15

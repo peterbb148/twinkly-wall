@@ -38,6 +38,7 @@ class LeaderboardCard(Card):
         self.name_color: RGB = tuple(self.config.get("name_color", WHITE))  # type: ignore
         self.score_color: RGB = tuple(self.config.get("score_color", GOLD_COLOR))  # type: ignore
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.repeats: int = self.config.get("repeats", 1)
         self.show_rank: bool = self.config.get("show_rank", True)
         self.podium_colors: bool = self.config.get("podium_colors", True)
 
@@ -133,20 +134,15 @@ class LeaderboardCard(Card):
         pixels_per_frame = self.scroll_speed / 30.0
         frame_delay = 1.0 / 30.0
 
-        start_time = time.time()
         offset = 0.0
-        scroll_completed = False
+        scrolls_done = 0
 
-        while True:
+        while scrolls_done < self.repeats:
             frame = self._render_frame(int(offset))
             yield frame, frame_delay
 
             offset += pixels_per_frame
 
             if offset >= total_scroll:
-                scroll_completed = True
+                scrolls_done += 1
                 offset = 0.0
-
-            elapsed = time.time() - start_time
-            if scroll_completed and elapsed >= self.duration:
-                break
