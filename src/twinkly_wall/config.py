@@ -39,7 +39,9 @@ class OperatingHoursConfig:
 
     enabled: bool = False
     start_hour: int = 8  # 08:00
+    start_minute: int = 0
     end_hour: int = 18  # 18:00 (6 PM)
+    end_minute: int = 0
     weekdays_only: bool = True  # Monday-Friday only
     timezone: str = "local"  # Use local timezone
 
@@ -154,7 +156,9 @@ def load_settings(path: Path | str | None = None) -> Settings:
         settings.operating_hours = OperatingHoursConfig(
             enabled=oh.get("enabled", False),
             start_hour=oh.get("start_hour", 8),
+            start_minute=oh.get("start_minute", 0),
             end_hour=oh.get("end_hour", 18),
+            end_minute=oh.get("end_minute", 0),
             weekdays_only=oh.get("weekdays_only", True),
             timezone=oh.get("timezone", "local"),
         )
@@ -245,9 +249,12 @@ def is_within_operating_hours(config: OperatingHoursConfig) -> bool:
     if config.weekdays_only and now.weekday() >= 5:  # Saturday or Sunday
         return False
 
-    # Check hour range
-    current_hour = now.hour
-    if current_hour < config.start_hour or current_hour >= config.end_hour:
+    # Convert to minutes since midnight for easier comparison
+    current_minutes = now.hour * 60 + now.minute
+    start_minutes = config.start_hour * 60 + config.start_minute
+    end_minutes = config.end_hour * 60 + config.end_minute
+
+    if current_minutes < start_minutes or current_minutes >= end_minutes:
         return False
 
     return True
