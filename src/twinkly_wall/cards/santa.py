@@ -1,6 +1,5 @@
 """Santa sleigh flying across animation card."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -46,6 +45,7 @@ class SantaCard(Card):
         self.speed: float = self.config.get("speed", 15.0)
         self.y_pos: int = self.config.get("y_pos", 1)
         self.trail_stars: bool = self.config.get("trail_stars", True)
+        self.repeats: int = self.config.get("repeats", 1)
 
     def _draw_santa(self, canvas: Canvas, x: int, y: int) -> None:
         """Draw the Santa sleigh sprite."""
@@ -82,20 +82,22 @@ class SantaCard(Card):
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate Santa animation frames."""
         sprite_width = len(SANTA_SLEIGH[0])
-        santa_x = -sprite_width  # Start off-screen left
+        santa_x = float(-sprite_width)  # Start off-screen left
 
-        start_time = time.time()
         frame_delay = 1.0 / 30.0
         frame_num = 0
+        cycles_done = 0
 
-        while time.time() - start_time < self.duration:
+        while cycles_done < self.repeats:
             frame = self._render_frame(santa_x, frame_num)
             yield frame, frame_delay
 
             santa_x += self.speed * frame_delay
 
-            # Loop when off-screen right
+            # Check if cycle completed (off-screen right)
             if santa_x > WIDTH:
-                santa_x = -sprite_width
+                cycles_done += 1
+                if cycles_done < self.repeats:
+                    santa_x = float(-sprite_width)
 
             frame_num += 1

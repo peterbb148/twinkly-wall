@@ -1,6 +1,5 @@
 """Tuborg Julebryg promotional card."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -54,6 +53,7 @@ class TuborgJulebryg(Card):
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.num_santas: int = self.config.get("num_santas", 3)
         self.santa_spacing: int = self.config.get("santa_spacing", 10)
+        self.repeats: int = self.config.get("repeats", 1)
 
     def _get_content_width(self) -> int:
         """Get total width of text plus Santas."""
@@ -107,13 +107,15 @@ class TuborgJulebryg(Card):
         total_scroll = content_width + WIDTH + 1
 
         offset = 0.0
+        scrolls_done = 0
 
-        while True:
+        while scrolls_done < self.repeats:
             frame = self._render_frame(int(offset))
             yield frame, frame_delay
 
             offset += pixels_per_frame
 
-            # Exit when scroll is complete
+            # Check if scroll completed
             if offset >= total_scroll:
-                break
+                scrolls_done += 1
+                offset = 0.0
