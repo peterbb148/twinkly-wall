@@ -41,6 +41,7 @@ class PulseCard(Card):
         text_color = self.config.get("text_color", [255, 255, 255])
         self.text_color: RGB = tuple(text_color) if isinstance(text_color, list) else text_color
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
+        self.repeats: int = self.config.get("repeats", 1)
 
     def _apply_brightness(self, brightness: float) -> RGB:
         """Apply brightness to the base color."""
@@ -118,17 +119,27 @@ class PulseCard(Card):
         else:
             total_scroll = 0
 
-        start_time = time.time()
         frame_delay = 1.0 / 30.0  # 30 FPS
         text_offset = 0.0
+        scrolls_done = 0
+        t = 0.0
 
-        while time.time() - start_time < self.duration:
-            t = time.time() - start_time
-            brightness = brightness_fn(t)
-            frame = self._render_frame(brightness, int(text_offset))
-            yield frame, frame_delay
-            # Update text scroll position
-            if self.text:
+        # If text is configured, use scroll-based timing; otherwise use duration
+        if self.text:
+            while scrolls_done < self.repeats:
+                brightness = brightness_fn(t)
+                frame = self._render_frame(brightness, int(text_offset))
+                yield frame, frame_delay
+                t += frame_delay
                 text_offset += self.scroll_speed * frame_delay
                 if text_offset >= total_scroll:
-                    break  # End after single scroll
+                    scrolls_done += 1
+                    text_offset = 0.0
+        else:
+            # No text - use duration-based timing for pure pulse effect
+            start_time = time.time()
+            while time.time() - start_time < self.duration:
+                t = time.time() - start_time
+                brightness = brightness_fn(t)
+                frame = self._render_frame(brightness, 0)
+                yield frame, frame_delay
