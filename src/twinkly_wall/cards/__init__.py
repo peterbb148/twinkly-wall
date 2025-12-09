@@ -26,6 +26,7 @@ from .matrix import MatrixCard
 from .menorah import MenorahCard
 from .news import NewsCard
 from .ocean import OceanCard
+from .overlay import OverlayCard
 from .pacman import PacmanCard
 from .pacman_chase import PacmanChaseCard
 from .pong import PongCard
@@ -68,6 +69,7 @@ __all__ = [
     "MenorahCard",
     "NewsCard",
     "OceanCard",
+    "OverlayCard",
     "PacmanCard",
     "PacmanChaseCard",
     "PomodoroCard",
