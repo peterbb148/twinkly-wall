@@ -26,6 +26,24 @@ from .outputs.twinkly import TwinklyOutput
 from .types import HEIGHT, RGB, WHITE, WIDTH
 
 
+def create_context_with_datasources() -> CardContext:
+    """Create a CardContext with datasources from settings."""
+    settings = load_settings()
+    datasources: dict = {}
+
+    # Add weather datasource if configured
+    if settings.weather.latitude and settings.weather.longitude:
+        from .datasources.weather import WeatherDataSource
+
+        datasources["weather"] = WeatherDataSource(
+            latitude=settings.weather.latitude,
+            longitude=settings.weather.longitude,
+            cache_duration=settings.weather.cache_duration,
+        )
+
+    return CardContext(datasources=datasources)
+
+
 def parse_color(color_str: str) -> RGB:
     """
     Parse a color string into an RGB tuple.
@@ -265,7 +283,7 @@ def cmd_card(args: argparse.Namespace) -> int:
         mirror_v=settings.twinkly.mirror_v,
     )
 
-    ctx = CardContext()
+    ctx = create_context_with_datasources()
 
     name = label or card_type
     print(f"Sending '{name}' card to Twinkly at {settings.twinkly.host}...")
@@ -355,7 +373,7 @@ def cmd_preview(args: argparse.Namespace) -> int:
         return 1
 
     # Create context and run
-    ctx = CardContext()
+    ctx = create_context_with_datasources()
 
     name = label or card_type
     print(f"Previewing '{name}' card for {duration}s (Ctrl+C to stop)...")
@@ -379,7 +397,7 @@ def _preview_playlist(args: argparse.Namespace) -> int:
         print(f"No cards found in playlist: {args.playlist}", file=sys.stderr)
         return 1
 
-    ctx = CardContext()
+    ctx = create_context_with_datasources()
     total_cards = len(playlist.cards)
 
     print(f"Previewing playlist: {args.playlist} ({total_cards} cards)")
