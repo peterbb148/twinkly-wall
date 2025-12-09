@@ -1,5 +1,6 @@
 """Quote of the day card."""
 
+import logging
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -9,6 +10,8 @@ from ..datasources.quotes import QuoteData, QuoteDataSource, QuoteError
 from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
+
+logger = logging.getLogger(__name__)
 
 
 @register_card
@@ -56,9 +59,9 @@ class QuoteCard(Card):
             quote_data = quote_ds.get_quote()
             quote_text = quote_data.quote
             author = quote_data.author
-        except QuoteError:
-            quote_text = "Wisdom comes to those who seek it."
-            author = "Ancient Proverb"
+        except QuoteError as e:
+            logger.warning(f"Quote card skipped: {e}")
+            return
 
         # Build display text
         if self.show_author:
