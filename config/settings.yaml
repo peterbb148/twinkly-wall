@@ -15,5 +15,5 @@ weather:
 operating_hours:
   enabled: true
   start_hour: 8
-  end_hour: 18
+  end_hour: 11
   weekdays_only: true
