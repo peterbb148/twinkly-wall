@@ -1,5 +1,6 @@
 """RSS news feed ticker card."""
 
+import logging
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -9,6 +10,8 @@ from ..datasources.rss import RSSDataSource, RSSError
 from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
+
+logger = logging.getLogger(__name__)
 
 # Default BBC News RSS feed
 DEFAULT_FEED = "https://feeds.bbci.co.uk/news/rss.xml"
@@ -81,11 +84,13 @@ class NewsCard(Card):
         # Fetch headlines
         try:
             headlines = rss_ds.get_headlines()[: self.max_headlines]
-        except RSSError:
-            headlines = ["News feed unavailable"]
+        except RSSError as e:
+            logger.warning(f"News card skipped: {e}")
+            return
 
         if not headlines:
-            headlines = ["No news available"]
+            logger.warning("News card skipped: no headlines available")
+            return
 
         content_width = self._calculate_total_width(headlines)
         total_scroll = content_width + WIDTH + 1

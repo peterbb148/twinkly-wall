@@ -169,23 +169,11 @@ class SuperligaCard(Card):
             data = ds.get_standings()
             standings = data.standings[: self.max_teams]
         except SuperligaError as e:
-            logger.error(f"Failed to get Superliga standings: {e}")
-            # Show error message
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 1, "SUPERLIGA", (255, 0, 0))
-            frame = canvas.copy()
-            start_time = time.time()
-            while time.time() - start_time < self.duration:
-                yield frame, 1.0
+            logger.warning(f"Superliga card skipped: {e}")
             return
 
         if not standings:
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 1, "NO DATA", (255, 0, 0))
-            frame = canvas.copy()
-            start_time = time.time()
-            while time.time() - start_time < self.duration:
-                yield frame, 1.0
+            logger.warning("Superliga card skipped: no standings data")
             return
 
         # Build display entries: (rank, short_name, points, color)

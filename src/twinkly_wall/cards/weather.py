@@ -1,5 +1,6 @@
 """Weather display card - scrolling forecast text."""
 
+import logging
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -9,6 +10,8 @@ from ..datasources.weather import WeatherData, WeatherError
 from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
+
+logger = logging.getLogger(__name__)
 
 # Weather condition colors
 CONDITION_COLORS: dict[str, RGB] = {
@@ -72,25 +75,14 @@ class WeatherCard(Card):
         # Get weather datasource from context
         weather_ds = ctx.datasources.get("weather")
         if not weather_ds:
-            # No weather configured, show error
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 1, "NO WX", (255, 0, 0))
-            frame = canvas.copy()
-            start_time = time.time()
-            while time.time() - start_time < self.duration:
-                yield frame, 1.0
+            logger.warning("Weather card skipped: no weather datasource configured")
             return
 
         # Fetch weather data
         try:
             weather = weather_ds.get_weather()
-        except WeatherError:
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 1, "WX ERR", (255, 0, 0))
-            frame = canvas.copy()
-            start_time = time.time()
-            while time.time() - start_time < self.duration:
-                yield frame, 1.0
+        except WeatherError as e:
+            logger.warning(f"Weather card skipped: {e}")
             return
 
         # Build weather text
