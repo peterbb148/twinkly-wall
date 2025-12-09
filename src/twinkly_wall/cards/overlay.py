@@ -88,7 +88,7 @@ class OverlayCard(Card):
 
         # Calculate scroll parameters
         total_text_width = text_width(self.text)
-        total_scroll = total_text_width + WIDTH
+        total_scroll = total_text_width + WIDTH + 1
         frame_delay = 1.0 / 30.0
         pixels_per_frame = self.scroll_speed * frame_delay
 

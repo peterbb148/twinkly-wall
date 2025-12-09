@@ -196,7 +196,7 @@ class SuperligaCard(Card):
 
         # Calculate scroll parameters
         content_width = self._calculate_content_width(entries)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         # Animation parameters
         pixels_per_frame = self.scroll_speed / 30.0

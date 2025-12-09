@@ -54,7 +54,7 @@ class TwinklysayCard(Card):
             return
 
         content_width = text_width(self.text)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         # Calculate frame timing (~30 FPS)
         pixels_per_frame = self.scroll_speed / 30.0

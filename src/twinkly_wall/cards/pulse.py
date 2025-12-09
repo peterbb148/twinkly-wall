@@ -114,7 +114,7 @@ class PulseCard(Card):
         # Calculate text scroll parameters
         if self.text:
             total_text_width = text_width(self.text)
-            total_scroll = total_text_width + WIDTH
+            total_scroll = total_text_width + WIDTH + 1
         else:
             total_scroll = 0
 

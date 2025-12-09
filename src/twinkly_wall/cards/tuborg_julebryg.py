@@ -104,7 +104,7 @@ class TuborgJulebryg(Card):
         frame_delay = 1.0 / 30.0
 
         content_width = self._get_content_width()
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         offset = 0.0
 
