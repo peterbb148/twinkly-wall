@@ -67,7 +67,7 @@ class QuoteCard(Card):
             full_text = f'"{quote_text}"'
 
         content_width = text_width(full_text)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         frame_delay = 1.0 / 30.0  # 30 FPS
         pixels_per_frame = self.scroll_speed / 30.0

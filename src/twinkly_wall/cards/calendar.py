@@ -105,7 +105,7 @@ class CalendarCard(Card):
                 now = datetime.now()
                 date_text = self._get_date_text(now)
                 content_width = text_width(date_text)
-                total_scroll = content_width + WIDTH
+                total_scroll = content_width + WIDTH + 1
 
                 frame = self._render_frame(now, int(offset))
                 yield frame, frame_delay

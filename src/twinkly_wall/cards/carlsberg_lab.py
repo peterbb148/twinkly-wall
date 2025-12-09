@@ -101,7 +101,7 @@ class CarlsbergLabCard(Card):
         gap = 10 if self.show_hop else 0
         content_width = total_text_width + gap + hop_width
 
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         frame_delay = 1.0 / 30.0  # 30 FPS
         pixels_per_frame = self.scroll_speed / 30.0

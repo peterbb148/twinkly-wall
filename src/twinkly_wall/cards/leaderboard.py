@@ -128,7 +128,7 @@ class LeaderboardCard(Card):
         # Calculate total scroll distance
         full_text = self._build_scroll_text()
         content_width = text_width(full_text)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         # Animation parameters
         pixels_per_frame = self.scroll_speed / 30.0

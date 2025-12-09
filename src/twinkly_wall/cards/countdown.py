@@ -229,7 +229,7 @@ class CountdownCard(Card):
                 countdown_text = self._format_countdown(remaining)
 
                 content_width = self._get_content_width(countdown_text)
-                total_scroll = content_width + WIDTH
+                total_scroll = content_width + WIDTH + 1
 
                 frame = self._render_frame(countdown_text, int(offset))
                 yield frame, frame_delay

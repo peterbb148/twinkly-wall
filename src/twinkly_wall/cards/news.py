@@ -88,7 +88,7 @@ class NewsCard(Card):
             headlines = ["No news available"]
 
         content_width = self._calculate_total_width(headlines)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         frame_delay = 1.0 / 30.0  # 30 FPS
         pixels_per_frame = self.scroll_speed / 30.0

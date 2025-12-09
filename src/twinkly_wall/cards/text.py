@@ -178,7 +178,7 @@ class TextCard(Card):
         else:
             # Scrolling display
             content_width = self._get_content_width()
-            total_scroll = content_width + WIDTH  # Full scroll distance
+            total_scroll = content_width + WIDTH + 1  # Full scroll distance
 
             # Calculate frame timing
             pixels_per_frame = self.scroll_speed / 30.0  # ~30 FPS target

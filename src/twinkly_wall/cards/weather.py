@@ -100,7 +100,7 @@ class WeatherCard(Card):
 
         color = self._get_color(weather)
         content_width = text_width(text)
-        total_scroll = content_width + WIDTH
+        total_scroll = content_width + WIDTH + 1
 
         # Animation
         frame_delay = 1.0 / 30.0

@@ -115,7 +115,7 @@ class FridayCard(Card):
                 msg = "1 DAY TO FRIDAY"
             else:
                 msg = f"{days} DAYS TO FRIDAY"
-            total_scroll = text_width(msg) + WIDTH
+            total_scroll = text_width(msg) + WIDTH + 1
             scroll_speed = 30.0
             frame_delay = 1.0 / 30.0
             offset = 0.0
