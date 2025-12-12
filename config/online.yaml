@@ -22,6 +22,14 @@ cards:
   - type: tuborg_sleigh
     speed: 20
 
+  # Tuborg Christmas truck - classic delivery scene
+  - type: tuborg_truck
+    speed: 18
+
+  # Driving home for Christmas text
+  - type: driving_home
+    scroll_speed: 25
+
   # Weather forecast
   - type: weather
     duration: 8

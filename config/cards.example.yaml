@@ -33,6 +33,14 @@ cards:
     wind: 0.0
     accumulate: false
 
+  # Tuborg Christmas truck (animated)
+  - type: tuborg_truck
+    speed: 18
+
+  # Driving home for Christmas (scrolling text on snowy background)
+  - type: driving_home
+    scroll_speed: 25
+
   - type: beer
     duration: 10
 
