@@ -31,9 +31,9 @@ class SciencePaperCard(Card):
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
-        self.title: str = self.config.get("title", "")
+        self.title: str = self.config.get("title", "Paper Title Goes Here")
         self.prefix_text: str = self.config.get("prefix_text", "Science")
-        self.scroll_speed: float = self.config.get("scroll_speed", 25.0)
+        self.scroll_speed: float = self.config.get("scroll_speed", 40.0)
         self.box_padding: int = self.config.get("box_padding", 1)
         self.repeats: int = self.config.get("repeats", 1)
 
