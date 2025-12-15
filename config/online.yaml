@@ -81,7 +81,7 @@ cards:
   # Science Magazine publication announcement
   - type: science_paper
     title: "Sleeping or Sprouting: Genetic variation in a barley kinase gene determines dormancy duration and preharvest sprouting"
-    scroll_speed: 25
+    scroll_speed: 40
 
   # Barley field animation (celebrating the Science paper)
   - type: barley_field
