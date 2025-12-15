@@ -8,6 +8,7 @@ from .base import (
     list_card_types,
     register_card,
 )
+from .barley_field import BarleyFieldCard
 from .beer import BeerCard
 from .calendar import CalendarCard
 from .carlsberg_lab import CarlsbergLabCard
@@ -36,6 +37,7 @@ from .pulse import PulseCard
 from .quote import QuoteCard
 from .rainbow import RainbowCard
 from .santa import SantaCard
+from .science_paper import SciencePaperCard
 from .snake import SnakeCard
 from .snow import SnowCard
 from .space_invaders import SpaceInvadersCard
@@ -51,6 +53,7 @@ from .twinklysay import TwinklysayCard
 from .weather import WeatherCard
 
 __all__ = [
+    "BarleyFieldCard",
     "BeerCard",
     "CalendarCard",
     "CarlsbergLabCard",
@@ -81,6 +84,7 @@ __all__ = [
     "QuoteCard",
     "RainbowCard",
     "SantaCard",
+    "SciencePaperCard",
     "SnakeCard",
     "SnowCard",
     "SpaceInvadersCard",
