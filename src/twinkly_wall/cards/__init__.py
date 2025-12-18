@@ -12,6 +12,7 @@ from .barley_field import BarleyFieldCard
 from .beer import BeerCard
 from .calendar import CalendarCard
 from .carlsberg_lab import CarlsbergLabCard
+from .chemical_agent import ChemicalAgentCard
 from .clock import ClockCard
 from .coffee import CoffeeCard
 from .confetti import ConfettiCard
@@ -36,10 +37,13 @@ from .pomodoro import PomodoroCard
 from .pulse import PulseCard
 from .quote import QuoteCard
 from .rainbow import RainbowCard
+from .rain import RainCard
 from .santa import SantaCard
 from .science_paper import SciencePaperCard
+from .score_tower import ScoreTowerCard
 from .snake import SnakeCard
 from .snow import SnowCard
+from .stories import StoriesCard
 from .space_invaders import SpaceInvadersCard
 from .superliga import SuperligaCard
 from .starfield import StarfieldCard
@@ -50,6 +54,7 @@ from .tuborg_julebryg import TuborgJulebryg
 from .tuborg_sleigh import TuborgSleighCard
 from .tuborg_truck import TuborgTruckCard
 from .twinklysay import TwinklysayCard
+from .vertical_bars import VerticalBarsCard
 from .weather import WeatherCard
 
 __all__ = [
@@ -57,6 +62,7 @@ __all__ = [
     "BeerCard",
     "CalendarCard",
     "CarlsbergLabCard",
+    "ChemicalAgentCard",
     "Card",
     "CardContext",
     "ClockCard",
@@ -83,10 +89,13 @@ __all__ = [
     "PulseCard",
     "QuoteCard",
     "RainbowCard",
+    "RainCard",
     "SantaCard",
     "SciencePaperCard",
+    "ScoreTowerCard",
     "SnakeCard",
     "SnowCard",
+    "StoriesCard",
     "SpaceInvadersCard",
     "SuperligaCard",
     "StarfieldCard",
@@ -97,6 +106,7 @@ __all__ = [
     "TuborgSleighCard",
     "TuborgTruckCard",
     "TwinklysayCard",
+    "VerticalBarsCard",
     "WeatherCard",
     "create_card",
     "get_card_class",

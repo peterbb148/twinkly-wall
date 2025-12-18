@@ -94,6 +94,12 @@ uv run twinklysay preview beer
 # Rainbow effects
 uv run twinklysay preview rainbow --mode plasma
 
+# Vertical-friendly cards
+uv run twinklysay preview rain
+uv run twinklysay preview vertical_bars
+uv run twinklysay preview stories --duration 8
+uv run twinklysay preview score_tower --playlist config/leaderboard.yaml
+
 # Twinklysay (scrolling message, used for remote messages)
 uv run twinklysay preview twinklysay --text "Remote message!" --color gold
 
@@ -104,7 +110,7 @@ uv run twinklysay card twinklysay --text "Hello LED!" --color gold
 uv run twinklysay card --id 3 --playlist config/cards.yaml
 ```
 
-**Available cards:** clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay
+**Available cards:** clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay, rain, vertical_bars, stories, score_tower
 
 ### Common Options
 
@@ -113,6 +119,7 @@ uv run twinklysay card --id 3 --playlist config/cards.yaml
 | `-d, --duration` | Animation duration in seconds (default: 10) |
 | `-c, --color` | Text color (name, hex, or R,G,B) |
 | `--no-color` | Grayscale output |
+| `--orientation` | Preview orientation: horizontal, vertical_left, vertical_right |
 
 ## Remote Control (MCP Integration)
 
