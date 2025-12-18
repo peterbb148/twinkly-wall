@@ -4,13 +4,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import (
-    CHAR_HEIGHT,
-    draw_text,
-    draw_text_vertical_rotated,
-    text_width,
-    vertical_text_height,
-)
+from ..fonts import CHAR_HEIGHT, draw_text, draw_text_vertical_stacked, text_width, vertical_text_height
 from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
@@ -66,14 +60,14 @@ class TwinklysayCard(Card):
         return canvas.copy()
 
     def _render_vertical_rotated_frame(self, y_offset: int) -> Frame:
-        """Render a single frame of vertically stacked, rotated text."""
+        """Render a single frame of vertically stacked text (one char per row)."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(self.bgcolor)
 
         column_width = CHAR_HEIGHT
         x = max(0, (WIDTH - column_width) // 2)
 
-        draw_text_vertical_rotated(canvas, x, y_offset, self.text, self.color)
+        draw_text_vertical_stacked(canvas, x, y_offset, self.text, self.color)
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:

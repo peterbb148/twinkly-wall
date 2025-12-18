@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from .types import Orientation
+
 
 @dataclass
 class TwinklyConfig:
@@ -18,6 +20,7 @@ class TwinklyConfig:
     port: int = 80
     mirror_h: bool = False
     mirror_v: bool = False
+    orientation: Orientation = "horizontal"
 
 
 @dataclass
@@ -141,6 +144,7 @@ def load_settings(path: Path | str | None = None) -> Settings:
             port=tw.get("port", 80),
             mirror_h=tw.get("mirror_h", False),
             mirror_v=tw.get("mirror_v", False),
+            orientation=tw.get("orientation", "horizontal"),
         )
 
     if "weather" in data:

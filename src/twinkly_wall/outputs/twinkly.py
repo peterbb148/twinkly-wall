@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import requests
 
-from ..types import Frame
+from ..types import Frame, Orientation, apply_orientation
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +235,7 @@ class TwinklyOutput:
         self.led_profile = led_profile
         self.mirror_h = mirror_h
         self.mirror_v = mirror_v
+        self.orientation: Orientation = "horizontal"
         self._frame_count = 0
 
     def start(self) -> None:
@@ -377,7 +378,8 @@ class TwinklyOutput:
         """
         self.client.ensure_auth()
 
-        frame_data = self._frame_to_bytes(frame)
+        oriented = apply_orientation(frame, self.orientation)
+        frame_data = self._frame_to_bytes(oriented)
 
         try:
             self.client._request(

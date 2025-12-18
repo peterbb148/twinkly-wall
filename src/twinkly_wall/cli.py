@@ -284,6 +284,7 @@ def cmd_card(args: argparse.Namespace) -> int:
         mirror_h=settings.twinkly.mirror_h,
         mirror_v=settings.twinkly.mirror_v,
     )
+    output.orientation = settings.twinkly.orientation
 
     ctx = create_context_with_datasources()
 
@@ -357,11 +358,21 @@ def cmd_mcp(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_orientation(arg_value: str | None) -> Orientation:
+    """Resolve preview orientation, falling back to settings if not provided."""
+    if arg_value:
+        return arg_value  # type: ignore[return-value]
+
+    # Load default settings (config/settings.yaml, settings.yaml, or ~/.config)
+    settings = load_settings()
+    return settings.twinkly.orientation
+
+
 def cmd_preview(args: argparse.Namespace) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
     card_type = args.card
     duration = args.duration
-    orientation: Orientation = getattr(args, "orientation", "horizontal")
+    orientation: Orientation = _resolve_orientation(getattr(args, "orientation", None))
 
     # If playlist provided without --id or card type, play entire playlist
     if args.playlist and not args.id and not card_type:
@@ -423,7 +434,7 @@ def _preview_playlist(args: argparse.Namespace) -> int:
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
-                    orientation=getattr(args, "orientation", "horizontal"),
+                    orientation=_resolve_orientation(getattr(args, "orientation", None)),
                 )
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -545,8 +556,11 @@ def create_parser() -> argparse.ArgumentParser:
     preview_parser.add_argument(
         "--orientation",
         choices=["horizontal", "vertical_left", "vertical_right"],
-        default="horizontal",
-        help="Display orientation for preview (default: horizontal)",
+        default=None,
+        help=(
+            "Display orientation for preview. "
+            "Default: twinkly.orientation from settings.yaml (or horizontal)."
+        ),
     )
     # Clock-specific options
     preview_parser.add_argument(

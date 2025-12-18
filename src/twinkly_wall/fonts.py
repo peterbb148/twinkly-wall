@@ -215,7 +215,7 @@ def draw_text(
     return cursor_x - x
 
 
-def draw_text_vertical_rotated(
+def draw_text_vertical_stacked(
     canvas: Canvas,
     x: int,
     y: int,
@@ -223,9 +223,15 @@ def draw_text_vertical_rotated(
     color: RGB = WHITE,
     spacing: int = VERTICAL_CHAR_SPACING,
 ) -> int:
-    """Draw text vertically using 90° clockwise rotated glyphs.
+    """Draw text as a vertical stack of characters (no rotation).
 
-    Characters are stacked top-to-bottom along the Y axis.
+    Each character is drawn using the normal 5x7 glyph, stacked along the Y axis:
+
+        H
+        e
+        l
+        l
+        o
 
     Args:
         canvas: Target canvas.
@@ -242,9 +248,9 @@ def draw_text_vertical_rotated(
     total_height = 0
 
     for i, char in enumerate(text):
-        _, glyph_height = draw_char_rotated_cw(canvas, x, cursor_y, char, color)
-        total_height += glyph_height
-        cursor_y += glyph_height
+        draw_text(canvas, x, cursor_y, char, color)
+        total_height += CHAR_HEIGHT
+        cursor_y += CHAR_HEIGHT
         if i < len(text) - 1:
             cursor_y += spacing
             total_height += spacing
@@ -252,12 +258,27 @@ def draw_text_vertical_rotated(
     return total_height
 
 
+def draw_text_vertical_rotated(
+    canvas: Canvas,
+    x: int,
+    y: int,
+    text: str,
+    color: RGB = WHITE,
+    spacing: int = VERTICAL_CHAR_SPACING,
+) -> int:
+    """Draw text vertically using rotated glyphs (legacy helper).
+
+    NOTE: Current vertical stacked text mode uses draw_text_vertical_stacked.
+    This function is kept for backwards compatibility and may be removed later.
+    """
+    return draw_text_vertical_stacked(canvas, x, y, text, color, spacing)
+
+
 def vertical_text_height(text: str, spacing: int = VERTICAL_CHAR_SPACING) -> int:
-    """Calculate the pixel height of vertically stacked rotated text."""
+    """Calculate the pixel height of vertically stacked text."""
     if not text:
         return 0
-    # Each glyph is CHAR_WIDTH tall when rotated.
-    return len(text) * CHAR_WIDTH + (len(text) - 1) * spacing
+    return len(text) * CHAR_HEIGHT + (len(text) - 1) * spacing
 
 
 def render_text_to_frame(

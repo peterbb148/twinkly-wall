@@ -83,7 +83,9 @@ class TwinklyDaemon:
         if self.terminal_output:
             from .outputs.terminal import TerminalOutput
 
-            self._terminal = TerminalOutput()
+            self._terminal = TerminalOutput(
+                orientation=self.settings.twinkly.orientation,
+            )
             outputs.append(self._terminal)
             logger.info("Terminal output enabled")
 
@@ -97,6 +99,7 @@ class TwinklyDaemon:
                 mirror_h=self.settings.twinkly.mirror_h,
                 mirror_v=self.settings.twinkly.mirror_v,
             )
+            self._twinkly.orientation = self.settings.twinkly.orientation
             outputs.append(self._twinkly)
             logger.info(f"Twinkly output configured: {self.settings.twinkly.host}")
 

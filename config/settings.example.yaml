@@ -4,6 +4,9 @@
 twinkly:
   # IP address of your Twinkly device (or leave empty to use discovery)
   host: ""
+  # Display orientation: horizontal, vertical_left, or vertical_right
+  # Use vertical_* when the panel is mounted vertically on the wall.
+  orientation: horizontal
 
 weather:
   # Coordinates for Open-Meteo weather API (no API key needed!)
