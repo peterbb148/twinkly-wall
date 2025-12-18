@@ -2,25 +2,34 @@
 
 ## The Idea
 
-We wanted to create a fun, interactive LED display for our office at Carlsberg Research Laboratory. The goal was a programmable "billboard" that could show animations, messages, weather, and celebrate events - all controlled remotely.
+We wanted to create a fun, festive, interactive LED display for our office at Carlsberg Research Laboratory. The goal was a programmable "billboard" that could show animations, messages, weather, and celebrate events like Christmas, lab milestones, and publications - all controlled remotely.
 
 ## Hardware Setup
 
 **Components:**
 - **Twinkly Matrix 500** - A consumer LED panel with 500 LEDs arranged in a 10×50 pixel grid
 - **Raspberry Pi 4** - The brains running our Python software
-- **Wi-Fi Access Point** - The Pi creates a dedicated network for the Twinkly
+- **4G Wi-Fi Router/Access Point** - Provides both a dedicated wireless network for the wall and internet access via a mobile 4G connection
 
 **Network Architecture:**
-```
-[Raspberry Pi] ─── Wi-Fi AP ───> [Twinkly Matrix 500]
-      │                              10 × 50 LEDs
-   Ethernet
-      │
-  [Office Network/Internet]
+
+```mermaid
+flowchart LR
+    INET[Internet\n(4G mobile network)] --> RTR[4G Wi-Fi Router / AP]
+    RTR --> PI[Raspberry Pi 4]
+    RTR --> TW[Twinkly Matrix 500\n10 × 50 LEDs]
+
+    OFF[Office Network]:::office
+
+    classDef safe fill:#e0ffe0,stroke:#2b8a3e,color:#000;
+    classDef festive fill:#fff0f6,stroke:#d6336c,color:#000;
+    classDef office fill:#f8f9fa,stroke:#adb5bd,color:#495057;
+
+    class PI safe;
+    class TW festive;
 ```
 
-The Raspberry Pi connects to the office network via Ethernet (for internet access) while simultaneously hosting a Wi-Fi access point that the Twinkly connects to. This isolated network ensures reliable, low-latency communication with the LED panel.
+The entire Twinkly Wall setup (router, Raspberry Pi, and Twinkly panel) runs on its own 4G-backed Wi-Fi network and is not connected to the office network at all. The only path to the internet is through the 4G router, so the wall operates in complete isolation from the corporate LAN while still being able to fetch data like weather and messages.
 
 ## Software Architecture
 
@@ -36,7 +45,7 @@ We built a Python application (`twinkly-wall`) with these core components:
 
 ## The Card System
 
-Each "card" is a Python class that generates animation frames. Cards are configured via YAML:
+Each "card" is a Python class that generates animation frames – from gentle snowfall and rainbow gradients to Pac-Man munching Christmas trees. Cards are configured via YAML:
 
 ```yaml
 cards:
@@ -52,7 +61,7 @@ cards:
     theme: trees
 ```
 
-**Available cards include:** clock, weather, text, Pac-Man animations, beer bubbles, snowfall, rainbow effects, DNA helix, Science Magazine announcements, barley field, and many more.
+**Available cards include:** clock, weather, text, Pac-Man animations, beer bubbles, snowfall, rainbow effects, DNA helix, Science Magazine announcements, barley field, and many more festive and celebratory scenes.
 
 ## Remote Control via Claude
 
@@ -87,7 +96,7 @@ twinkly-wall --playlist config/online.yaml
 
 ## Results
 
-The Twinkly Wall has become a beloved feature of our office - displaying weather forecasts, countdown to Christmas, celebrating Science Magazine publications, and spreading holiday cheer with animated Pac-Man eating Christmas trees.
+The Twinkly Wall has become a beloved feature of our office - displaying weather forecasts, countdown to Christmas, celebrating Science Magazine publications, and spreading holiday cheer with animated Pac-Man eating Christmas trees, glowing beer bubbles, and cosy winter palettes.
 
 ---
 

@@ -1,6 +1,6 @@
-"""Core types for Twinkly Wall."""
+"""Core types and helpers for Twinkly Wall."""
 
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 # Display dimensions (Twinkly Matrix 500: 50 columns × 10 rows for horizontal display)
 WIDTH: int = 50
@@ -11,6 +11,9 @@ RGB: TypeAlias = tuple[int, int, int]
 
 # A frame is a 2D array of RGB values: Frame[y][x] = (r, g, b)
 Frame: TypeAlias = list[list[RGB]]
+
+# Display orientation.
+Orientation: TypeAlias = Literal["horizontal", "vertical_left", "vertical_right"]
 
 # Common colors
 BLACK: RGB = (0, 0, 0)
@@ -62,3 +65,55 @@ def scale_color(color: RGB, factor: float) -> RGB:
         min(255, max(0, int(color[1] * factor))),
         min(255, max(0, int(color[2] * factor))),
     )
+
+
+def rotate_frame_cw(frame: Frame) -> Frame:
+    """Rotate a frame 90 degrees clockwise."""
+    if not frame or not frame[0]:
+        return []
+
+    height = len(frame)
+    width = len(frame[0])
+    # New frame has dimensions width × height
+    return [[frame[height - 1 - x][y] for x in range(height)] for y in range(width)]
+
+
+def rotate_frame_ccw(frame: Frame) -> Frame:
+    """Rotate a frame 90 degrees counter-clockwise."""
+    if not frame or not frame[0]:
+        return []
+
+    height = len(frame)
+    width = len(frame[0])
+    # New frame has dimensions width × height
+    return [[frame[x][width - 1 - y] for x in range(height)] for y in range(width)]
+
+
+def rotate_frame_180(frame: Frame) -> Frame:
+    """Rotate a frame 180 degrees."""
+    if not frame or not frame[0]:
+        return []
+
+    height = len(frame)
+    width = len(frame[0])
+    return [
+        [frame[height - 1 - y][width - 1 - x] for x in range(width)]
+        for y in range(height)
+    ]
+
+
+def apply_orientation(frame: Frame, orientation: Orientation) -> Frame:
+    """Rotate a frame to match the desired orientation.
+
+    Args:
+        frame: Source frame to orient.
+        orientation: Display orientation: horizontal, vertical_left or vertical_right.
+
+    Returns:
+        New frame transformed for the requested orientation.
+    """
+    if orientation == "vertical_left":
+        return rotate_frame_ccw(frame)
+    if orientation == "vertical_right":
+        return rotate_frame_cw(frame)
+    return copy_frame(frame)

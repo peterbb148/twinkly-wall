@@ -4,7 +4,7 @@ import sys
 import time
 from collections.abc import Iterator
 
-from ..types import BLACK, RGB, Frame
+from ..types import BLACK, RGB, Frame, Orientation, apply_orientation
 
 
 def _brightness(color: RGB) -> int:
@@ -126,6 +126,7 @@ def animate_frames(
     color_mode: bool = True,
     use_half_blocks: bool = True,
     clear_between: bool = True,
+    orientation: Orientation = "horizontal",
 ) -> None:
     """
     Animate a sequence of frames in the terminal.
@@ -141,15 +142,17 @@ def animate_frames(
         first_frame = True
 
         for frame, delay in frames:
+            oriented = apply_orientation(frame, orientation)
+
             if clear_between:
                 clear_screen()
             elif not first_frame:
                 # Move cursor up to overwrite previous frame
-                height = len(frame)
+                height = len(oriented)
                 lines_to_move = height // 2 if use_half_blocks else height
                 move_cursor_up(lines_to_move)
 
-            print_frame(frame, color_mode, use_half_blocks)
+            print_frame(oriented, color_mode, use_half_blocks)
             first_frame = False
 
             if delay > 0:
@@ -180,7 +183,12 @@ class TerminalOutput:
     to the terminal in real-time.
     """
 
-    def __init__(self, color_mode: bool = True, use_half_blocks: bool = True):
+    def __init__(
+        self,
+        color_mode: bool = True,
+        use_half_blocks: bool = True,
+        orientation: Orientation = "horizontal",
+    ):
         """Initialize terminal output.
 
         Args:
@@ -189,6 +197,7 @@ class TerminalOutput:
         """
         self.color_mode = color_mode
         self.use_half_blocks = use_half_blocks
+        self.orientation = orientation
         self._first_frame = True
         self._last_height = 0
 
@@ -205,11 +214,13 @@ class TerminalOutput:
 
     def send_frame(self, frame: Frame) -> None:
         """Send a frame to the terminal."""
+        oriented = apply_orientation(frame, self.orientation)
+
         if not self._first_frame and self._last_height > 0:
             move_cursor_up(self._last_height)
 
-        print_frame(frame, self.color_mode, self.use_half_blocks)
+        print_frame(oriented, self.color_mode, self.use_half_blocks)
 
-        height = len(frame)
+        height = len(oriented)
         self._last_height = height // 2 if self.use_half_blocks else height
         self._first_frame = False

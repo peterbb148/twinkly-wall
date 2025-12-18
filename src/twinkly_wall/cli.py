@@ -23,7 +23,7 @@ from .config import load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .outputs.twinkly import TwinklyOutput
-from .types import HEIGHT, RGB, WHITE, WIDTH
+from .types import HEIGHT, RGB, WHITE, WIDTH, Orientation
 
 
 def create_context_with_datasources() -> CardContext:
@@ -168,6 +168,7 @@ def _build_card(card_type: str, args: argparse.Namespace, duration: float):
                 "text": args.text,
                 "color": list(color),
                 "scroll": args.scroll,
+                "scroll_direction": getattr(args, "scroll_direction", "horizontal"),
             }
         )
         return card, "text"
@@ -228,6 +229,7 @@ def _build_card(card_type: str, args: argparse.Namespace, duration: float):
             {
                 "text": args.text,
                 "color": list(color),
+                "scroll_direction": getattr(args, "scroll_direction", "horizontal"),
             }
         ), "twinklysay"
 
@@ -359,6 +361,7 @@ def cmd_preview(args: argparse.Namespace) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
     card_type = args.card
     duration = args.duration
+    orientation: Orientation = getattr(args, "orientation", "horizontal")
 
     # If playlist provided without --id or card type, play entire playlist
     if args.playlist and not args.id and not card_type:
@@ -385,6 +388,7 @@ def cmd_preview(args: argparse.Namespace) -> int:
         color_mode=not args.no_color,
         use_half_blocks=True,
         clear_between=False,
+        orientation=orientation,
     )
 
     return 0
@@ -419,6 +423,7 @@ def _preview_playlist(args: argparse.Namespace) -> int:
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
+                    orientation=getattr(args, "orientation", "horizontal"),
                 )
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -537,6 +542,12 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use grayscale output",
     )
+    preview_parser.add_argument(
+        "--orientation",
+        choices=["horizontal", "vertical_left", "vertical_right"],
+        default="horizontal",
+        help="Display orientation for preview (default: horizontal)",
+    )
     # Clock-specific options
     preview_parser.add_argument(
         "--twelve-hour",
@@ -558,6 +569,18 @@ def create_parser() -> argparse.ArgumentParser:
         "--scroll",
         action="store_true",
         help="Force scrolling (text card)",
+    )
+    preview_parser.add_argument(
+        "--scroll-direction",
+        choices=[
+            "horizontal",
+            "vertical_up",
+            "vertical_down",
+            "vertical_rotated_up",
+            "vertical_rotated_down",
+        ],
+        default="horizontal",
+        help="Scroll direction for text/twinklysay cards (default: horizontal)",
     )
     # Pacman-specific options
     preview_parser.add_argument(
@@ -665,6 +688,18 @@ def create_parser() -> argparse.ArgumentParser:
         "--scroll",
         action="store_true",
         help="Force scrolling (text card)",
+    )
+    card_parser.add_argument(
+        "--scroll-direction",
+        choices=[
+            "horizontal",
+            "vertical_up",
+            "vertical_down",
+            "vertical_rotated_up",
+            "vertical_rotated_down",
+        ],
+        default="horizontal",
+        help="Scroll direction for text/twinklysay cards (default: horizontal)",
     )
     # Pacman-specific options
     card_parser.add_argument(

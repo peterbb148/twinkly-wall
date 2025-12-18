@@ -114,6 +114,7 @@ FONT_5X7: dict[str, list[int]] = {
 CHAR_WIDTH = 5
 CHAR_HEIGHT = 7
 CHAR_SPACING = 1  # Space between characters
+VERTICAL_CHAR_SPACING = 1  # Space between vertically stacked characters
 
 
 def get_char_bitmap(char: str) -> list[int] | None:
@@ -148,6 +149,50 @@ def draw_char(canvas: Canvas, x: int, y: int, char: str, color: RGB = WHITE) -> 
     return CHAR_WIDTH
 
 
+def draw_char_rotated_cw(
+    canvas: Canvas,
+    x: int,
+    y: int,
+    char: str,
+    color: RGB = WHITE,
+) -> tuple[int, int]:
+    """Draw a single character rotated 90 degrees clockwise.
+
+    The standard 5x7 glyph becomes 7 pixels wide and 5 pixels tall.
+
+    Args:
+        canvas: Target canvas.
+        x: Left coordinate of the rotated glyph.
+        y: Top coordinate of the rotated glyph.
+        char: Character to draw.
+        color: Glyph color.
+
+    Returns:
+        Tuple of (width, height) of the drawn glyph.
+    """
+    bitmap = get_char_bitmap(char)
+    width = CHAR_HEIGHT
+    height = CHAR_WIDTH
+
+    if bitmap is None:
+        # Placeholder box for unknown characters
+        canvas.draw_rect(x, y, width, height, color)
+        return width, height
+
+    # Original coordinates: (cx, cy) with cx in [0,4], cy in [0,6]
+    # After 90° CW rotation:
+    #   nx = cy
+    #   ny = (CHAR_WIDTH - 1) - cx
+    for cy, row_bits in enumerate(bitmap):
+        for cx in range(CHAR_WIDTH):
+            if row_bits & (1 << (4 - cx)):
+                nx = x + cy
+                ny = y + (CHAR_WIDTH - 1 - cx)
+                canvas.set_pixel(nx, ny, color)
+
+    return width, height
+
+
 def draw_text(
     canvas: Canvas,
     x: int,
@@ -168,6 +213,51 @@ def draw_text(
         if i < len(text) - 1:
             cursor_x += spacing
     return cursor_x - x
+
+
+def draw_text_vertical_rotated(
+    canvas: Canvas,
+    x: int,
+    y: int,
+    text: str,
+    color: RGB = WHITE,
+    spacing: int = VERTICAL_CHAR_SPACING,
+) -> int:
+    """Draw text vertically using 90° clockwise rotated glyphs.
+
+    Characters are stacked top-to-bottom along the Y axis.
+
+    Args:
+        canvas: Target canvas.
+        x: Left coordinate of the first glyph.
+        y: Top coordinate of the first glyph.
+        text: Text to draw.
+        color: Glyph color.
+        spacing: Vertical spacing between glyphs in pixels.
+
+    Returns:
+        Total height of the rendered text in pixels.
+    """
+    cursor_y = y
+    total_height = 0
+
+    for i, char in enumerate(text):
+        _, glyph_height = draw_char_rotated_cw(canvas, x, cursor_y, char, color)
+        total_height += glyph_height
+        cursor_y += glyph_height
+        if i < len(text) - 1:
+            cursor_y += spacing
+            total_height += spacing
+
+    return total_height
+
+
+def vertical_text_height(text: str, spacing: int = VERTICAL_CHAR_SPACING) -> int:
+    """Calculate the pixel height of vertically stacked rotated text."""
+    if not text:
+        return 0
+    # Each glyph is CHAR_WIDTH tall when rotated.
+    return len(text) * CHAR_WIDTH + (len(text) - 1) * spacing
 
 
 def render_text_to_frame(
