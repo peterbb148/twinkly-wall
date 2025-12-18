@@ -119,7 +119,7 @@ uv run twinklysay card --id 3 --playlist config/cards.yaml
 | `-d, --duration` | Animation duration in seconds (default: 10) |
 | `-c, --color` | Text color (name, hex, or R,G,B) |
 | `--no-color` | Grayscale output |
-| `--orientation` | Preview orientation: horizontal, vertical_left, vertical_right |
+| `--orientation` | Preview orientation: horizontal, vertical_left, vertical_right (matches `twinkly.orientation`) |
 
 ## Remote Control (MCP Integration)
 
