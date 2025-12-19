@@ -110,7 +110,7 @@ uv run twinklysay card twinklysay --text "Hello LED!" --color gold
 uv run twinklysay card --id 3 --playlist config/cards.yaml
 ```
 
-**Available cards:** clock, text, pacman, beer, snow, rainbow, test_pattern, carlsberg_lab, twinklysay, rain, vertical_bars, stories, score_tower
+**Available cards:** clock, text, pacman, beer, beer_vertical, snow, rainbow, test_pattern, carlsberg_lab, candle_vertical, twinklysay, rain, vertical_bars, stories, score_tower
 
 ### Common Options
 
