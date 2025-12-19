@@ -1,0 +1,85 @@
+# Twinkly Wall Vertical Playlist
+# Optimised for a vertically mounted panel (use twinkly.orientation=vertical_left/right)
+
+default_duration: 10
+default_transition: none
+
+cards:
+  # Vertical candle with falling / accumulating snow
+  - type: candle_vertical
+    duration: 12
+    snow_density: 22
+    wind: 0.1
+    accumulate: true
+
+  # Vertical beer glass filling with bubbles and foam
+  - type: beer_vertical
+    duration: 12
+    fill_time: 6
+    bubble_count: 12
+    wobble: true
+
+  # Vertical stacked welcome text, scrolling from bottom to top
+  - type: text
+    duration: 10
+    text: "WELCOME TO THE VERTICAL WALL"
+    color: [255, 255, 255]
+    scroll: true
+    scroll_direction: vertical_rotated_up
+
+  # Vertical rain / waterfall effect
+  - type: rain
+    duration: 10
+    color: [120, 180, 255]
+    tail_length: 4
+    density: 0.45
+    speed: 1.1
+
+  # Vertical meter bars
+  - type: vertical_bars
+    duration: 10
+    bar_width: 3
+    gap: 1
+    color: [0, 255, 0]
+    speed: 1.0
+
+  # Short "stories" column, good for announcements
+  - type: stories
+    duration: 15
+    stories:
+      - "Welcome to Twinkly Wall"
+      - "Panel in vertical mode"
+      - "Powered by twinklysay"
+    story_duration: 2.5
+    fade_duration: 0.6
+    repeats: 1
+
+  # Aurora / Northern Lights
+  - type: aurora
+    duration: 12
+    speed: 1.0
+    brightness: 0.8
+
+  # Meteor shower diagonally across the wall
+  - type: meteor_shower
+    duration: 10
+    density: 6
+    speed: 12
+
+  # Growing vines along the wall
+  - type: vines
+    duration: 10
+    count: 4
+    speed: 1.0
+
+  # Lava column
+  - type: lava_column
+    duration: 10
+    blobs: 3
+    speed: 1.0
+
+  # Sparkling curtain as a soft ambient effect
+  - type: sparkle_curtain
+    duration: 10
+    density: 0.18
+    sparkle_chance: 0.04
