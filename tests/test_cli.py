@@ -393,3 +393,28 @@ def test_main_returns_exit_codes(capsys):
     assert __version__ in capsys.readouterr().out
     assert main(["say", "Hi", "--color", "invalid"]) == 1
     assert main(["unknown"]) == 2
+
+
+@pytest.mark.parametrize("command", [[], ["say"], ["preview"], ["card"], ["list"], ["mcp"]])
+def test_short_help_compatibility(command):
+    result = runner.invoke(app, [*command, "-h"])
+    assert result.exit_code == 0
+    assert "Usage:" in result.output
+
+
+def test_yaml_environment_variables_expand_before_validation(tmp_path, monkeypatch):
+    settings = tmp_path / "settings.yaml"
+    settings.write_text("twinkly: {orientation: '${DISPLAY_ORIENTATION}'}\n")
+    playlist = tmp_path / "cards.yaml"
+    playlist.write_text("cards: [{type: '${CARD_TYPE}', duration: 0.01}]\n")
+    monkeypatch.setenv("DISPLAY_ORIENTATION", "vertical_left")
+    monkeypatch.setenv("CARD_TYPE", "clock")
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(
+        app, ["preview", "--playlist", str(playlist), "--id", "1", "--settings", str(settings)]
+    )
+    assert result.exit_code == 0, result.output
+    assert animate.call_args.kwargs["orientation"] == "vertical_left"
+    monkeypatch.setenv("CARD_TYPE", "unknown")
+    assert runner.invoke(app, ["list", "--playlist", str(playlist)]).exit_code == 2

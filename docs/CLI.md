@@ -13,7 +13,7 @@ Rosetta, Linux, and Windows binaries are not supplied.
 Download `twinklysay-VERSION-darwin-arm64.tar.gz` and its `.sha256` file from
 [GitHub Releases](https://github.com/peterbb148/twinkly-wall/releases). Artifacts
 appear after a version tag completes the release workflow. Before the first tag,
-PR builds are available as the `twinklysay-darwin-arm64` Actions artifact.
+PR builds are available as a `twinklysay-VERSION-darwin-arm64` Actions artifact.
 
 Replace `VERSION` below with the downloaded version:
 
@@ -117,13 +117,15 @@ Use UV and Python 3.11 for source installations:
 ```bash
 uv sync --locked
 uv run --locked twinklysay --help
-uv run --locked pytest --cov=twinkly_wall.cli --cov-branch --cov-report=term-missing --cov-fail-under=81
+uv run --locked pytest --cov=twinkly_wall.cli --cov=scripts.retain_binaries --cov-branch --cov-report=term-missing --cov-fail-under=81
+uv run --locked coverage report --include='scripts/retain_binaries.py' --fail-under=81
 uv run --locked ruff check src/ tests/ scripts/ packaging/entrypoint.py
 uv run --locked ruff format --check src/ tests/ scripts/ packaging/entrypoint.py
 ```
 
-The full test suite runs; the coverage threshold applies specifically to the CLI
-being migrated, including its rendering handlers. MCP registration/polling and
+The full test suite runs; CI measures coverage for the CLI being migrated,
+including its rendering handlers, and the binary retention script. Each must
+exceed 80% coverage. MCP registration/polling and
 device output tests use mocks. They do not certify a live server or LED hardware.
 
 On native Apple Silicon macOS, run:
@@ -148,3 +150,21 @@ the corresponding `vVERSION` tag. `.github/workflows/release.yml` checks that th
 tag matches both versions, runs the same tests and native build/install jobs,
 and publishes the verified archive/checksum to GitHub Releases. A failed build or
 test prevents publication. Creating a workflow does not itself publish a release.
+
+## Binary retention
+
+Only the **current and previous binary versions** are retained for each distribution:
+
+- GitHub Releases keep archives and checksums for the two most recently published
+  binary versions. After a successful publication, older binary assets are deleted;
+  their Git tags, release notes, source archives, and unrelated assets remain.
+- Actions keep the newest verified build of each of the two latest binary versions,
+  ordered by artifact creation time. Superseded builds of the same version,
+  completed failed builds, and legacy unversioned binary artifacts are removed
+  after a new build passes the full test/build/install checks. Other active runs
+  are left alone until they finish.
+
+Cleanup is serialized and reads back the inventory to verify deletions. A failed
+build, failed publication, or missing current archive/artifact prevents cleanup.
+API errors fail the job visibly. Actions' ordinary artifact expiry still applies;
+GitHub Releases provide the persistent downloads for the two retained versions.
