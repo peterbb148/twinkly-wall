@@ -28,7 +28,7 @@ from .cards import (
     create_card,
     list_card_types,
 )
-from .config import load_playlist, load_settings
+from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .outputs.twinkly import TwinklyOutput
@@ -558,6 +558,7 @@ def _validate_config_path(value: Path | None, *, playlist: bool) -> Path | None:
         data = {}
     if not isinstance(data, dict):
         raise typer.BadParameter("Configuration must be a YAML mapping")
+    data = _process_env_vars(data)
     if playlist:
         cards = data.get("cards", [])
         if not isinstance(cards, list):
@@ -612,6 +613,7 @@ SettingsPath = Annotated[
 
 app = typer.Typer(
     name="twinklysay",
+    context_settings={"help_option_names": ["-h", "--help"]},
     help="Render text and animations for Twinkly LED displays.",
     add_completion=False,
     pretty_exceptions_enable=False,

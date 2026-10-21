@@ -18,6 +18,8 @@ def main() -> None:
             "HOME": str(root),
             "LANG": "en_US.UTF-8",
             "TERM": "dumb",
+            "DISPLAY_ORIENTATION": "vertical_left",
+            "CARD_TYPE": "clock",
         }
         # Keep the normal temporary directory available to PyInstaller's onefile loader.
         if "TMPDIR" in os.environ:
@@ -39,14 +41,16 @@ def main() -> None:
             return result.stdout + result.stderr
 
         assert "Usage:" in run("--help")
+        assert "Usage:" in run("-h")
+        assert "Usage:" in run("preview", "-h")
         assert "twinklysay " in run("--version")
         assert "clock" in run("list")
         assert run("say", "Hello", "--no-color").strip()
         assert "Previewing" in run("preview", "clock", "--duration", "0.03", "--no-color")
         settings = root / "settings.yaml"
-        settings.write_text("twinkly: {orientation: vertical_left}\n")
+        settings.write_text("twinkly: {orientation: '${DISPLAY_ORIENTATION}'}\n")
         playlist = root / "cards.yaml"
-        playlist.write_text("cards:\n  - type: clock\n    duration: 0.03\n")
+        playlist.write_text("cards:\n  - type: '${CARD_TYPE}'\n    duration: 0.03\n")
         assert "[1] clock" in run("list", "--playlist", str(playlist))
         assert "1:clock" in run(
             "preview",
