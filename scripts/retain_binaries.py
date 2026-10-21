@@ -25,7 +25,9 @@ def release_deletions(releases: list[dict], current_tag: str) -> list[int]:
     if len(current_assets) != 2:
         raise ValueError("Current release must contain both its binary archive and checksum")
     versions.sort(key=lambda item: item[0]["published_at"], reverse=True)
-    return [asset["id"] for _, assets in versions[2:] for asset in assets]
+    complete = [(release, assets) for release, assets in versions if len(assets) == 2]
+    keep = {asset["id"] for _, assets in complete[:2] for asset in assets}
+    return [asset["id"] for _, assets in versions for asset in assets if asset["id"] not in keep]
 
 
 def artifact_deletions(artifacts: list[dict], runs: dict[int, dict], current_run: int) -> list[int]:
