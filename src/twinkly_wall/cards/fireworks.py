@@ -37,13 +37,13 @@ class Firework:
 
 
 FIREWORK_COLORS: list[RGB] = [
-    (255, 0, 0),      # Red
-    (0, 255, 0),      # Green
-    (0, 100, 255),    # Blue
-    (255, 255, 0),    # Yellow
-    (255, 0, 255),    # Magenta
-    (0, 255, 255),    # Cyan
-    (255, 128, 0),    # Orange
+    (255, 0, 0),  # Red
+    (0, 255, 0),  # Green
+    (0, 100, 255),  # Blue
+    (255, 255, 0),  # Yellow
+    (255, 0, 255),  # Magenta
+    (0, 255, 255),  # Cyan
+    (255, 128, 0),  # Orange
     (255, 255, 255),  # White
 ]
 
@@ -80,7 +80,7 @@ class FireworksCard(Card):
         fw.exploded = True
         fw.particles = []
         for _ in range(self.particle_count):
-            angle = random.uniform(0, 6.28)
+            _angle = random.uniform(0, 6.28)
             speed = random.uniform(0.5, 1.5)
             fw.particles.append(
                 Particle(

@@ -1,6 +1,5 @@
 """Stories-style card that cycles short messages."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -82,4 +81,3 @@ class StoriesCard(Card):
                     color = blend_color(self.bgcolor, self.color, alpha)
                     frame = self._render_story(text, color)
                     yield frame, frame_delay
-

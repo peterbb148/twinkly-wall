@@ -96,10 +96,7 @@ def rotate_frame_180(frame: Frame) -> Frame:
 
     height = len(frame)
     width = len(frame[0])
-    return [
-        [frame[height - 1 - y][width - 1 - x] for x in range(width)]
-        for y in range(height)
-    ]
+    return [[frame[height - 1 - y][width - 1 - x] for x in range(width)] for y in range(height)]
 
 
 def apply_orientation(frame: Frame, orientation: Orientation) -> Frame:

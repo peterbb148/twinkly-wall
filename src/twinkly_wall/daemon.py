@@ -138,11 +138,7 @@ class TwinklyDaemon:
         if not self.mcp_enabled:
             return None
 
-        server_url = (
-            self.mcp_server
-            or os.environ.get("TWINKLY_MCP_URL")
-            or DEFAULT_SERVER_URL
-        )
+        server_url = self.mcp_server or os.environ.get("TWINKLY_MCP_URL") or DEFAULT_SERVER_URL
         api_key = self.mcp_api_key or os.environ.get("TWINKLY_API_KEY")
 
         client = MCPClient(

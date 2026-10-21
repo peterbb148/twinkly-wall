@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
+from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 CANDLE_BODY: RGB = (230, 230, 255)
@@ -157,4 +157,3 @@ class CandleVerticalCard(Card):
             yield frame, frame_delay
 
             t += frame_delay
-

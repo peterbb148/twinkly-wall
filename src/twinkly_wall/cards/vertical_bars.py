@@ -55,4 +55,3 @@ class VerticalBarsCard(Card):
                         canvas.set_pixel(x, y, self.color)
 
             yield canvas.copy(), frame_delay
-

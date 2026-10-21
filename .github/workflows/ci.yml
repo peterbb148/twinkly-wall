@@ -5,47 +5,75 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: "latest"
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.13.1"
+          python-version: "3.11"
+      - run: uv sync --locked
+      - name: Run all tests and measure CLI coverage
+        run: uv run --locked pytest --cov=twinkly_wall.cli --cov-branch --cov-report=term-missing --cov-fail-under=81
+      - run: uv run --locked ruff check src/ tests/ scripts/ packaging/entrypoint.py
+      - run: uv run --locked ruff format --check src/ tests/ scripts/ packaging/entrypoint.py
 
-      - name: Set up Python
-        run: uv python install 3.11
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run tests
-        run: uv run pytest -v
-
-  lint:
-    runs-on: ubuntu-latest
-
+  macos-binary:
+    runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: "latest"
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.13.1"
+          python-version: "3.11"
+      - name: Check release tag matches the project version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          uv run --locked python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          from twinkly_wall import __version__
+          version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          assert os.environ["GITHUB_REF_NAME"] == f"v{version}", "Tag must match pyproject.toml"
+          assert version == __version__, "Package and CLI versions must match"
+          PY
+      - name: Build native ARM64 binary and run isolated smoke tests
+        run: bash scripts/build_macos.sh
+      - name: Upload verified binary archive and checksum
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: twinklysay-darwin-arm64
+          path: |
+            dist/twinklysay-*-darwin-arm64.tar.gz
+            dist/twinklysay-*-darwin-arm64.tar.gz.sha256
+          if-no-files-found: error
 
-      - name: Set up Python
-        run: uv python install 3.11
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run ruff check
-        run: uv run ruff check src/ tests/
-
-      - name: Run ruff format check
-        run: uv run ruff format --check src/ tests/
+  macos-install:
+    needs: macos-binary
+    runs-on: macos-14
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: twinklysay-darwin-arm64
+          path: ${{ runner.temp }}/twinklysay-download
+      - name: Verify and test the downloaded archive on a fresh runner
+        working-directory: ${{ runner.temp }}/twinklysay-download
+        run: |
+          shasum -a 256 -c *.sha256
+          tar -xzf twinklysay-*-darwin-arm64.tar.gz
+          test "$(lipo -archs twinklysay)" = arm64
+          codesign --verify --strict twinklysay
+          python3 checks/smoke_binary.py "$PWD/twinklysay"

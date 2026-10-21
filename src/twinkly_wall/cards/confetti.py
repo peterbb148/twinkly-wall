@@ -25,15 +25,15 @@ class ConfettiPiece:
 
 
 CONFETTI_COLORS: list[RGB] = [
-    (255, 0, 0),      # Red
-    (0, 255, 0),      # Green
-    (0, 100, 255),    # Blue
-    (255, 255, 0),    # Yellow
-    (255, 0, 255),    # Magenta
-    (0, 255, 255),    # Cyan
-    (255, 128, 0),    # Orange
+    (255, 0, 0),  # Red
+    (0, 255, 0),  # Green
+    (0, 100, 255),  # Blue
+    (255, 255, 0),  # Yellow
+    (255, 0, 255),  # Magenta
+    (0, 255, 255),  # Cyan
+    (255, 128, 0),  # Orange
     (255, 192, 203),  # Pink
-    (255, 215, 0),    # Gold
+    (255, 215, 0),  # Gold
 ]
 
 
