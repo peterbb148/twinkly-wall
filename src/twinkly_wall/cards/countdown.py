@@ -22,7 +22,7 @@ SPRITE_TREE: list[list[int]] = [
 ]
 
 TREE_COLORS: dict[int, RGB] = {
-    1: (0, 180, 0),    # Green tree
+    1: (0, 180, 0),  # Green tree
     2: (139, 69, 19),  # Brown trunk
     3: (255, 215, 0),  # Gold star
 }

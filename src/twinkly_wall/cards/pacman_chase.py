@@ -6,7 +6,7 @@ from typing import Any
 from ..canvas import Canvas
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
-from .pacman import PACMAN_CLOSED, PACMAN_OPEN, SPRITE_GHOST, draw_sprite
+from .pacman import PACMAN_CLOSED, SPRITE_GHOST, draw_sprite
 
 # Pac-Man facing left (mouth on left side)
 PACMAN_OPEN_LEFT: list[list[int]] = [
@@ -113,8 +113,7 @@ class PacmanChaseCard(Card):
                 if cycles_done < self.repeats:
                     pacman_x = float(WIDTH)
                     ghost_positions = [
-                        float(WIDTH + 10 + i * self.ghost_spacing)
-                        for i in range(self.num_ghosts)
+                        float(WIDTH + 10 + i * self.ghost_spacing) for i in range(self.num_ghosts)
                     ]
 
             # Animate mouth (toggle every 0.12s - faster when running!)

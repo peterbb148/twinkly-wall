@@ -1,14 +1,13 @@
 """Danish Superliga standings card."""
 
 import logging
-import time
 from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
 from ..datasources.superliga import SuperligaDataSource, SuperligaError
 from ..fonts import draw_text, text_width
-from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
+from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 logger = logging.getLogger(__name__)
@@ -16,36 +15,36 @@ logger = logging.getLogger(__name__)
 # Team colors and short names mapping
 # Key: Full team name from API, Value: (short_name, RGB color)
 TEAM_INFO: dict[str, tuple[str, RGB]] = {
-    "FC Midtjylland": ("FCM", (255, 50, 50)),      # Red
-    "FC Copenhagen": ("FCK", (255, 255, 255)),     # White
-    "AGF Aarhus": ("AGF", (255, 255, 255)),        # White
-    "AGF": ("AGF", (255, 255, 255)),               # White (alt name)
-    "Randers FC": ("RFC", (135, 206, 250)),        # Light blue
-    "Randers": ("RFC", (135, 206, 250)),           # Light blue (alt)
-    "Brondby IF": ("BIF", (255, 220, 0)),          # Yellow
-    "Brøndby": ("BIF", (255, 220, 0)),             # Yellow (alt)
-    "Silkeborg IF": ("SIF", (50, 200, 50)),        # Green
-    "Silkeborg": ("SIF", (50, 200, 50)),           # Green (alt)
-    "FC Nordsjaelland": ("FCN", (255, 140, 0)),    # Orange
-    "FC Nordsjælland": ("FCN", (255, 140, 0)),     # Orange (alt)
-    "Aalborg BK": ("AaB", (255, 50, 50)),          # Red
-    "AaB": ("AaB", (255, 50, 50)),                 # Red (alt)
-    "Viborg FF": ("VFF", (50, 200, 50)),           # Green
-    "Viborg": ("VFF", (50, 200, 50)),              # Green (alt)
-    "Lyngby BK": ("LBK", (0, 100, 255)),           # Blue
-    "Lyngby": ("LBK", (0, 100, 255)),              # Blue (alt)
-    "Vejle BK": ("VB", (255, 50, 50)),             # Red
-    "Vejle": ("VB", (255, 50, 50)),                # Red (alt)
-    "OB": ("OB", (0, 100, 255)),                   # Blue
-    "Odense Boldklub": ("OB", (0, 100, 255)),      # Blue (alt)
-    "SonderjyskE": ("SJF", (0, 100, 255)),         # Blue
-    "Sønderjyske": ("SJF", (0, 100, 255)),         # Blue (alt)
-    "Hvidovre IF": ("HIF", (255, 50, 50)),         # Red
-    "Hvidovre": ("HIF", (255, 50, 50)),            # Red (alt)
-    "AC Horsens": ("ACH", (255, 220, 0)),          # Yellow
-    "Horsens": ("ACH", (255, 220, 0)),             # Yellow (alt)
-    "FC Fredericia": ("FCF", (255, 50, 50)),       # Red
-    "Fredericia": ("FCF", (255, 50, 50)),          # Red (alt)
+    "FC Midtjylland": ("FCM", (255, 50, 50)),  # Red
+    "FC Copenhagen": ("FCK", (255, 255, 255)),  # White
+    "AGF Aarhus": ("AGF", (255, 255, 255)),  # White
+    "AGF": ("AGF", (255, 255, 255)),  # White (alt name)
+    "Randers FC": ("RFC", (135, 206, 250)),  # Light blue
+    "Randers": ("RFC", (135, 206, 250)),  # Light blue (alt)
+    "Brondby IF": ("BIF", (255, 220, 0)),  # Yellow
+    "Brøndby": ("BIF", (255, 220, 0)),  # Yellow (alt)
+    "Silkeborg IF": ("SIF", (50, 200, 50)),  # Green
+    "Silkeborg": ("SIF", (50, 200, 50)),  # Green (alt)
+    "FC Nordsjaelland": ("FCN", (255, 140, 0)),  # Orange
+    "FC Nordsjælland": ("FCN", (255, 140, 0)),  # Orange (alt)
+    "Aalborg BK": ("AaB", (255, 50, 50)),  # Red
+    "AaB": ("AaB", (255, 50, 50)),  # Red (alt)
+    "Viborg FF": ("VFF", (50, 200, 50)),  # Green
+    "Viborg": ("VFF", (50, 200, 50)),  # Green (alt)
+    "Lyngby BK": ("LBK", (0, 100, 255)),  # Blue
+    "Lyngby": ("LBK", (0, 100, 255)),  # Blue (alt)
+    "Vejle BK": ("VB", (255, 50, 50)),  # Red
+    "Vejle": ("VB", (255, 50, 50)),  # Red (alt)
+    "OB": ("OB", (0, 100, 255)),  # Blue
+    "Odense Boldklub": ("OB", (0, 100, 255)),  # Blue (alt)
+    "SonderjyskE": ("SJF", (0, 100, 255)),  # Blue
+    "Sønderjyske": ("SJF", (0, 100, 255)),  # Blue (alt)
+    "Hvidovre IF": ("HIF", (255, 50, 50)),  # Red
+    "Hvidovre": ("HIF", (255, 50, 50)),  # Red (alt)
+    "AC Horsens": ("ACH", (255, 220, 0)),  # Yellow
+    "Horsens": ("ACH", (255, 220, 0)),  # Yellow (alt)
+    "FC Fredericia": ("FCF", (255, 50, 50)),  # Red
+    "Fredericia": ("FCF", (255, 50, 50)),  # Red (alt)
 }
 
 # Fallback color for unknown teams
@@ -148,9 +147,7 @@ class SuperligaCard(Card):
 
         return canvas.copy()
 
-    def _calculate_content_width(
-        self, entries: list[tuple[int, str, int, RGB]]
-    ) -> int:
+    def _calculate_content_width(self, entries: list[tuple[int, str, int, RGB]]) -> int:
         """Calculate total width of scrolling content."""
         total = 0
         for rank, name, points, _ in entries:

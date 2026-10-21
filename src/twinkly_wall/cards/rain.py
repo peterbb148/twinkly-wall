@@ -1,6 +1,5 @@
 """Vertical rain / waterfall card."""
 
-import math
 import random
 from collections.abc import Iterator
 from typing import Any
@@ -56,9 +55,7 @@ class RainCard(Card):
 
                 # Head of drop moves down the column; wrap with a longer period so columns desync
                 period = HEIGHT + self.tail_length + 5
-                head = int(
-                    (frame_index * self.speed + offset) % period
-                ) - self.tail_length
+                head = int((frame_index * self.speed + offset) % period) - self.tail_length
 
                 # Draw head + tail with simple brightness falloff
                 for i in range(self.tail_length):
@@ -71,4 +68,3 @@ class RainCard(Card):
                         canvas.set_pixel(x, y, (r, g, b))
 
             yield canvas.copy(), frame_delay
-

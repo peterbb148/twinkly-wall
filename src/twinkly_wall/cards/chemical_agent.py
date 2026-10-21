@@ -122,4 +122,3 @@ class ChemicalAgentCard(Card):
                 offset += pixels_per_frame
 
             scrolls_done += 1
-

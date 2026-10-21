@@ -1,9 +1,18 @@
 """Command-line interface for Twinkly Wall."""
 
-import argparse
 import sys
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path
+from typing import Annotated
 
+import requests
+import typer
+import yaml
+
+from . import __version__
 from .canvas import Canvas
 from .cards import (
     BeerCard,
@@ -26,9 +35,38 @@ from .outputs.twinkly import TwinklyOutput
 from .types import HEIGHT, RGB, WHITE, WIDTH, Orientation
 
 
-def create_context_with_datasources() -> CardContext:
+@dataclass
+class CLIOptions:
+    """Validated command options passed to the existing rendering handlers."""
+
+    card: str | None = None
+    id: int | None = None
+    playlist: Path | None = None
+    settings: Path | None = None
+    duration: float = 10.0
+    color: str | None = None
+    no_color: bool = False
+    no_half_blocks: bool = False
+    orientation: str | None = None
+    twelve_hour: bool = False
+    no_blink: bool = False
+    text: str | None = None
+    scroll: bool = False
+    scroll_direction: str = "horizontal"
+    speed: float = 15.0
+    theme: str = "trees"
+    wind: float = 0.0
+    accumulate: bool = False
+    mode: str = "rainbow"
+    pattern_mode: str = "rows"
+    server: str | None = None
+    interval: float = 2.0
+    api_key: str | None = None
+
+
+def create_context_with_datasources(settings_path: Path | None = None) -> CardContext:
     """Create a CardContext with datasources from settings."""
-    settings = load_settings()
+    settings = load_settings(settings_path)
     datasources: dict = {}
 
     # Add weather datasource if configured
@@ -132,9 +170,9 @@ def _card_from_playlist(index: int, playlist_path: str | None):
     return card, label
 
 
-def _build_card(card_type: str, args: argparse.Namespace, duration: float):
+def _build_card(card_type: str, args: CLIOptions, duration: float):
     """Create a card instance from CLI arguments or playlist selection."""
-    if getattr(args, "id", None):
+    if args.id is not None:
         return _card_from_playlist(args.id, getattr(args, "playlist", None))
 
     # Create the appropriate card
@@ -143,7 +181,7 @@ def _build_card(card_type: str, args: argparse.Namespace, duration: float):
             color = parse_color(args.color) if args.color else WHITE
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
-            return None
+            return None, ""
         card = ClockCard(
             {
                 "duration": duration,
@@ -244,16 +282,16 @@ def _build_card(card_type: str, args: argparse.Namespace, duration: float):
     return None, ""
 
 
-def cmd_say(args: argparse.Namespace) -> int:
+def cmd_say(args: CLIOptions) -> int:
     """Handle the 'say' subcommand - render text to terminal."""
     try:
-        color = parse_color(args.color)
+        color = parse_color(args.color or "white")
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
     text = args.text
-    frame = render_text_centered(text, color)
+    frame = render_text_centered(text or "", color)
 
     print_frame(
         frame,
@@ -264,7 +302,7 @@ def cmd_say(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_card(args: argparse.Namespace) -> int:
+def cmd_card(args: CLIOptions) -> int:
     """Handle the 'card' subcommand - send a card to the Twinkly LED device."""
     card_type = args.card
     duration = args.duration
@@ -278,6 +316,8 @@ def cmd_card(args: argparse.Namespace) -> int:
         return 1
 
     settings = load_settings(args.settings)
+    if not settings.twinkly.host:
+        raise ValueError("Configure twinkly.host in --settings before sending to a device")
     output = TwinklyOutput(
         host=settings.twinkly.host,
         port=settings.twinkly.port,
@@ -286,7 +326,7 @@ def cmd_card(args: argparse.Namespace) -> int:
     )
     output.orientation = settings.twinkly.orientation
 
-    ctx = create_context_with_datasources()
+    ctx = create_context_with_datasources(args.settings)
 
     name = label or card_type
     print(f"Sending '{name}' card to Twinkly at {settings.twinkly.host}...")
@@ -308,7 +348,7 @@ def cmd_card(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_list(args: argparse.Namespace) -> int:
+def cmd_list(args: CLIOptions) -> int:
     """List available registered cards and optional playlist entries."""
     types = sorted(list_card_types())
     print("Registered cards:")
@@ -322,24 +362,26 @@ def cmd_list(args: argparse.Namespace) -> int:
             for idx, cfg in enumerate(playlist.cards, start=1):
                 print(f" [{idx}] {cfg.type}")
         else:
-            print(f"\nPlaylist {args.playlist} is empty or not found.")
+            print(f"\nPlaylist {args.playlist} is empty.")
     return 0
 
 
-def cmd_mcp(args: argparse.Namespace) -> int:
+def cmd_mcp(args: CLIOptions) -> int:
     """Handle the 'mcp' subcommand - start MCP polling client."""
-    from .mcp_client import MCPClient
-
     import os
 
-    server_url = args.server or os.environ.get("TWINKLY_MCP_URL", "https://twinkly-mcp.onrender.com")
+    from .mcp_client import MCPClient
+
+    server_url = args.server or os.environ.get(
+        "TWINKLY_MCP_URL", "https://twinkly-mcp.onrender.com"
+    )
     api_key = args.api_key or os.environ.get("TWINKLY_API_KEY")
     poll_interval = args.interval
 
-    print(f"Starting MCP client...")
+    print("Starting MCP client...")
     print(f"  Server: {server_url}")
     print(f"  Poll interval: {poll_interval}s")
-    print(f"  Output: terminal")
+    print("  Output: terminal")
     print()
     print("Waiting for commands from Claude... (Ctrl+C to stop)")
     print()
@@ -351,28 +393,30 @@ def cmd_mcp(args: argparse.Namespace) -> int:
     )
 
     try:
-        client.run(use_terminal=True)
+        if not client.register_cards():
+            raise ConnectionError(f"Could not register cards with MCP server at {server_url}")
+        client.run(use_terminal=True, register=False)
     except KeyboardInterrupt:
         print("\nStopped.")
 
     return 0
 
 
-def _resolve_orientation(arg_value: str | None) -> Orientation:
+def _resolve_orientation(arg_value: str | None, settings_path: Path | None = None) -> Orientation:
     """Resolve preview orientation, falling back to settings if not provided."""
     if arg_value:
         return arg_value  # type: ignore[return-value]
 
     # Load default settings (config/settings.yaml, settings.yaml, or ~/.config)
-    settings = load_settings()
+    settings = load_settings(settings_path)
     return settings.twinkly.orientation
 
 
-def cmd_preview(args: argparse.Namespace) -> int:
+def cmd_preview(args: CLIOptions) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
     card_type = args.card
     duration = args.duration
-    orientation: Orientation = _resolve_orientation(getattr(args, "orientation", None))
+    orientation: Orientation = _resolve_orientation(args.orientation, args.settings)
 
     # If playlist provided without --id or card type, play entire playlist
     if args.playlist and not args.id and not card_type:
@@ -387,7 +431,7 @@ def cmd_preview(args: argparse.Namespace) -> int:
         return 1
 
     # Create context and run
-    ctx = create_context_with_datasources()
+    ctx = create_context_with_datasources(args.settings)
 
     name = label or card_type
     print(f"Previewing '{name}' card for {duration}s (Ctrl+C to stop)...")
@@ -405,14 +449,14 @@ def cmd_preview(args: argparse.Namespace) -> int:
     return 0
 
 
-def _preview_playlist(args: argparse.Namespace) -> int:
+def _preview_playlist(args: CLIOptions) -> int:
     """Preview an entire playlist in the terminal."""
     playlist = load_playlist(args.playlist)
     if not playlist.cards:
         print(f"No cards found in playlist: {args.playlist}", file=sys.stderr)
         return 1
 
-    ctx = create_context_with_datasources()
+    ctx = create_context_with_datasources(args.settings)
     total_cards = len(playlist.cards)
 
     print(f"Previewing playlist: {args.playlist} ({total_cards} cards)")
@@ -424,8 +468,7 @@ def _preview_playlist(args: argparse.Namespace) -> int:
             for idx, cfg in enumerate(playlist.cards, start=1):
                 card = create_card(cfg.type, {**cfg.config, "duration": cfg.duration})
                 if card is None:
-                    print(f"Skipping unknown card type: {cfg.type}")
-                    continue
+                    raise ValueError(f"Unknown card type in playlist: {cfg.type}")
 
                 print(f"[{idx}/{total_cards}] {cfg.type} ({cfg.duration}s)")
 
@@ -434,7 +477,7 @@ def _preview_playlist(args: argparse.Namespace) -> int:
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
-                    orientation=_resolve_orientation(getattr(args, "orientation", None)),
+                    orientation=_resolve_orientation(args.orientation, args.settings),
                 )
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -442,349 +485,303 @@ def _preview_playlist(args: argparse.Namespace) -> int:
     return 0
 
 
-def create_parser() -> argparse.ArgumentParser:
-    """Create the argument parser for twinklysay."""
-    parser = argparse.ArgumentParser(
-        prog="twinklysay",
-        description="Render text and animations for Twinkly LED displays",
+# Typed values shared by the Typer commands.
+class PreviewOrientation(StrEnum):
+    """Supported terminal display orientations."""
+
+    horizontal = "horizontal"
+    vertical_left = "vertical_left"
+    vertical_right = "vertical_right"
+
+
+class ScrollDirection(StrEnum):
+    """Text scrolling directions."""
+
+    horizontal = "horizontal"
+    vertical_up = "vertical_up"
+    vertical_down = "vertical_down"
+    vertical_rotated_up = "vertical_rotated_up"
+    vertical_rotated_down = "vertical_rotated_down"
+
+
+class PacmanTheme(StrEnum):
+    """Supported Pac-Man themes."""
+
+    trees = "trees"
+    beer = "beer"
+    hearts = "hearts"
+    snow = "snow"
+    ghosts = "ghosts"
+    dots = "dots"
+    snowman = "snowman"
+    hops = "hops"
+
+
+class RainbowMode(StrEnum):
+    """Rainbow rendering modes."""
+
+    rainbow = "rainbow"
+    plasma = "plasma"
+    wave = "wave"
+    gradient = "gradient"
+
+
+class PatternMode(StrEnum):
+    """Device test patterns."""
+
+    rows = "rows"
+    all_rows = "all_rows"
+    cols = "cols"
+    corners = "corners"
+    gradient = "gradient"
+    numbers = "numbers"
+
+
+def _validate_card(value: str | None) -> str | None:
+    """Reject unknown card names before starting rendering or contacting hardware."""
+    if value is not None and value not in list_card_types():
+        raise typer.BadParameter(
+            f"Unknown card '{value}'. Use 'twinklysay list' for available cards."
+        )
+    return value
+
+
+def _validate_config_path(value: Path | None, *, playlist: bool) -> Path | None:
+    """Validate explicit YAML input before the existing loaders consume it."""
+    if value is None:
+        return None
+    try:
+        data = yaml.safe_load(value.read_text())
+    except (OSError, UnicodeError, yaml.YAMLError) as error:
+        raise typer.BadParameter(f"Cannot read YAML: {error}") from error
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        raise typer.BadParameter("Configuration must be a YAML mapping")
+    if playlist:
+        cards = data.get("cards", [])
+        if not isinstance(cards, list):
+            raise typer.BadParameter("Playlist cards must be a list")
+        for item in cards:
+            if not isinstance(item, dict) or item.get("type") not in list_card_types():
+                raise typer.BadParameter("Each playlist card must have a registered type")
+    else:
+        for section in ("twinkly", "weather", "operating_hours"):
+            if section in data and not isinstance(data[section], dict):
+                raise typer.BadParameter(f"Settings section '{section}' must be a mapping")
+        orientation = data.get("twinkly", {}).get("orientation", "horizontal")
+        if not isinstance(orientation, str) or orientation not in {
+            item.value for item in PreviewOrientation
+        }:
+            raise typer.BadParameter(f"Invalid display orientation: {orientation}")
+    return value
+
+
+def _validate_playlist(value: Path | None) -> Path | None:
+    """Validate an explicitly selected playlist."""
+    return _validate_config_path(value, playlist=True)
+
+
+def _validate_settings(value: Path | None) -> Path | None:
+    """Validate an explicitly selected settings file."""
+    return _validate_config_path(value, playlist=False)
+
+
+ConfigPath = Annotated[
+    Path | None,
+    typer.Option(
+        exists=True, file_okay=True, dir_okay=False, readable=True, callback=_validate_playlist
+    ),
+]
+CardName = Annotated[
+    str | None, typer.Argument(callback=_validate_card, help="Registered card type")
+]
+PlaylistID = Annotated[int | None, typer.Option("--id", min=1, help="Playlist card ID (1-based)")]
+Duration = Annotated[float, typer.Option("--duration", "-d", min=0.001, help="Duration in seconds")]
+Color = Annotated[str | None, typer.Option("--color", "-c", help="Color name, hex, or R,G,B")]
+Text = Annotated[str | None, typer.Option("--text", "-t", help="Text for text/twinklysay cards")]
+Speed = Annotated[float, typer.Option(min=0.001, help="Animation speed in pixels/sec")]
+Wind = Annotated[float, typer.Option(min=-1, max=1, help="Snow wind direction")]
+NoColor = Annotated[bool, typer.Option("--no-color", help="Render grayscale terminal output")]
+SettingsPath = Annotated[
+    Path | None,
+    typer.Option(
+        "--settings", "-s", exists=True, dir_okay=False, readable=True, callback=_validate_settings
+    ),
+]
+
+app = typer.Typer(
+    name="twinklysay",
+    help="Render text and animations for Twinkly LED displays.",
+    add_completion=False,
+    pretty_exceptions_enable=False,
+)
+
+
+def _version_callback(value: bool) -> None:
+    """Print the application version without requiring a subcommand."""
+    if value:
+        typer.echo(f"twinklysay {__version__}")
+        raise typer.Exit()
+
+
+@app.callback(invoke_without_command=True)
+def cli(
+    ctx: typer.Context,
+    version: Annotated[
+        bool, typer.Option("--version", callback=_version_callback, is_eager=True)
+    ] = False,
+) -> None:
+    """Show help when invoked without a command."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
+
+def _execute(handler: Callable[[CLIOptions], int], options: CLIOptions) -> None:
+    """Translate expected input and provider failures into a useful command exit code."""
+    try:
+        code = handler(options)
+    except KeyboardInterrupt:
+        typer.echo("\nStopped.", err=True)
+        code = 130
+    except (OSError, ValueError, yaml.YAMLError, requests.RequestException) as error:
+        typer.echo(f"Error: {error}", err=True)
+        code = 1
+    raise typer.Exit(code)
+
+
+@app.command("say")
+def say(
+    text: Annotated[str, typer.Argument(help="Text to display")],
+    color: Annotated[str, typer.Option("--color", "-c")] = "white",
+    no_color: NoColor = False,
+    no_half_blocks: Annotated[bool, typer.Option("--no-half-blocks")] = False,
+) -> None:
+    """Render a text message in the terminal."""
+    _execute(
+        cmd_say,
+        CLIOptions(text=text, color=color, no_color=no_color, no_half_blocks=no_half_blocks),
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # 'list' subcommand
-    list_parser = subparsers.add_parser(
-        "list",
-        help="List available cards (and optional playlist entries)",
-    )
-    list_parser.add_argument(
-        "--playlist",
-        type=str,
-        help="Path to cards.yaml to show indexed entries",
-    )
+@app.command("list")
+def list_cards(playlist: ConfigPath = None) -> None:
+    """List registered cards and optional numbered playlist entries."""
+    _execute(cmd_list, CLIOptions(playlist=playlist))
 
-    # 'mcp' subcommand - MCP polling client
-    mcp_parser = subparsers.add_parser(
-        "mcp",
-        help="Start MCP polling client for remote control",
-        description="Poll the MCP server for commands from Claude Desktop",
-    )
-    mcp_parser.add_argument(
-        "-s",
-        "--server",
-        type=str,
-        help="MCP server URL (default: $TWINKLY_MCP_URL or https://twinkly-mcp.onrender.com)",
-    )
-    mcp_parser.add_argument(
-        "-i",
-        "--interval",
-        type=float,
-        default=2.0,
-        help="Poll interval in seconds (default: 2)",
-    )
-    mcp_parser.add_argument(
-        "--api-key",
-        type=str,
-        help="API key for authentication (default: $TWINKLY_API_KEY)",
-    )
 
-    # 'say' subcommand
-    say_parser = subparsers.add_parser(
-        "say",
-        help="Render text message",
-        description="Render a text message to the terminal (or LED display)",
-    )
-    say_parser.add_argument(
-        "text",
-        help="Text to display",
-    )
-    say_parser.add_argument(
-        "-c",
-        "--color",
-        default="white",
-        help="Text color (name, hex #RRGGBB, or R,G,B). Default: white",
-    )
-    say_parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Use grayscale output instead of colors",
-    )
-    say_parser.add_argument(
-        "--no-half-blocks",
-        action="store_true",
-        help="Use full blocks instead of half-blocks (lower resolution)",
-    )
+@app.command("mcp")
+def mcp(
+    server: Annotated[str | None, typer.Option("--server", "-s", envvar="TWINKLY_MCP_URL")] = None,
+    interval: Annotated[float, typer.Option("--interval", "-i", min=0.001)] = 2.0,
+    api_key: Annotated[str | None, typer.Option(envvar="TWINKLY_API_KEY")] = None,
+) -> None:
+    """Poll the MCP server for remote commands and render them in the terminal."""
+    _execute(cmd_mcp, CLIOptions(server=server, interval=interval, api_key=api_key))
 
-    # 'preview' subcommand
-    preview_parser = subparsers.add_parser(
-        "preview",
-        help="Preview a card animation",
-        description="Preview a card animation in the terminal",
-    )
-    preview_parser.add_argument(
-        "card",
-        nargs="?",
-        choices=sorted(list_card_types()),
-        help="Card type to preview (required unless --id is used)",
-    )
-    preview_parser.add_argument(
-        "--id",
-        type=int,
-        help="Preview a card by id from a playlist (1-based)",
-    )
-    preview_parser.add_argument(
-        "--playlist",
-        type=str,
-        help="Path to playlist yaml. Use alone to preview entire playlist, or with --id for single card",
-    )
-    preview_parser.add_argument(
-        "-d",
-        "--duration",
-        type=float,
-        default=10.0,
-        help="Duration in seconds (default: 10)",
-    )
-    preview_parser.add_argument(
-        "-c",
-        "--color",
-        help="Text color (name, hex #RRGGBB, or R,G,B)",
-    )
-    preview_parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Use grayscale output",
-    )
-    preview_parser.add_argument(
-        "--orientation",
-        choices=["horizontal", "vertical_left", "vertical_right"],
-        default=None,
-        help=(
-            "Display orientation for preview. "
-            "Default: twinkly.orientation from settings.yaml (or horizontal)."
+
+@app.command("preview")
+def preview(
+    card: CardName = None,
+    id: PlaylistID = None,
+    playlist: ConfigPath = None,
+    duration: Duration = 10.0,
+    color: Color = None,
+    no_color: NoColor = False,
+    orientation: PreviewOrientation | None = None,
+    settings: SettingsPath = None,
+    twelve_hour: bool = False,
+    no_blink: bool = False,
+    text: Text = None,
+    scroll: bool = False,
+    scroll_direction: ScrollDirection = ScrollDirection.horizontal,
+    speed: Speed = 15.0,
+    theme: PacmanTheme = PacmanTheme.trees,
+    wind: Wind = 0.0,
+    accumulate: bool = False,
+    mode: RainbowMode = RainbowMode.rainbow,
+    pattern_mode: PatternMode = PatternMode.rows,
+) -> None:
+    """Preview a card, a playlist entry, or a looping playlist in the terminal."""
+    _execute(
+        cmd_preview,
+        CLIOptions(
+            card=card,
+            id=id,
+            playlist=playlist,
+            duration=duration,
+            color=color,
+            no_color=no_color,
+            orientation=orientation,
+            settings=settings,
+            twelve_hour=twelve_hour,
+            no_blink=no_blink,
+            text=text,
+            scroll=scroll,
+            scroll_direction=scroll_direction,
+            speed=speed,
+            theme=theme,
+            wind=wind,
+            accumulate=accumulate,
+            mode=mode,
+            pattern_mode=pattern_mode,
         ),
     )
-    # Clock-specific options
-    preview_parser.add_argument(
-        "--twelve-hour",
-        action="store_true",
-        help="Use 12-hour format (clock only)",
-    )
-    preview_parser.add_argument(
-        "--no-blink",
-        action="store_true",
-        help="Disable colon blinking (clock only)",
-    )
-    # Text-specific options
-    preview_parser.add_argument(
-        "-t",
-        "--text",
-        help="Text message (required for text card)",
-    )
-    preview_parser.add_argument(
-        "--scroll",
-        action="store_true",
-        help="Force scrolling (text card)",
-    )
-    preview_parser.add_argument(
-        "--scroll-direction",
-        choices=[
-            "horizontal",
-            "vertical_up",
-            "vertical_down",
-            "vertical_rotated_up",
-            "vertical_rotated_down",
-        ],
-        default="horizontal",
-        help="Scroll direction for text/twinklysay cards (default: horizontal)",
-    )
-    # Pacman-specific options
-    preview_parser.add_argument(
-        "--speed",
-        type=float,
-        default=15.0,
-        help="Animation speed in pixels/sec (pacman card, default: 15)",
-    )
-    preview_parser.add_argument(
-        "--theme",
-        choices=["trees", "beer", "hearts", "snow", "ghosts", "dots", "snowman", "hops"],
-        default="trees",
-        help="What Pac-Man eats (pacman card, default: trees)",
-    )
-    # Snow-specific options
-    preview_parser.add_argument(
-        "--wind",
-        type=float,
-        default=0.0,
-        help="Wind direction -1 to 1 (snow card, default: 0)",
-    )
-    preview_parser.add_argument(
-        "--accumulate",
-        action="store_true",
-        help="Accumulate snow at bottom (snow card)",
-    )
-    # Rainbow-specific options
-    preview_parser.add_argument(
-        "--mode",
-        choices=["rainbow", "plasma", "wave", "gradient"],
-        default="rainbow",
-        help="Rainbow animation mode (rainbow card, default: rainbow)",
-    )
-    # Test pattern options
-    preview_parser.add_argument(
-        "--pattern-mode",
-        choices=["rows", "all_rows", "cols", "corners", "gradient", "numbers"],
-        default="rows",
-        help="Test pattern mode (test_pattern card, default: rows)",
-    )
 
-    # 'card' subcommand - send a card directly to the Twinkly device
-    card_parser = subparsers.add_parser(
-        "card",
-        help="Send a single card to the Twinkly LED display",
-        description="Render a specific card on the Twinkly device (uses settings.yaml)",
-    )
-    card_parser.add_argument(
-        "card",
-        nargs="?",
-        choices=sorted(list_card_types()),
-        help="Card type to display (required unless --id is used)",
-    )
-    card_parser.add_argument(
-        "--id",
-        type=int,
-        help="Display a card by id from a playlist (1-based)",
-    )
-    card_parser.add_argument(
-        "--playlist",
-        type=str,
-        help="Path to cards.yaml for --id (default: config/cards.yaml)",
-    )
-    card_parser.add_argument(
-        "-s",
-        "--settings",
-        type=str,
-        help="Path to settings.yaml (default: config/settings.yaml)",
-    )
-    card_parser.add_argument(
-        "-d",
-        "--duration",
-        type=float,
-        default=10.0,
-        help="Duration in seconds (default: 10, some cards ignore)",
-    )
-    card_parser.add_argument(
-        "-c",
-        "--color",
-        help="Text color (name, hex #RRGGBB, or R,G,B)",
-    )
-    card_parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Use grayscale output",
-    )
-    # Clock-specific options
-    card_parser.add_argument(
-        "--twelve-hour",
-        action="store_true",
-        help="Use 12-hour format (clock only)",
-    )
-    card_parser.add_argument(
-        "--no-blink",
-        action="store_true",
-        help="Disable colon blinking (clock only)",
-    )
-    # Text-specific options
-    card_parser.add_argument(
-        "-t",
-        "--text",
-        help="Text message (required for text/twinklysay card)",
-    )
-    card_parser.add_argument(
-        "--scroll",
-        action="store_true",
-        help="Force scrolling (text card)",
-    )
-    card_parser.add_argument(
-        "--scroll-direction",
-        choices=[
-            "horizontal",
-            "vertical_up",
-            "vertical_down",
-            "vertical_rotated_up",
-            "vertical_rotated_down",
-        ],
-        default="horizontal",
-        help="Scroll direction for text/twinklysay cards (default: horizontal)",
-    )
-    # Pacman-specific options
-    card_parser.add_argument(
-        "--speed",
-        type=float,
-        default=15.0,
-        help="Animation speed in pixels/sec (pacman/carlsberg_lab card, default: 15)",
-    )
-    card_parser.add_argument(
-        "--theme",
-        choices=["trees", "beer", "hearts", "snow", "ghosts", "dots", "snowman", "hops"],
-        default="trees",
-        help="What Pac-Man eats (pacman card, default: trees)",
-    )
-    # Snow-specific options
-    card_parser.add_argument(
-        "--wind",
-        type=float,
-        default=0.0,
-        help="Wind direction -1 to 1 (snow card, default: 0)",
-    )
-    card_parser.add_argument(
-        "--accumulate",
-        action="store_true",
-        help="Accumulate snow at bottom (snow card)",
-    )
-    # Rainbow-specific options
-    card_parser.add_argument(
-        "--mode",
-        choices=["rainbow", "plasma", "wave", "gradient"],
-        default="rainbow",
-        help="Rainbow animation mode (rainbow card, default: rainbow)",
-    )
-    # Test pattern options
-    card_parser.add_argument(
-        "--pattern-mode",
-        choices=["rows", "all_rows", "cols", "corners", "gradient", "numbers"],
-        default="rows",
-        help="Test pattern mode (test_pattern card, default: rows)",
-    )
 
-    # Version
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0",
+@app.command("card")
+def card(
+    card: CardName = None,
+    id: PlaylistID = None,
+    playlist: ConfigPath = None,
+    settings: SettingsPath = None,
+    duration: Duration = 10.0,
+    color: Color = None,
+    no_color: NoColor = False,
+    twelve_hour: bool = False,
+    no_blink: bool = False,
+    text: Text = None,
+    scroll: bool = False,
+    scroll_direction: ScrollDirection = ScrollDirection.horizontal,
+    speed: Speed = 15.0,
+    theme: PacmanTheme = PacmanTheme.trees,
+    wind: Wind = 0.0,
+    accumulate: bool = False,
+    mode: RainbowMode = RainbowMode.rainbow,
+    pattern_mode: PatternMode = PatternMode.rows,
+) -> None:
+    """Send a card or numbered playlist entry directly to the Twinkly device."""
+    _execute(
+        cmd_card,
+        CLIOptions(
+            card=card,
+            id=id,
+            playlist=playlist,
+            settings=settings,
+            duration=duration,
+            color=color,
+            no_color=no_color,
+            twelve_hour=twelve_hour,
+            no_blink=no_blink,
+            text=text,
+            scroll=scroll,
+            scroll_direction=scroll_direction,
+            speed=speed,
+            theme=theme,
+            wind=wind,
+            accumulate=accumulate,
+            mode=mode,
+            pattern_mode=pattern_mode,
+        ),
     )
-
-    return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Main entry point for twinklysay CLI."""
-    parser = create_parser()
-    args = parser.parse_args(argv)
-
-    if args.command is None:
-        parser.print_help()
-        return 0
-
-    if args.command == "list":
-        return cmd_list(args)
-    elif args.command == "mcp":
-        return cmd_mcp(args)
-    elif args.command == "say":
-        return cmd_say(args)
-    elif args.command == "preview":
-        return cmd_preview(args)
-    elif args.command == "card":
-        return cmd_card(args)
-
+    """Run the Typer application and return its exit code for console entry points."""
+    try:
+        app(args=argv, prog_name="twinklysay")
+    except SystemExit as error:
+        return int(error.code or 0)
     return 0
 
 

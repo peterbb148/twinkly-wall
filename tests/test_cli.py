@@ -1,8 +1,12 @@
 """Tests for the CLI module."""
 
-import pytest
+from unittest.mock import MagicMock
 
-from twinkly_wall.cli import create_parser, main, parse_color, render_text_centered
+import pytest
+from typer.testing import CliRunner
+
+from twinkly_wall import __version__, cli
+from twinkly_wall.cli import app, main, parse_color, render_text_centered
 
 
 class TestParseColor:
@@ -65,56 +69,327 @@ class TestRenderTextCentered:
         assert has_red
 
 
-class TestParser:
-    """Tests for argument parser."""
-
-    def test_say_command(self):
-        """Should parse say command with text."""
-        parser = create_parser()
-        args = parser.parse_args(["say", "Hello"])
-        assert args.command == "say"
-        assert args.text == "Hello"
-
-    def test_say_with_color(self):
-        """Should parse say command with color option."""
-        parser = create_parser()
-        args = parser.parse_args(["say", "Hello", "-c", "red"])
-        assert args.color == "red"
-
-    def test_say_with_no_color(self):
-        """Should parse no-color flag."""
-        parser = create_parser()
-        args = parser.parse_args(["say", "Hello", "--no-color"])
-        assert args.no_color is True
-
-    def test_say_default_color(self):
-        """Default color should be white."""
-        parser = create_parser()
-        args = parser.parse_args(["say", "Hello"])
-        assert args.color == "white"
+runner = CliRunner()
 
 
-class TestMain:
-    """Tests for main entry point."""
+@pytest.fixture(autouse=True)
+def isolate_config(tmp_path, monkeypatch):
+    """Keep developer settings and external providers out of CLI tests."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("TWINKLY_MCP_URL", raising=False)
+    monkeypatch.delenv("TWINKLY_API_KEY", raising=False)
 
-    def test_no_command_shows_help(self, capsys):
-        """No command should print help and return 0."""
-        result = main([])
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "twinklysay" in captured.out
 
-    def test_say_command_runs(self, capsys):
-        """Say command should render and return 0."""
-        result = main(["say", "Hi"])
-        assert result == 0
-        captured = capsys.readouterr()
-        # Should have output with ANSI codes or block characters
-        assert len(captured.out) > 0
+@pytest.mark.parametrize(
+    "command",
+    [
+        [],
+        ["--help"],
+        ["say", "--help"],
+        ["preview", "--help"],
+        ["card", "--help"],
+        ["mcp", "--help"],
+        ["list", "--help"],
+    ],
+)
+def test_help(command):
+    result = runner.invoke(app, command)
+    assert result.exit_code == 0
+    assert "Usage:" in result.output
 
-    def test_say_invalid_color(self, capsys):
-        """Invalid color should return error."""
-        result = main(["say", "Hi", "-c", "notacolor"])
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Error" in captured.err
+
+def test_version():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == f"twinklysay {__version__}"
+
+
+@pytest.mark.parametrize(
+    "args",
+    [["say", "Hi"], ["say", "Hi", "-c", "red"], ["say", "Hi", "--no-color", "--no-half-blocks"]],
+)
+def test_say(args):
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0
+    assert result.output.strip()
+
+
+def test_list_cards():
+    result = runner.invoke(app, ["list"])
+    assert result.exit_code == 0
+    assert "clock" in result.output
+    assert "twinklysay" in result.output
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["say"],
+        ["unknown"],
+        ["preview", "unknown"],
+        ["card", "unknown"],
+        ["preview", "clock", "--duration", "0"],
+        ["preview", "clock", "--duration", "abc"],
+        ["preview", "--id", "0"],
+        ["card", "--id", "-1"],
+        ["preview", "clock", "--orientation", "diagonal"],
+        ["preview", "text", "--scroll-direction", "diagonal"],
+        ["preview", "pacman", "--theme", "unknown"],
+        ["preview", "rainbow", "--mode", "unknown"],
+        ["preview", "test_pattern", "--pattern-mode", "unknown"],
+        ["preview", "snow", "--wind", "2"],
+        ["mcp", "--interval", "0"],
+        ["list", "--playlist", "missing.yaml"],
+        ["card", "clock", "--settings", "missing.yaml"],
+    ],
+)
+def test_invalid_arguments(args):
+    result = runner.invoke(app, args)
+    assert result.exit_code == 2
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["preview"],
+        ["card"],
+        ["preview", "text"],
+        ["preview", "twinklysay"],
+        ["card", "text"],
+        ["card", "twinklysay"],
+        ["say", "Hi", "-c", "invalid"],
+        ["preview", "clock", "-c", "invalid"],
+        ["preview", "text", "-t", "Hi", "-c", "invalid"],
+        ["preview", "twinklysay", "-t", "Hi", "-c", "invalid"],
+    ],
+)
+def test_command_validation(args):
+    result = runner.invoke(app, args)
+    assert result.exit_code == 1
+    assert result.output.strip()
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize(
+    "card",
+    [
+        "clock",
+        "text",
+        "pacman",
+        "beer",
+        "snow",
+        "rainbow",
+        "test_pattern",
+        "carlsberg_lab",
+        "twinklysay",
+        "rain",
+    ],
+)
+def test_preview_dispatch(card, monkeypatch):
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(
+        app,
+        [
+            "preview",
+            card,
+            "-t",
+            "Hello",
+            "-d",
+            "0.01",
+            "--orientation",
+            "vertical_right",
+            "--no-color",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    animate.assert_called_once()
+    assert animate.call_args.kwargs["orientation"] == "vertical_right"
+    assert animate.call_args.kwargs["color_mode"] is False
+
+
+def test_card_specific_options(monkeypatch):
+    build = MagicMock(return_value=(MagicMock(), "pacman"))
+    monkeypatch.setattr(cli, "_build_card", build)
+    monkeypatch.setattr(cli, "animate_frames", MagicMock())
+    result = runner.invoke(
+        app,
+        [
+            "preview",
+            "pacman",
+            "--theme",
+            "hops",
+            "--speed",
+            "20",
+            "--wind",
+            "-0.5",
+            "--accumulate",
+            "--twelve-hour",
+            "--no-blink",
+            "--scroll",
+            "--scroll-direction",
+            "vertical_up",
+            "--mode",
+            "plasma",
+            "--pattern-mode",
+            "corners",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    options = build.call_args.args[1]
+    assert options.theme == "hops"
+    assert options.speed == 20
+    assert options.wind == -0.5
+    assert options.accumulate and options.twelve_hour and options.no_blink and options.scroll
+    assert options.scroll_direction == "vertical_up"
+    assert options.mode == "plasma"
+    assert options.pattern_mode == "corners"
+
+
+@pytest.fixture
+def playlist(tmp_path):
+    path = tmp_path / "cards.yaml"
+    path.write_text("cards:\n  - type: clock\n    duration: 0.01\n")
+    return path
+
+
+def test_explicit_playlist_listing(playlist):
+    result = runner.invoke(app, ["list", "--playlist", str(playlist)])
+    assert result.exit_code == 0
+    assert "[1] clock" in result.output
+
+
+@pytest.mark.parametrize("id", ["1", "2"])
+def test_playlist_entry(playlist, monkeypatch, id):
+    monkeypatch.setattr(cli, "animate_frames", MagicMock())
+    result = runner.invoke(app, ["preview", "--playlist", str(playlist), "--id", id])
+    assert result.exit_code == (0 if id == "1" else 1), result.output
+
+
+def test_looping_playlist_stops_cleanly(playlist, monkeypatch):
+    monkeypatch.setattr(cli, "animate_frames", MagicMock(side_effect=KeyboardInterrupt))
+    result = runner.invoke(app, ["preview", "--playlist", str(playlist)])
+    assert result.exit_code == 0
+    assert "Stopped" in result.output
+
+
+def test_empty_playlist(tmp_path):
+    path = tmp_path / "empty.yaml"
+    path.write_text("cards: []\n")
+    assert runner.invoke(app, ["list", "--playlist", str(path)]).exit_code == 0
+    assert runner.invoke(app, ["preview", "--playlist", str(path)]).exit_code == 1
+    assert runner.invoke(app, ["preview", "--playlist", str(path), "--id", "1"]).exit_code == 1
+
+
+@pytest.mark.parametrize(
+    "content", ["[", "[]", "cards: clock", "cards: [clock]", "cards: [{type: unknown}]"]
+)
+def test_invalid_playlist_yaml(tmp_path, content):
+    path = tmp_path / "invalid.yaml"
+    path.write_text(content)
+    result = runner.invoke(app, ["list", "--playlist", str(path)])
+    assert result.exit_code == 2
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize(
+    "content", ["[", "[]", "twinkly: []", "weather: []", "twinkly: {orientation: diagonal}"]
+)
+def test_invalid_settings_yaml(tmp_path, content):
+    path = tmp_path / "invalid.yaml"
+    path.write_text(content)
+    result = runner.invoke(app, ["preview", "clock", "--settings", str(path)])
+    assert result.exit_code == 2
+    assert "Traceback" not in result.output
+
+
+def test_explicit_settings_used_for_preview(tmp_path, monkeypatch):
+    path = tmp_path / "custom.yaml"
+    path.write_text("twinkly: {orientation: vertical_left}\nweather: {latitude: 1, longitude: 2}\n")
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(app, ["preview", "clock", "--settings", str(path)])
+    assert result.exit_code == 0, result.output
+    assert animate.call_args.kwargs["orientation"] == "vertical_left"
+    ctx = cli.create_context_with_datasources(path)
+    assert "weather" in ctx.datasources
+
+
+def test_unconfigured_device_fails():
+    result = runner.invoke(app, ["card", "clock"])
+    assert result.exit_code == 1
+    assert "twinkly.host" in result.output
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_device_send_and_cleanup(tmp_path, monkeypatch, fails):
+    path = tmp_path / "device.yaml"
+    path.write_text("twinkly: {host: localhost, port: 8080, orientation: vertical_left}\n")
+    output = MagicMock()
+    if fails:
+        output.start.side_effect = RuntimeError("device unreachable")
+    factory = MagicMock(return_value=output)
+    monkeypatch.setattr(cli, "TwinklyOutput", factory)
+    monkeypatch.setattr(cli.time, "sleep", MagicMock())
+    result = runner.invoke(app, ["card", "clock", "-d", "0.001", "--settings", str(path)])
+    assert result.exit_code == (1 if fails else 0), result.output
+    factory.assert_called_once_with(host="localhost", port=8080, mirror_h=False, mirror_v=False)
+    output.stop.assert_called_once()
+    if not fails:
+        output.send_frame.assert_called()
+    else:
+        assert "device unreachable" in result.output
+
+
+@pytest.mark.parametrize("registered", [False, True])
+def test_mcp_registration_and_environment(monkeypatch, registered):
+    from twinkly_wall import mcp_client
+
+    client = MagicMock()
+    client.register_cards.return_value = registered
+    client.run.side_effect = KeyboardInterrupt
+    factory = MagicMock(return_value=client)
+    monkeypatch.setattr(mcp_client, "MCPClient", factory)
+    monkeypatch.setenv("TWINKLY_MCP_URL", "http://localhost:8000")
+    monkeypatch.setenv("TWINKLY_API_KEY", "test-secret")
+    result = runner.invoke(app, ["mcp", "-i", "0.1"])
+    assert result.exit_code == (0 if registered else 1), result.output
+    factory.assert_called_once_with(
+        server_url="http://localhost:8000", poll_interval=0.1, api_key="test-secret"
+    )
+    if registered:
+        client.run.assert_called_once_with(use_terminal=True, register=False)
+    else:
+        client.run.assert_not_called()
+        assert "Could not register" in result.output
+    assert "test-secret" not in result.output
+
+
+def test_interruption_restores_command_exit(monkeypatch):
+    monkeypatch.setattr(cli, "animate_frames", MagicMock(side_effect=KeyboardInterrupt))
+    result = runner.invoke(app, ["preview", "clock"])
+    assert result.exit_code == 130
+    assert "Stopped" in result.output
+
+
+@pytest.mark.parametrize("loop_playlist", [False, True])
+def test_real_renderer_restores_cursor_and_stops(playlist, monkeypatch, loop_playlist):
+    from twinkly_wall.outputs import terminal
+
+    show_cursor = MagicMock()
+    monkeypatch.setattr(terminal, "show_cursor", show_cursor)
+    monkeypatch.setattr(terminal.time, "sleep", MagicMock(side_effect=KeyboardInterrupt))
+    args = ["preview", "--playlist", str(playlist)] if loop_playlist else ["preview", "clock"]
+    result = runner.invoke(app, args)
+    assert result.exit_code == (0 if loop_playlist else 130)
+    show_cursor.assert_called_once()
+    assert "Stopped" in result.output
+
+
+def test_main_returns_exit_codes(capsys):
+    assert main(["--version"]) == 0
+    assert __version__ in capsys.readouterr().out
+    assert main(["say", "Hi", "--color", "invalid"]) == 1
+    assert main(["unknown"]) == 2

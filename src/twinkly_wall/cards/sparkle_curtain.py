@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -60,4 +60,3 @@ class SparkleCurtainCard(Card):
                     canvas.set_pixel(x, y, color)
 
             yield canvas.copy(), frame_delay
-

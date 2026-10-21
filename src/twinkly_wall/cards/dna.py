@@ -13,10 +13,10 @@ from .base import Card, CardContext, register_card
 STRAND_1_COLOR: RGB = (0, 150, 255)  # Blue
 STRAND_2_COLOR: RGB = (255, 50, 100)  # Pink/Red
 BASE_PAIR_COLORS: list[RGB] = [
-    (255, 255, 0),   # Yellow (A-T)
-    (0, 255, 150),   # Cyan/Green (G-C)
-    (255, 150, 0),   # Orange (T-A)
-    (150, 255, 0),   # Lime (C-G)
+    (255, 255, 0),  # Yellow (A-T)
+    (0, 255, 150),  # Cyan/Green (G-C)
+    (255, 150, 0),  # Orange (T-A)
+    (150, 255, 0),  # Lime (C-G)
 ]
 BACKGROUND_COLOR: RGB = (0, 0, 20)  # Dark blue
 

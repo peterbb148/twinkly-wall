@@ -8,7 +8,8 @@ The client is optional and can be disabled for offline operation.
 
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import requests
 
@@ -80,7 +81,10 @@ class MCPClient:
             # Set last_command_id to the most recent command (if any)
             if commands:
                 self.last_command_id = commands[-1]["id"]
-                logger.info(f"Synced to command ID {self.last_command_id}, skipping {len(commands)} old commands")
+                logger.info(
+                    f"Synced to command ID {self.last_command_id}, "
+                    f"skipping {len(commands)} old commands"
+                )
             else:
                 logger.info("No existing commands in queue")
 
@@ -295,17 +299,19 @@ class MCPClient:
 
         return True
 
-    def run(self, use_terminal: bool = True) -> None:
+    def run(self, use_terminal: bool = True, *, register: bool = True) -> None:
         """Run the polling loop.
 
         Args:
             use_terminal: If True, render commands to terminal
+            register: Register cards before polling; False when registration already succeeded.
         """
         self._running = True
         logger.info(f"MCP client starting, polling {self.server_url}")
 
-        # Register cards on startup
-        self.register_cards()
+        # Register cards on startup unless the caller already did so.
+        if register:
+            self.register_cards()
 
         while self._running:
             try:

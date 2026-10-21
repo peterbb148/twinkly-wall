@@ -151,9 +151,7 @@ class WeatherDataSource:
         try:
             self._cache = self._fetch()
             self._cache_time = now
-            logger.info(
-                f"Weather updated: {self._cache.temperature}°C, {self._cache.condition}"
-            )
+            logger.info(f"Weather updated: {self._cache.temperature}°C, {self._cache.condition}")
         except WeatherError as e:
             logger.warning(f"Weather fetch failed: {e}")
             # Return stale cache if available
