@@ -214,3 +214,20 @@ def test_main_reports_clear_failure_without_success(monkeypatch, capsys, error, 
         retention.main()
     assert exit_info.value.code == 1
     assert expected in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("asset_index", [0, 1])
+def test_incomplete_intermediate_release_does_not_displace_usable_previous(asset_index):
+    incomplete = release(2)
+    orphan = incomplete["assets"][asset_index]
+    incomplete["assets"] = [orphan, incomplete["assets"][2]]
+    records = [release(1), incomplete, release(3)]
+    assert retention.release_deletions(records, "v0.3.0") == [orphan["id"]]
+
+
+def test_incomplete_releases_are_removed_while_only_complete_pairs_count_toward_limit():
+    incomplete = release(3)
+    incomplete["assets"] = [incomplete["assets"][1]]
+    assert retention.release_deletions(
+        [release(1), release(2), incomplete, release(4)], "v0.4.0"
+    ) == [31, 10, 11]

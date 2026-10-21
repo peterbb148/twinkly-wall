@@ -156,7 +156,9 @@ test prevents publication. Creating a workflow does not itself publish a release
 Only the **current and previous binary versions** are retained for each distribution:
 
 - GitHub Releases keep archives and checksums for the two most recently published
-  binary versions. After a successful publication, older binary assets are deleted;
+  complete binary versions (each with its archive and checksum). Incomplete
+  releases do not displace the previous usable version. After a successful
+  publication, older or incomplete binary assets are deleted;
   their Git tags, release notes, source archives, and unrelated assets remain.
 - Actions keep the newest verified build of each of the two latest binary versions,
   ordered by artifact creation time. Superseded builds of the same version,
@@ -164,7 +166,8 @@ Only the **current and previous binary versions** are retained for each distribu
   after a new build passes the full test/build/install checks. Other active runs
   are left alone until they finish.
 
-Cleanup is serialized and reads back the inventory to verify deletions. A failed
+Cleanup is serialized with GitHub's `queue: max` so queued publications are not
+replaced by incoming cleanup jobs, and reads back the inventory to verify deletions. A failed
 build, failed publication, or missing current archive/artifact prevents cleanup.
 API errors fail the job visibly. Actions' ordinary artifact expiry still applies;
 GitHub Releases provide the persistent downloads for the two retained versions.
