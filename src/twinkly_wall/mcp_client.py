@@ -8,7 +8,8 @@ The client is optional and can be disabled for offline operation.
 
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import requests
 
@@ -80,7 +81,11 @@ class MCPClient:
             # Set last_command_id to the most recent command (if any)
             if commands:
                 self.last_command_id = commands[-1]["id"]
-                logger.info(f"Synced to command ID {self.last_command_id}, skipping {len(commands)} old commands")
+                logger.info(
+                    "Synced to command ID %s, skipping %d old commands",
+                    self.last_command_id,
+                    len(commands),
+                )
             else:
                 logger.info("No existing commands in queue")
 

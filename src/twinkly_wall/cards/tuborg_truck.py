@@ -20,6 +20,7 @@ WHEEL_BLACK: RGB = (20, 20, 20)
 WINDOW_BLUE: RGB = (200, 220, 255)
 FACE_SKIN: RGB = (255, 200, 150)
 
+
 @register_card
 class TuborgTruckCard(Card):
     """Tuborg truck rolling through the snow with falling flakes.

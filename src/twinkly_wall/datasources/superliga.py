@@ -140,9 +140,7 @@ class SuperligaDataSource:
         try:
             self._cache = self._fetch()
             self._cache_time = now
-            logger.info(
-                f"Superliga standings updated: {len(self._cache.standings)} teams"
-            )
+            logger.info(f"Superliga standings updated: {len(self._cache.standings)} teams")
         except SuperligaError as e:
             logger.warning(f"Superliga fetch failed: {e}")
             # Return stale cache if available

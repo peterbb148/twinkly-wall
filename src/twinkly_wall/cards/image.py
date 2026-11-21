@@ -213,6 +213,7 @@ class ImageCard(Card):
             # No path, show error
             canvas = Canvas(WIDTH, HEIGHT)
             from ..fonts import draw_text
+
             draw_text(canvas, 0, 1, "NO IMG", (255, 0, 0))
             frame = canvas.copy()
             start_time = time.time()
@@ -237,6 +238,7 @@ class ImageCard(Card):
             logger.error(f"Failed to load image {self.path}: {e}")
             canvas = Canvas(WIDTH, HEIGHT)
             from ..fonts import draw_text
+
             draw_text(canvas, 0, 1, "ERR", (255, 0, 0))
             frame = canvas.copy()
             start_time = time.time()

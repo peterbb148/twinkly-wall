@@ -84,4 +84,3 @@ class TorchVerticalCard(Card):
             embers = new_embers
 
             yield canvas.copy(), frame_delay
-

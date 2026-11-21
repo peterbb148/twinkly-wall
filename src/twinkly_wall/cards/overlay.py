@@ -1,6 +1,5 @@
 """Overlay card - add scrolling text on top of any animation."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
