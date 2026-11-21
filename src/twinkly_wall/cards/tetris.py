@@ -54,9 +54,7 @@ class TetrisCard(Card):
             "y": 0,
         }
 
-    def _can_move(
-        self, piece: dict, grid: list[list[RGB | None]], dx: int, dy: int
-    ) -> bool:
+    def _can_move(self, piece: dict, grid: list[list[RGB | None]], dx: int, dy: int) -> bool:
         """Check if piece can move in direction."""
         for bx, by in piece["shape"]:
             new_x = piece["x"] + bx + dx
@@ -134,9 +132,7 @@ class TetrisCard(Card):
         well_offset = (WIDTH - self.well_width) // 2
 
         # Initialize grid
-        grid: list[list[RGB | None]] = [
-            [None] * self.well_width for _ in range(HEIGHT)
-        ]
+        grid: list[list[RGB | None]] = [[None] * self.well_width for _ in range(HEIGHT)]
 
         current_piece = self._spawn_piece()
         drop_timer = 0.0

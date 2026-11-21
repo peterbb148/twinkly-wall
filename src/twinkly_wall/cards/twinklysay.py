@@ -4,7 +4,13 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import CHAR_HEIGHT, draw_text, draw_text_vertical_stacked, text_width, vertical_text_height
+from ..fonts import (
+    CHAR_HEIGHT,
+    draw_text,
+    draw_text_vertical_stacked,
+    text_width,
+    vertical_text_height,
+)
 from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 

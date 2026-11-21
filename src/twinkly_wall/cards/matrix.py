@@ -102,10 +102,7 @@ class MatrixCard(Card):
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate matrix rain animation frames."""
         # Initialize drops
-        drops = [
-            self._create_drop(random.uniform(-HEIGHT, HEIGHT))
-            for _ in range(self.density)
-        ]
+        drops = [self._create_drop(random.uniform(-HEIGHT, HEIGHT)) for _ in range(self.density)]
 
         start_time = time.time()
         frame_delay = 1.0 / 30.0

@@ -1,9 +1,8 @@
 """Space Invaders animation card."""
 
-import random
 import time
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from ..canvas import Canvas
@@ -25,7 +24,7 @@ SHIP_SPRITE: list[list[int]] = [
 ]
 
 INVADER_COLORS: list[RGB] = [
-    (0, 255, 0),    # Green
+    (0, 255, 0),  # Green
     (0, 200, 255),  # Cyan
     (255, 100, 0),  # Orange
 ]
@@ -206,10 +205,7 @@ class SpaceInvadersCard(Card):
             for bullet in bullets[:]:
                 for inv in invaders:
                     if inv.alive:
-                        if (
-                            inv.x <= bullet.x < inv.x + 5
-                            and inv.y <= bullet.y < inv.y + 4
-                        ):
+                        if inv.x <= bullet.x < inv.x + 5 and inv.y <= bullet.y < inv.y + 4:
                             inv.alive = False
                             bullets.remove(bullet)
                             explosions.append(Explosion(x=bullet.x, y=int(bullet.y)))

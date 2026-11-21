@@ -1,7 +1,6 @@
 """Tuborg Christmas sleigh animation - Santa and reindeer from the classic commercial."""
 
 import random
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -30,22 +29,126 @@ TUBORG_SLEIGH: list[list[int]] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Empty row
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Empty row
     [0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Antlers
-    [0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 6, 4, 6, 0, 0, 0],  # Antlers + hat + present
-    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 3, 0, 0, 6, 6, 6, 0, 0, 0],  # Head + face + present
-    [0, 0, 1, 1, 8, 0, 7, 7, 7, 7, 7, 0, 0, 0, 4, 4, 3, 3, 0, 4, 6, 4, 0, 0, 0],  # Body + reins + beard + present
+    [
+        0,
+        0,
+        2,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        3,
+        0,
+        0,
+        6,
+        4,
+        6,
+        0,
+        0,
+        0,
+    ],  # Antlers + hat + present
+    [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        5,
+        3,
+        0,
+        0,
+        6,
+        6,
+        6,
+        0,
+        0,
+        0,
+    ],  # Head + face + present
+    [
+        0,
+        0,
+        1,
+        1,
+        8,
+        0,
+        7,
+        7,
+        7,
+        7,
+        7,
+        0,
+        0,
+        0,
+        4,
+        4,
+        3,
+        3,
+        0,
+        4,
+        6,
+        4,
+        0,
+        0,
+        0,
+    ],  # Body + reins + beard + present
     [0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 7, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 0, 0],  # Body + sleigh
-    [0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0],  # Legs + sleigh base
+    [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        0,
+    ],  # Legs + sleigh base
 ]
 
 SLEIGH_COLORS: dict[int, RGB] = {
-    1: (139, 90, 50),     # Brown reindeer
-    2: (180, 140, 60),    # Tan/gold sleigh and antlers
-    3: (200, 30, 30),     # Red Santa suit
-    4: (255, 255, 255),   # White beard/ribbons
-    5: (255, 200, 150),   # Skin tone
-    6: (50, 160, 50),     # Green presents
-    7: (80, 50, 30),      # Dark brown hooves/reins
-    8: (255, 140, 0),     # Orange (nose)
+    1: (139, 90, 50),  # Brown reindeer
+    2: (180, 140, 60),  # Tan/gold sleigh and antlers
+    3: (200, 30, 30),  # Red Santa suit
+    4: (255, 255, 255),  # White beard/ribbons
+    5: (255, 200, 150),  # Skin tone
+    6: (50, 160, 50),  # Green presents
+    7: (80, 50, 30),  # Dark brown hooves/reins
+    8: (255, 140, 0),  # Orange (nose)
 }
 
 

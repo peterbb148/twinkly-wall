@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, GREEN, HEIGHT, RED, WHITE, WIDTH, Frame
+from ..types import BLACK, GREEN, HEIGHT, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -60,4 +60,3 @@ class CountdownRulerCard(Card):
                         canvas.set_pixel(x, y, self.color)
 
             yield canvas.copy(), frame_delay
-

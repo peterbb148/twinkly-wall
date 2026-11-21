@@ -96,4 +96,3 @@ class MeteorShowerCard(Card):
             meteors = new_meteors
 
             yield canvas.copy(), frame_delay
-

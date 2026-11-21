@@ -103,10 +103,7 @@ class PongCard(Card):
                 ball_vy = (hit_pos - 0.5) * 0.5
 
             # Right paddle
-            if (
-                ball_x >= WIDTH - 3
-                and paddle2_y <= ball_y < paddle2_y + self.paddle_height
-            ):
+            if ball_x >= WIDTH - 3 and paddle2_y <= ball_y < paddle2_y + self.paddle_height:
                 ball_vx = -abs(ball_vx)  # Bounce left
                 hit_pos = (ball_y - paddle2_y) / self.paddle_height
                 ball_vy = (hit_pos - 0.5) * 0.5
@@ -141,7 +138,5 @@ class PongCard(Card):
                 elif paddle2_y > target_y:
                     paddle2_y = max(0, paddle2_y - 1)
 
-            frame = self._render_frame(
-                ball_x, ball_y, paddle1_y, paddle2_y, score1, score2
-            )
+            frame = self._render_frame(ball_x, ball_y, paddle1_y, paddle2_y, score1, score2)
             yield frame, frame_delay

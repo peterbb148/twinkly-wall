@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..datasources.quotes import QuoteData, QuoteDataSource, QuoteError
+from ..datasources.quotes import QuoteDataSource, QuoteError
 from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card

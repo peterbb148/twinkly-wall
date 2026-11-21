@@ -50,7 +50,9 @@ class LavaColumnCard(Card):
             radius = random.randint(1, 3)
             speed = random.uniform(0.5, 1.5) * self.speed
             direction = random.choice([-1, 1])
-            blobs.append(Blob(x=float(column_x), y=y, radius=radius, speed=speed, direction=direction))
+            blobs.append(
+                Blob(x=float(column_x), y=y, radius=radius, speed=speed, direction=direction)
+            )
         return blobs
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
@@ -91,4 +93,3 @@ class LavaColumnCard(Card):
                     blob.direction = -1
 
             yield canvas.copy(), frame_delay
-

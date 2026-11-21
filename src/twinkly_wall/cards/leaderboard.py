@@ -6,7 +6,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..fonts import draw_text, text_width
-from ..types import BLACK, GOLD, HEIGHT, RGB, WHITE, WIDTH, Frame
+from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 # Podium colors

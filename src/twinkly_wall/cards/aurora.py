@@ -1,7 +1,6 @@
 """Aurora / Northern Lights vertical ambient effect."""
 
 import math
-import random
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -76,4 +75,3 @@ class AuroraCard(Card):
                     canvas.set_pixel(x, y, self._color_at(x, y, t))
 
             yield canvas.copy(), frame_delay
-
