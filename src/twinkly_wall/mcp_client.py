@@ -82,8 +82,9 @@ class MCPClient:
             if commands:
                 self.last_command_id = commands[-1]["id"]
                 logger.info(
-                    f"Synced to command ID {self.last_command_id}, "
-                    f"skipping {len(commands)} old commands"
+                    "Synced to command ID %s, skipping %d old commands",
+                    self.last_command_id,
+                    len(commands),
                 )
             else:
                 logger.info("No existing commands in queue")

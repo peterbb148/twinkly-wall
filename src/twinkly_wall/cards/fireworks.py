@@ -80,7 +80,6 @@ class FireworksCard(Card):
         fw.exploded = True
         fw.particles = []
         for _ in range(self.particle_count):
-            _angle = random.uniform(0, 6.28)
             speed = random.uniform(0.5, 1.5)
             fw.particles.append(
                 Particle(
