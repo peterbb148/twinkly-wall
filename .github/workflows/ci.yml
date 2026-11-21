@@ -6,46 +6,52 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
-          version: "latest"
+          version: "0.12.5"
 
       - name: Set up Python
         run: uv python install 3.11
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked --python 3.11
+
+      - name: Audit locked dependencies
+        run: uv audit --locked --python-version 3.11
 
       - name: Run tests
-        run: uv run pytest -v
+        run: uv run --locked pytest -v
 
   lint:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
-          version: "latest"
+          version: "0.12.5"
 
       - name: Set up Python
         run: uv python install 3.11
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked --python 3.11
 
       - name: Run ruff check
-        run: uv run ruff check src/ tests/
+        run: uv run --locked ruff check src/ tests/
 
       - name: Run ruff format check
-        run: uv run ruff format --check src/ tests/
+        run: uv run --locked ruff format --check src/ tests/
