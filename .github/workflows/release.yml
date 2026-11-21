@@ -39,7 +39,7 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" dist/* \
             --verify-tag --title "Twinklysay $GITHUB_REF_NAME" --generate-notes \
-            --notes "For macOS 14 or newer on Apple Silicon (ARM64). Includes Python; no Python or UV installation is needed. Ad-hoc signed, without an Apple Developer signature or notarization. Verify the SHA-256 checksum before installing. See docs/CLI.md in the tagged source for installation and Gatekeeper instructions."
+            --notes "For macOS 15 or newer on Apple Silicon (ARM64). Includes Python; no Python or UV installation is needed. Ad-hoc signed, without an Apple Developer signature or notarization. Verify the SHA-256 checksum before installing. See docs/CLI.md in the tagged source for installation and Gatekeeper instructions."
       - name: Keep current and previous binary versions
         env:
           GH_TOKEN: ${{ github.token }}
