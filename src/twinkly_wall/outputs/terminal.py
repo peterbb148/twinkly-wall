@@ -158,8 +158,6 @@ def animate_frames(
             if delay > 0:
                 time.sleep(delay)
 
-    except KeyboardInterrupt:
-        pass
     finally:
         show_cursor()
         print()  # Newline after animation

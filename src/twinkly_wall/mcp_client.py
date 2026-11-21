@@ -300,17 +300,19 @@ class MCPClient:
 
         return True
 
-    def run(self, use_terminal: bool = True) -> None:
+    def run(self, use_terminal: bool = True, *, register: bool = True) -> None:
         """Run the polling loop.
 
         Args:
             use_terminal: If True, render commands to terminal
+            register: Register cards before polling; False when registration already succeeded.
         """
         self._running = True
         logger.info(f"MCP client starting, polling {self.server_url}")
 
-        # Register cards on startup
-        self.register_cards()
+        # Register cards on startup unless the caller already did so.
+        if register:
+            self.register_cards()
 
         while self._running:
             try:
