@@ -11,7 +11,7 @@ from .base import Card, CardContext, register_card
 
 # Fire color palette (from hot to cool)
 FIRE_PALETTE: list[RGB] = [
-    (0, 0, 0),        # Black (coolest)
+    (0, 0, 0),  # Black (coolest)
     (32, 0, 0),
     (64, 0, 0),
     (128, 0, 0),

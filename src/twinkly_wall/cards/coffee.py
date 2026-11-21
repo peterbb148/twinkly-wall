@@ -1,6 +1,5 @@
 """Coffee break animation card."""
 
-import math
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -25,7 +24,7 @@ COFFEE_MUG: list[list[int]] = [
 MUG_COLORS: dict[int, RGB] = {
     1: (240, 240, 240),  # White mug
     2: (150, 150, 150),  # Gray steam
-    3: (101, 67, 33),    # Brown coffee
+    3: (101, 67, 33),  # Brown coffee
     4: (220, 220, 220),  # Handle
 }
 

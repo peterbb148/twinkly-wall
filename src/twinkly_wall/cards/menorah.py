@@ -17,7 +17,7 @@ CANDLE_POSITIONS = [
     (15, 7, False),
     (19, 7, False),
     (23, 7, False),
-    (25, 5, True),   # Shamash (center, higher)
+    (25, 5, True),  # Shamash (center, higher)
     (27, 7, False),  # Right 4
     (31, 7, False),
     (35, 7, False),

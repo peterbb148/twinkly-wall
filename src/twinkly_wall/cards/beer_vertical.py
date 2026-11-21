@@ -145,4 +145,3 @@ class BeerVerticalCard(Card):
 
             frame = self._render_frame(fill_ratio, bubbles, elapsed)
             yield frame, frame_delay
-

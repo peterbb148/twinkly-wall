@@ -26,10 +26,10 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ```bash
 # Install with UV
-uv pip install -e .
+uv sync --locked --no-dev
 
 # Run the CLI
-uv run twinklysay --help
+uv run --locked --no-dev twinklysay --help
 ```
 
 ## CLI Usage (`twinklysay`)
@@ -188,15 +188,21 @@ uv run twinklysay mcp -i 5
 
 ## Development
 
+CI uses Python 3.11 and uv 0.12.5. Use that uv version to reproduce these checks.
+
 ```bash
 # Install dev dependencies
-uv pip install -e ".[dev]"
+uv sync --locked --python 3.11
 
 # Run tests
-pytest
+uv run --locked pytest
 
-# Lint
-ruff check src/
+# Check lint and formatting
+uv run --locked ruff check src/ tests/
+uv run --locked ruff format --check src/ tests/
+
+# Audit the committed lockfile as CI does
+uv audit --locked --python-version 3.11
 ```
 
 ## Project Structure

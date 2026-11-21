@@ -76,4 +76,3 @@ class VinesCard(Card):
                     vine.age = 0.0
 
             yield canvas.copy(), frame_delay
-

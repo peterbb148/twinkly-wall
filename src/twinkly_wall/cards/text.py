@@ -5,7 +5,13 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import CHAR_HEIGHT, draw_text, draw_text_vertical_stacked, text_width, vertical_text_height
+from ..fonts import (
+    CHAR_HEIGHT,
+    draw_text,
+    draw_text_vertical_stacked,
+    text_width,
+    vertical_text_height,
+)
 from ..types import BLACK, HEIGHT, RGB, WHITE, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
@@ -21,7 +27,7 @@ SPRITE_TREE: list[list[int]] = [
 ]
 
 TREE_COLORS: dict[int, RGB] = {
-    1: (0, 180, 0),    # Green tree
+    1: (0, 180, 0),  # Green tree
     2: (139, 69, 19),  # Brown trunk
     3: (255, 215, 0),  # Gold star
 }

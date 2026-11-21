@@ -78,4 +78,3 @@ class ScoreTowerCard(Card):
                     y += row_height
 
                 yield canvas.copy(), frame_delay
-
