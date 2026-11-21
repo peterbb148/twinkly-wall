@@ -24,6 +24,10 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Quick Start
 
+The Typer-based `twinklysay` CLI is also distributed as a self-contained
+**macOS Apple Silicon (ARM64)** executable. See [CLI installation and releases](docs/CLI.md)
+for downloads, supported macOS versions, checksums, and the initial signing status.
+
 ```bash
 # Install with UV
 uv sync --locked --no-dev
