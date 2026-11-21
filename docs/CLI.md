@@ -6,8 +6,8 @@ installations; it is not part of the initial executable release.
 
 ## Install on Apple Silicon macOS
 
-The initial binary target is **macOS 14 (Sonoma) or newer, Apple Silicon ARM64**.
-Release builds and installation tests run natively on macOS 14. Intel macOS,
+The initial binary target is **macOS 15 (Sonoma) or newer, Apple Silicon ARM64**.
+Release builds and installation tests run natively on macOS 15. Intel macOS,
 Rosetta, Linux, and Windows binaries are not supplied.
 
 Download `twinklysay-VERSION-darwin-arm64.tar.gz` and its `.sha256` file from
@@ -138,9 +138,9 @@ This installs the locked build group, builds a single executable using
 `packaging/twinklysay.spec`, checks ARM64 architecture and the ad-hoc signature,
 runs smoke tests with an empty executable search path outside the checkout, then
 creates the archive and checksum in `dist/`. A local build is validated only on
-its host OS; use the macOS 14 CI artifact for the documented release target.
+its host OS; use the macOS 15 CI artifact for the documented release target.
 
-PR CI builds the executable and tests the downloaded archive on a second macOS 14
+PR CI builds the executable and tests the downloaded archive on a second macOS 15
 runner with no source checkout or build environment. Only the test harness uses
 the runner's Python; the executable receives no Python/UV on `PATH`.
 
