@@ -6,7 +6,7 @@ installations; it is not part of the initial executable release.
 
 ## Install on Apple Silicon macOS
 
-The initial binary target is **macOS 15 (Sonoma) or newer, Apple Silicon ARM64**.
+The initial binary target is **macOS 15 (Sequoia) or newer, Apple Silicon ARM64**.
 Release builds and installation tests run natively on macOS 15. Intel macOS,
 Rosetta, Linux, and Windows binaries are not supplied.
 
