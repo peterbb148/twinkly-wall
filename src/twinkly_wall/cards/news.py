@@ -41,9 +41,7 @@ class NewsCard(Card):
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.max_headlines: int = self.config.get("max_headlines", 5)
 
-    def _render_frame(
-        self, headlines: list[str], offset: int
-    ) -> Frame:
+    def _render_frame(self, headlines: list[str], offset: int) -> Frame:
         """Render a frame with scrolling headlines."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)

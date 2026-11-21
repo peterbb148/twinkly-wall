@@ -9,8 +9,8 @@ from ..fonts import draw_text, text_width
 from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
-WORK_COLOR: RGB = (255, 50, 50)    # Red for work
-BREAK_COLOR: RGB = (50, 255, 50)   # Green for break
+WORK_COLOR: RGB = (255, 50, 50)  # Red for work
+BREAK_COLOR: RGB = (50, 255, 50)  # Green for break
 BG_DARK: RGB = (30, 30, 30)
 
 
@@ -32,9 +32,7 @@ class PomodoroCard(Card):
         self.break_minutes: int = self.config.get("break_minutes", 5)
         self.show_progress: bool = self.config.get("show_progress", True)
 
-    def _render_frame(
-        self, phase: str, remaining_seconds: int, progress: float
-    ) -> Frame:
+    def _render_frame(self, phase: str, remaining_seconds: int, progress: float) -> Frame:
         """Render the pomodoro display."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)

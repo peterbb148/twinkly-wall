@@ -1,6 +1,5 @@
 """Carlsberg Research Laboratory branding card."""
 
-import time
 from collections.abc import Iterator
 from typing import Any
 
@@ -29,9 +28,7 @@ BLACK: RGB = (0, 0, 0)
 CARLSBERG_GREEN: RGB = (40, 74, 65)  # #284a41
 
 
-def draw_sprite(
-    canvas: Canvas, sprite: list[list[int]], x: int, y: int, color: RGB
-) -> None:
+def draw_sprite(canvas: Canvas, sprite: list[list[int]], x: int, y: int, color: RGB) -> None:
     """Draw a sprite on the canvas."""
     for sy, row in enumerate(sprite):
         for sx, pixel in enumerate(row):

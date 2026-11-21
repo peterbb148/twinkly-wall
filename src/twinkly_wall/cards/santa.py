@@ -20,10 +20,10 @@ SANTA_SLEIGH: list[list[int]] = [
 ]
 
 SANTA_COLORS: dict[int, RGB] = {
-    1: (200, 0, 0),      # Red suit/sleigh
+    1: (200, 0, 0),  # Red suit/sleigh
     2: (255, 200, 150),  # Skin
     3: (255, 255, 255),  # White beard/trim
-    4: (139, 90, 43),    # Brown reindeer
+    4: (139, 90, 43),  # Brown reindeer
     5: (255, 255, 100),  # Yellow stars
 }
 
@@ -65,6 +65,7 @@ class SantaCard(Card):
         # Draw twinkling background stars
         if self.trail_stars:
             import random
+
             random.seed(42)  # Consistent star positions
             for _ in range(8):
                 sx = random.randint(0, WIDTH - 1)

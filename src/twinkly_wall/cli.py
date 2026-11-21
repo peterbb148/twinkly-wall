@@ -328,18 +328,20 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 def cmd_mcp(args: argparse.Namespace) -> int:
     """Handle the 'mcp' subcommand - start MCP polling client."""
-    from .mcp_client import MCPClient
-
     import os
 
-    server_url = args.server or os.environ.get("TWINKLY_MCP_URL", "https://twinkly-mcp.onrender.com")
+    from .mcp_client import MCPClient
+
+    server_url = args.server or os.environ.get(
+        "TWINKLY_MCP_URL", "https://twinkly-mcp.onrender.com"
+    )
     api_key = args.api_key or os.environ.get("TWINKLY_API_KEY")
     poll_interval = args.interval
 
-    print(f"Starting MCP client...")
+    print("Starting MCP client...")
     print(f"  Server: {server_url}")
     print(f"  Poll interval: {poll_interval}s")
-    print(f"  Output: terminal")
+    print("  Output: terminal")
     print()
     print("Waiting for commands from Claude... (Ctrl+C to stop)")
     print()
@@ -534,7 +536,10 @@ def create_parser() -> argparse.ArgumentParser:
     preview_parser.add_argument(
         "--playlist",
         type=str,
-        help="Path to playlist yaml. Use alone to preview entire playlist, or with --id for single card",
+        help=(
+            "Path to playlist yaml. Use alone to preview entire playlist, "
+            "or with --id for single card"
+        ),
     )
     preview_parser.add_argument(
         "-d",

@@ -24,10 +24,10 @@ SPRITE_SANTA: list[list[int]] = [
 ]
 
 SANTA_COLORS: dict[int, RGB] = {
-    1: (200, 0, 0),      # Red suit
+    1: (200, 0, 0),  # Red suit
     2: (255, 200, 150),  # Skin
     3: (255, 255, 255),  # White beard/buttons/pompom
-    4: (40, 40, 40),     # Black boots
+    4: (40, 40, 40),  # Black boots
 }
 
 
@@ -47,8 +47,7 @@ class TuborgJulebryg(Card):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.text: str = self.config.get(
-            "text",
-            "Tuborg Snebajer 0.0% NUL JUL - Driving home for Christmas"
+            "text", "Tuborg Snebajer 0.0% NUL JUL - Driving home for Christmas"
         )
         self.scroll_speed: float = self.config.get("scroll_speed", 30.0)
         self.num_santas: int = self.config.get("num_santas", 3)

@@ -1,6 +1,5 @@
 """Pac-Man eating things animation card."""
 
-import time
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any

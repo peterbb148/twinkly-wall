@@ -38,9 +38,7 @@ class SnakeCard(Card):
             if (x, y) not in snake:
                 return (x, y)
 
-    def _render_frame(
-        self, snake: list[tuple[int, int]], food: tuple[int, int]
-    ) -> Frame:
+    def _render_frame(self, snake: list[tuple[int, int]], food: tuple[int, int]) -> Frame:
         """Render the current game state."""
         canvas = Canvas(WIDTH, HEIGHT)
         canvas.clear(BLACK)
@@ -110,16 +108,13 @@ class SnakeCard(Card):
         # Initialize snake in the middle
         start_x = WIDTH // 2
         start_y = HEIGHT // 2
-        snake: list[tuple[int, int]] = [
-            (start_x - i, start_y) for i in range(self.initial_length)
-        ]
+        snake: list[tuple[int, int]] = [(start_x - i, start_y) for i in range(self.initial_length)]
         direction = (1, 0)  # Moving right
 
         food = self._spawn_food(snake)
 
         start_time = time.time()
         frame_delay = 1.0 / (10 * self.speed)  # Snake moves slower than 30fps
-        move_timer = 0.0
 
         while time.time() - start_time < self.duration:
             # Get AI direction

@@ -5,7 +5,6 @@ import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from html import unescape
-from typing import Any
 
 import requests
 
@@ -48,7 +47,9 @@ def _clean_text(text: str | None) -> str:
     return text
 
 
-def _get_text(element: ET.Element | None, tag: str, namespaces: dict[str, str] | None = None) -> str:
+def _get_text(
+    element: ET.Element | None, tag: str, namespaces: dict[str, str] | None = None
+) -> str:
     """Get text from an XML element."""
     if element is None:
         return ""

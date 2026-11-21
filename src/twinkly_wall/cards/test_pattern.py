@@ -27,16 +27,16 @@ class TestPatternCard(Card):
         """Each row a different color."""
         canvas = Canvas(WIDTH, HEIGHT)
         colors = [
-            (255, 0, 0),      # Row 0: Red
-            (255, 128, 0),    # Row 1: Orange
-            (255, 255, 0),    # Row 2: Yellow
-            (128, 255, 0),    # Row 3: Lime
-            (0, 255, 0),      # Row 4: Green
-            (0, 255, 255),    # Row 5: Cyan
-            (0, 128, 255),    # Row 6: Light Blue
-            (0, 0, 255),      # Row 7: Blue
-            (128, 0, 255),    # Row 8: Purple
-            (255, 0, 255),    # Row 9: Magenta
+            (255, 0, 0),  # Row 0: Red
+            (255, 128, 0),  # Row 1: Orange
+            (255, 255, 0),  # Row 2: Yellow
+            (128, 255, 0),  # Row 3: Lime
+            (0, 255, 0),  # Row 4: Green
+            (0, 255, 255),  # Row 5: Cyan
+            (0, 128, 255),  # Row 6: Light Blue
+            (0, 0, 255),  # Row 7: Blue
+            (128, 0, 255),  # Row 8: Purple
+            (255, 0, 255),  # Row 9: Magenta
         ]
         for y in range(HEIGHT):
             color = colors[y % len(colors)]
@@ -99,6 +99,7 @@ class TestPatternCard(Card):
     def _render_numbers(self) -> Frame:
         """Show row numbers."""
         from ..fonts import draw_text
+
         canvas = Canvas(WIDTH, HEIGHT)
         # Draw row numbers on left side
         for y in range(HEIGHT):
