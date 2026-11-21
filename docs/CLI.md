@@ -10,7 +10,19 @@ The initial binary target is **macOS 15 (Sequoia) or newer, Apple Silicon ARM64*
 Release builds and installation tests run natively on macOS 15. Intel macOS,
 Rosetta, Linux, and Windows binaries are not supplied.
 
-Download `twinklysay-VERSION-darwin-arm64.tar.gz` and its `.sha256` file from
+From a repository checkout, authenticate GitHub CLI with `gh auth login` using
+an account with access to this repository. Run the installer to download and
+verify the latest release and install `twinklysay` in `~/.local/bin`:
+
+```bash
+bash scripts/install_macos.sh
+```
+
+Pass a release tag such as `v0.1.0` to pin the version. Set
+`TWINKLYSAY_INSTALL_DIR` to choose a different destination. Rerun the installer
+to upgrade.
+
+For manual installation, download `twinklysay-VERSION-darwin-arm64.tar.gz` and its `.sha256` file from
 [GitHub Releases](https://github.com/peterbb148/twinkly-wall/releases). Artifacts
 appear after a version tag completes the release workflow. Before the first tag,
 PR builds are available as a `twinklysay-VERSION-darwin-arm64` Actions artifact.
