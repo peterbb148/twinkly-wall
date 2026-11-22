@@ -270,7 +270,8 @@ Only the **current and previous binary versions** are retained for each distribu
   are left alone until they finish.
 
 Cleanup is serialized with GitHub's `queue: max` so queued publications are not
-replaced by incoming cleanup jobs, and reads back the inventory to verify deletions. A failed
+replaced by incoming cleanup jobs, and reads back the inventory to verify deletions. A bounded retry allows for
+records that GitHub still lists briefly after deletion. A failed
 build, failed publication, or missing current archive/artifact prevents cleanup.
 API errors fail the job visibly. Actions' ordinary artifact expiry still applies;
 GitHub Releases provide the persistent downloads for the two retained versions.
