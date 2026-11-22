@@ -244,10 +244,11 @@ twinkly-cli say card party-flame --settings ~/.config/twinkly-wall/portrait.yaml
 ```
 
 The [Skål card](../config/cards.d/skal.yaml) displays the fixed text `SKÅL!`
-left to right on the landscape wall. To preview it, run:
+left to right on the landscape wall. Preview it with your wall's settings so
+the terminal uses the same mirror axes:
 
 ```bash
-twinkly-cli say preview skal --orientation horizontal
+twinkly-cli say preview skal --orientation horizontal --settings ./wall-settings.yaml
 ```
 
 The list includes each external definition's path. For playlist playback, add
