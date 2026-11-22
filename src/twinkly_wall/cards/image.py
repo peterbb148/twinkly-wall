@@ -9,7 +9,7 @@ from typing import Any
 from PIL import Image
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, HEIGHT, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 logger = logging.getLogger(__name__)
@@ -67,13 +67,22 @@ def resize_image(img: Image.Image, width: int, height: int, fit: str = "contain"
     return img.resize((new_width, new_height), Image.Resampling.NEAREST)
 
 
-def image_to_frame(img: Image.Image, offset_x: int = 0, offset_y: int = 0) -> Frame:
+def image_to_frame(
+    img: Image.Image,
+    offset_x: int = 0,
+    offset_y: int = 0,
+    *,
+    width: int = WIDTH,
+    height: int = HEIGHT,
+) -> Frame:
     """Convert PIL Image to Frame format.
 
     Args:
         img: PIL Image (should be RGB mode)
         offset_x: X offset to center image
         offset_y: Y offset to center image
+        width: Frame width in pixels
+        height: Frame height in pixels
 
     Returns:
         Frame (2D list of RGB tuples)
@@ -82,13 +91,13 @@ def image_to_frame(img: Image.Image, offset_x: int = 0, offset_y: int = 0) -> Fr
     if img.mode != "RGB":
         img = img.convert("RGB")
 
-    frame: Frame = [[BLACK for _ in range(WIDTH)] for _ in range(HEIGHT)]
+    frame: Frame = [[BLACK for _ in range(width)] for _ in range(height)]
 
-    for y in range(min(img.height, HEIGHT)):
-        for x in range(min(img.width, WIDTH)):
+    for y in range(min(img.height, height)):
+        for x in range(min(img.width, width)):
             px = offset_x + x
             py = offset_y + y
-            if 0 <= px < WIDTH and 0 <= py < HEIGHT:
+            if 0 <= px < width and 0 <= py < height:
                 r, g, b = img.getpixel((x, y))
                 frame[py][px] = (r, g, b)
 
@@ -130,6 +139,7 @@ class ImageCard(Card):
 
     Config options:
         path: Path to image file (required)
+        layout: landscape (default) or portrait
         fit: How to fit image - contain, cover, stretch (default: contain)
         scroll: Scroll wide images horizontally (default: auto)
         scroll_speed: Pixels per second for scrolling (default: 20)
@@ -141,6 +151,12 @@ class ImageCard(Card):
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
+        layout = self.config.get("layout", "landscape")
+        if layout not in ("landscape", "portrait"):
+            raise ValueError("Image layout must be landscape or portrait")
+        self.width, self.height = (
+            (PORTRAIT_WIDTH, PORTRAIT_HEIGHT) if layout == "portrait" else (WIDTH, HEIGHT)
+        )
         self.path: str = self.config.get("path", "")
         self.fit: str = self.config.get("fit", "contain")
         self.scroll: bool | str = self.config.get("scroll", "auto")
@@ -160,22 +176,22 @@ class ImageCard(Card):
     def _should_scroll(self, img_width: int) -> bool:
         """Determine if image should scroll."""
         if self.scroll == "auto":
-            return img_width > WIDTH
+            return img_width > self.width
         return bool(self.scroll)
 
     def _render_static(self, img: Image.Image) -> Frame:
         """Render a static image frame."""
         # Resize to fit display
-        resized = resize_image(img, WIDTH, HEIGHT, self.fit)
+        resized = resize_image(img, self.width, self.height, self.fit)
 
         # Calculate centering offset
         offset_x = 0
         offset_y = 0
         if self.center:
-            offset_x = (WIDTH - resized.width) // 2
-            offset_y = (HEIGHT - resized.height) // 2
+            offset_x = (self.width - resized.width) // 2
+            offset_y = (self.height - resized.height) // 2
 
-        return image_to_frame(resized, offset_x, offset_y)
+        return image_to_frame(resized, offset_x, offset_y, width=self.width, height=self.height)
 
     def _render_scrolling(self, img: Image.Image, offset: int) -> Frame:
         """Render a scrolling image frame.
@@ -184,7 +200,7 @@ class ImageCard(Card):
             img: The full-width image
             offset: Current scroll offset (0 = start, increases as we scroll)
         """
-        canvas = Canvas(WIDTH, HEIGHT)
+        canvas = Canvas(self.width, self.height)
         canvas.clear(self.bgcolor)
 
         # Convert image to RGB
@@ -192,14 +208,14 @@ class ImageCard(Card):
             img = img.convert("RGB")
 
         # Resize height to fit display, keep width proportional
-        if img.height != HEIGHT:
-            ratio = HEIGHT / img.height
+        if img.height != self.height:
+            ratio = self.height / img.height
             new_width = int(img.width * ratio)
-            img = img.resize((new_width, HEIGHT), Image.Resampling.NEAREST)
+            img = img.resize((new_width, self.height), Image.Resampling.NEAREST)
 
         # Draw visible portion
-        for y in range(HEIGHT):
-            for x in range(WIDTH):
+        for y in range(self.height):
+            for x in range(self.width):
                 src_x = x + offset
                 if 0 <= src_x < img.width:
                     r, g, b = img.getpixel((src_x, y))
@@ -211,7 +227,7 @@ class ImageCard(Card):
         """Generate image frames."""
         if not self.path:
             # No path, show error
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(self.width, self.height)
             from ..fonts import draw_text
 
             draw_text(canvas, 0, 1, "NO IMG", (255, 0, 0))
@@ -236,7 +252,7 @@ class ImageCard(Card):
             img = load_image(path)
         except Exception as e:
             logger.error(f"Failed to load image {self.path}: {e}")
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(self.width, self.height)
             from ..fonts import draw_text
 
             draw_text(canvas, 0, 1, "ERR", (255, 0, 0))
@@ -253,10 +269,10 @@ class ImageCard(Card):
 
         # Check if we should scroll
         # First resize to display height
-        if img.height != HEIGHT:
-            ratio = HEIGHT / img.height
+        if img.height != self.height:
+            ratio = self.height / img.height
             new_width = int(img.width * ratio)
-            img_for_check = img.resize((new_width, HEIGHT), Image.Resampling.NEAREST)
+            img_for_check = img.resize((new_width, self.height), Image.Resampling.NEAREST)
         else:
             img_for_check = img
 
@@ -282,15 +298,17 @@ class ImageCard(Card):
             frame_img, frame_duration = gif_frames[frame_idx]
 
             # Resize and convert to frame
-            resized = resize_image(frame_img, WIDTH, HEIGHT, self.fit)
+            resized = resize_image(frame_img, self.width, self.height, self.fit)
 
             offset_x = 0
             offset_y = 0
             if self.center:
-                offset_x = (WIDTH - resized.width) // 2
-                offset_y = (HEIGHT - resized.height) // 2
+                offset_x = (self.width - resized.width) // 2
+                offset_y = (self.height - resized.height) // 2
 
-            frame = image_to_frame(resized, offset_x, offset_y)
+            frame = image_to_frame(
+                resized, offset_x, offset_y, width=self.width, height=self.height
+            )
             yield frame, frame_duration
 
             # Next frame (loop)
@@ -299,10 +317,10 @@ class ImageCard(Card):
     def _scroll_image(self, img: Image.Image) -> Iterator[tuple[Frame, float]]:
         """Scroll a wide image."""
         # Resize height to fit display
-        if img.height != HEIGHT:
-            ratio = HEIGHT / img.height
+        if img.height != self.height:
+            ratio = self.height / img.height
             new_width = int(img.width * ratio)
-            img = img.resize((new_width, HEIGHT), Image.Resampling.NEAREST)
+            img = img.resize((new_width, self.height), Image.Resampling.NEAREST)
 
         total_scroll = img.width  # Scroll until image is off screen
         pixels_per_frame = self.scroll_speed / 30.0
