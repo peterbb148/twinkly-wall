@@ -221,7 +221,9 @@ a lowercase letter and can also contain lowercase letters, digits, underscores,
 and hyphens. Names must be unique across both directories and the built-in
 catalog.
 
-For example, save this as `party-flame.yaml` with the GIF beside it.
+The repository's [party-flame card](../config/cards.d/party-flame.yaml) uses an
+external 10×50 GIF. To make your own version, save a definition like this with
+its GIF beside it.
 
 ```yaml
 type: image
