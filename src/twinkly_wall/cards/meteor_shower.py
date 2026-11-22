@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -44,12 +44,12 @@ class MeteorShowerCard(Card):
         """Create a new meteor entering from top or left edge."""
         if random.random() < 0.5:
             # From top
-            x = random.uniform(0, WIDTH - 1)
+            x = random.uniform(0, PORTRAIT_WIDTH - 1)
             y = -1.0
         else:
             # From left
             x = -1.0
-            y = random.uniform(0, HEIGHT - 1)
+            y = random.uniform(0, PORTRAIT_HEIGHT - 1)
 
         speed_x = self.speed * random.uniform(0.7, 1.3)
         speed_y = self.speed * random.uniform(0.5, 1.0)
@@ -64,7 +64,7 @@ class MeteorShowerCard(Card):
         meteors: list[Meteor] = [self._new_meteor() for _ in range(self.density)]
 
         while time.time() - start < self.duration:
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             # Draw and update meteors
@@ -75,7 +75,7 @@ class MeteorShowerCard(Card):
                     fx = meteor.x - meteor.speed_x * frame_delay * i
                     fy = meteor.y - meteor.speed_y * frame_delay * i
                     ix, iy = int(fx), int(fy)
-                    if 0 <= ix < WIDTH and 0 <= iy < HEIGHT:
+                    if 0 <= ix < PORTRAIT_WIDTH and 0 <= iy < PORTRAIT_HEIGHT:
                         brightness = max(0.2, 1.0 - i / meteor.length)
                         color: RGB = (
                             int(255 * brightness),
@@ -88,7 +88,10 @@ class MeteorShowerCard(Card):
                 meteor.x += meteor.speed_x * frame_delay
                 meteor.y += meteor.speed_y * frame_delay
 
-                if meteor.x > WIDTH + meteor.length or meteor.y > HEIGHT + meteor.length:
+                if (
+                    meteor.x > PORTRAIT_WIDTH + meteor.length
+                    or meteor.y > PORTRAIT_HEIGHT + meteor.length
+                ):
                     meteor = self._new_meteor()
 
                 new_meteors.append(meteor)

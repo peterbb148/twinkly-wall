@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, GREEN, HEIGHT, WHITE, WIDTH, Frame
+from ..types import BLACK, GREEN, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, WHITE, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -39,24 +39,24 @@ class CountdownRulerCard(Card):
                 break
 
             ratio = max(0.0, 1.0 - min(elapsed, self.total_seconds) / max(0.1, self.total_seconds))
-            filled = int(ratio * HEIGHT)
+            filled = int(ratio * PORTRAIT_HEIGHT)
 
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             # Draw ruler border
-            for y in range(HEIGHT):
+            for y in range(PORTRAIT_HEIGHT):
                 canvas.set_pixel(0, y, WHITE)
-                canvas.set_pixel(WIDTH - 1, y, WHITE)
+                canvas.set_pixel(PORTRAIT_WIDTH - 1, y, WHITE)
 
             # Draw filled bar
             if self.direction == "down":
-                for y in range(HEIGHT - filled, HEIGHT):
-                    for x in range(1, WIDTH - 1):
+                for y in range(PORTRAIT_HEIGHT - filled, PORTRAIT_HEIGHT):
+                    for x in range(1, PORTRAIT_WIDTH - 1):
                         canvas.set_pixel(x, y, self.color)
             else:
                 for y in range(0, filled):
-                    for x in range(1, WIDTH - 1):
+                    for x in range(1, PORTRAIT_WIDTH - 1):
                         canvas.set_pixel(x, y, self.color)
 
             yield canvas.copy(), frame_delay

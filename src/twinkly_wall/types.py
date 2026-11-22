@@ -5,6 +5,8 @@ from typing import Literal, TypeAlias
 # Display dimensions (Twinkly Matrix 500: 50 columns × 10 rows for horizontal display)
 WIDTH: int = 50
 HEIGHT: int = 10
+PORTRAIT_WIDTH: int = HEIGHT
+PORTRAIT_HEIGHT: int = WIDTH
 
 # RGB color tuple (0-255 per channel)
 RGB: TypeAlias = tuple[int, int, int]
@@ -99,18 +101,39 @@ def rotate_frame_180(frame: Frame) -> Frame:
     return [[frame[height - 1 - y][width - 1 - x] for x in range(width)] for y in range(height)]
 
 
-def apply_orientation(frame: Frame, orientation: Orientation) -> Frame:
-    """Rotate a frame to match the desired orientation.
+def apply_orientation(
+    frame: Frame,
+    orientation: Orientation,
+    *,
+    mirror_h: bool = False,
+    mirror_v: bool = False,
+) -> Frame:
+    """Orient a card frame for the viewer and flip it along the requested axes.
 
     Args:
-        frame: Source frame to orient.
-        orientation: Display orientation: horizontal, vertical_left or vertical_right.
+        frame: Card pixels in their logical portrait or landscape layout.
+        orientation: Physical display mount.
+        mirror_h: Flip left to right as viewed on the display.
+        mirror_v: Flip top to bottom as viewed on the display.
 
     Returns:
-        New frame transformed for the requested orientation.
+        Pixels laid out as seen by the viewer.
     """
-    if orientation == "vertical_left":
-        return rotate_frame_ccw(frame)
-    if orientation == "vertical_right":
-        return rotate_frame_cw(frame)
-    return copy_frame(frame)
+    if not frame or not frame[0]:
+        return copy_frame(frame)
+
+    portrait_frame = len(frame) > len(frame[0])
+    portrait_display = orientation != "horizontal"
+    if portrait_frame == portrait_display:
+        oriented = copy_frame(frame)
+    elif orientation == "vertical_left":
+        oriented = rotate_frame_ccw(frame)
+    else:
+        oriented = rotate_frame_cw(frame)
+
+    if mirror_v:
+        oriented.reverse()
+    if mirror_h:
+        for row in oriented:
+            row.reverse()
+    return oriented

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import HEIGHT, RGB, WIDTH, Frame
+from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -35,13 +35,13 @@ class SparkleCurtainCard(Card):
 
         # Preselect potential sparkle positions
         candidates: list[tuple[int, int]] = []
-        for y in range(HEIGHT):
-            for x in range(WIDTH):
+        for y in range(PORTRAIT_HEIGHT):
+            for x in range(PORTRAIT_WIDTH):
                 if random.random() < self.density:
                     candidates.append((x, y))
 
         while time.time() - start < self.duration:
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
 
             # Dim base background
             base_value = int(255 * self.base_brightness)

@@ -4,8 +4,8 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import draw_text
-from ..types import BLACK, GOLD, HEIGHT, RGB, WHITE, WIDTH, Frame
+from ..fonts import CHAR_HEIGHT, draw_text, text_width
+from ..types import GOLD, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WHITE, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -39,42 +39,37 @@ class ScoreTowerCard(Card):
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate stacked leaderboard frames."""
+        row_height = CHAR_HEIGHT + 1
+        rows_per_page = PORTRAIT_HEIGHT // row_height
+        rows = []
+        if self.title:
+            rows.append((self.title, self.name_color))
         if not self.entries:
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 1, "NO DATA", (255, 0, 0))
-            yield canvas.copy(), self.duration
-            return
+            rows.append(("NO DATA", (255, 0, 0)))
 
-        # Each "page" shows as many rows as fit in the 10px height
-        row_height = 2  # One text row + one spacer
-        max_rows = max(1, HEIGHT // row_height)
-
-        # Prepare list of pages, each with a slice of entries
-        pages: list[list[dict[str, Any]]] = []
-        for start in range(0, len(self.entries), max_rows):
-            pages.append(self.entries[start : start + max_rows])
-
-        frame_delay = 0.5
+        # Reserve two lines per entry so scores never get clipped by the name.
+        pages: list[list[tuple[str, RGB]]] = []
+        for rank, entry in enumerate(self.entries, start=1):
+            if len(rows) + 2 > rows_per_page:
+                pages.append(rows)
+                rows = []
+            name = str(entry.get("name", ""))
+            label = f"{rank}. {name}" if self.show_rank else name
+            rows.extend(((label, self.name_color), (str(entry.get("score", 0)), self.score_color)))
+        if rows:
+            pages.append(rows)
 
         for _ in range(self.repeats):
-            for page_index, page in enumerate(pages):
-                canvas = Canvas(WIDTH, HEIGHT)
-                canvas.clear(BLACK)
-
-                y = 0
-                if self.title and page_index == 0:
-                    draw_text(canvas, 0, y, self.title, self.name_color)
-                    y += row_height
-
-                for i, entry in enumerate(page, start=1):
-                    name = str(entry.get("name", ""))[:10]
-                    score = entry.get("score", 0)
-                    label = name
-                    if self.show_rank:
-                        rank = (page_index * max_rows) + i
-                        label = f"{rank}. {label}"
-                    text = f"{label} {score}"
-                    draw_text(canvas, 0, y, text, self.name_color)
-                    y += row_height
-
-                yield canvas.copy(), frame_delay
+            for page in pages:
+                widths = [text_width(text) for text, _ in page]
+                overflow = max(0, max(widths) - PORTRAIT_WIDTH)
+                for offset in range(overflow + 1):
+                    canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+                    for index, ((text, color), width) in enumerate(zip(page, widths, strict=True)):
+                        if width <= PORTRAIT_WIDTH:
+                            x = (PORTRAIT_WIDTH - width) // 2
+                        else:
+                            x = -min(offset, width - PORTRAIT_WIDTH)
+                        draw_text(canvas, x, index * row_height, text, color)
+                    delay = 0.5 if offset in (0, overflow) else 0.12
+                    yield canvas.copy(), delay

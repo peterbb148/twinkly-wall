@@ -32,7 +32,7 @@ from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .outputs.twinkly import TwinklyOutput
-from .types import HEIGHT, RGB, WHITE, WIDTH, Orientation
+from .types import HEIGHT, RGB, WHITE, WIDTH
 
 
 @dataclass
@@ -402,21 +402,10 @@ def cmd_mcp(args: CLIOptions) -> int:
     return 0
 
 
-def _resolve_orientation(arg_value: str | None, settings_path: Path | None = None) -> Orientation:
-    """Resolve preview orientation, falling back to settings if not provided."""
-    if arg_value:
-        return arg_value  # type: ignore[return-value]
-
-    # Load default settings (config/settings.yaml, settings.yaml, or ~/.config)
-    settings = load_settings(settings_path)
-    return settings.twinkly.orientation
-
-
 def cmd_preview(args: CLIOptions) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
     card_type = args.card
     duration = args.duration
-    orientation: Orientation = _resolve_orientation(args.orientation, args.settings)
 
     # If playlist provided without --id or card type, play entire playlist
     if args.playlist and not args.id and not card_type:
@@ -437,13 +426,15 @@ def cmd_preview(args: CLIOptions) -> int:
     print(f"Previewing '{name}' card for {duration}s (Ctrl+C to stop)...")
     print()
 
-    # Use animate_frames for smooth animation
+    display = load_settings(args.settings).twinkly
     animate_frames(
         card.frames(ctx),
         color_mode=not args.no_color,
         use_half_blocks=True,
         clear_between=False,
-        orientation=orientation,
+        orientation=args.orientation or display.orientation,
+        mirror_h=display.mirror_h,
+        mirror_v=display.mirror_v,
     )
 
     return 0
@@ -457,6 +448,7 @@ def _preview_playlist(args: CLIOptions) -> int:
         return 1
 
     ctx = create_context_with_datasources(args.settings)
+    display = load_settings(args.settings).twinkly
     total_cards = len(playlist.cards)
 
     print(f"Previewing playlist: {args.playlist} ({total_cards} cards)")
@@ -477,7 +469,9 @@ def _preview_playlist(args: CLIOptions) -> int:
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
-                    orientation=_resolve_orientation(args.orientation, args.settings),
+                    orientation=args.orientation or display.orientation,
+                    mirror_h=display.mirror_h,
+                    mirror_v=display.mirror_v,
                 )
     except KeyboardInterrupt:
         print("\nStopped.")
