@@ -75,6 +75,33 @@ if grep -Fq 'Failed to load image' image.log; then
   exit 1
 fi
 
+catalog="$work/card-definitions"
+mkdir "$catalog"
+export TWINKLY_CARD_DIR="$catalog"
+cat > "$catalog/party-flame.yaml" <<'YAML'
+type: image
+layout: portrait
+path: flame.ppm
+scroll: false
+YAML
+{
+  printf 'P6\n10 50\n255\n'
+  head -c 1500 /dev/zero
+} > "$catalog/flame.ppm"
+"$binary" say list > catalog.log
+grep -Fq "party-flame ($catalog/party-flame.yaml)" catalog.log
+"$binary" say preview party-flame --settings settings.yaml --duration 0.1 --no-color > flame.log
+if grep -Fq '█' flame.log; then
+  echo 'The initial external image should be black.' >&2
+  exit 1
+fi
+{
+  printf 'P6\n10 50\n255\n'
+  head -c 1500 /dev/zero | tr '\000' '\377'
+} > "$catalog/flame.ppm"
+"$binary" say preview party-flame --settings settings.yaml --duration 0.1 --no-color > flame.log
+grep -Fq '██████████' flame.log
+
 "$binary" wall --help > help.log
 grep -Fq 'usage: twinkly-cli wall ' help.log
 "$binary" wall --terminal --settings settings.yaml --cards cards.yaml > wall.log 2>&1 &
