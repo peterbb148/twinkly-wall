@@ -34,8 +34,7 @@ dev = [
 ]
 
 [project.scripts]
-twinklysay = "twinkly_wall.cli:main"
-twinklywall = "twinkly_wall.daemon:main"
+twinkly-cli = "twinkly_wall.command:main"
 
 [build-system]
 requires = ["hatchling"]

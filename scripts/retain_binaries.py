@@ -7,12 +7,18 @@ import subprocess
 from collections import defaultdict
 from typing import Any
 
-BINARY_TARGETS = (
+CURRENT_TARGETS = (
+    ("twinkly-cli", "darwin-arm64"),
+    ("twinkly-cli", "ubuntu-arm64"),
+)
+BINARY_TARGETS = CURRENT_TARGETS + (
     ("twinklysay", "darwin-arm64"),
     ("twinklysay", "ubuntu-arm64"),
     ("twinklywall", "ubuntu-arm64"),
 )
-ARTIFACT_NAME = re.compile(r"(twinklysay|twinklywall)-(.+)-(darwin-arm64|ubuntu-arm64)\Z")
+ARTIFACT_NAME = re.compile(
+    r"(twinkly-cli|twinklysay|twinklywall)-(.+)-(darwin-arm64|ubuntu-arm64)\Z"
+)
 LEGACY_ARTIFACT = "twinklysay-darwin-arm64"
 
 
@@ -51,7 +57,7 @@ def release_deletions(releases: list[dict], current_tag: str) -> list[int]:
                 if complete_versions <= 2:
                     continue
             deletions.extend(assets.values())
-        if not current_complete:
+        if (command, platform) in CURRENT_TARGETS and not current_complete:
             raise ValueError(
                 f"Current release must contain the archive and checksum for {command} {platform}"
             )
@@ -67,10 +73,14 @@ def artifact_deletions(artifacts: list[dict], runs: dict[int, dict], current_run
         if artifact["expired"] or (identity is None and artifact["name"] != LEGACY_ARTIFACT):
             continue
         candidates.append((artifact, identity))
-        if artifact["workflow_run"]["id"] == current_run and identity is not None:
+        if (
+            artifact["workflow_run"]["id"] == current_run
+            and identity is not None
+            and identity[0] in CURRENT_TARGETS
+        ):
             target, version = identity
             current_targets[version].add(target)
-    if len(current_targets) != 1 or next(iter(current_targets.values())) != set(BINARY_TARGETS):
+    if len(current_targets) != 1 or next(iter(current_targets.values())) != set(CURRENT_TARGETS):
         raise ValueError("Current verified run must have all binary artifacts for one version")
 
     eligible = []

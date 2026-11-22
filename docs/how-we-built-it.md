@@ -85,13 +85,13 @@ When someone asks Claude to display a message, it sends the command to our MCP s
 
 ```bash
 # Preview in terminal
-uv run twinklysay preview pacman
+uv run twinkly-cli say preview pacman
 
 # Preview from playlist
-uv run twinklysay preview --playlist config/online.yaml
+uv run twinkly-cli say preview --playlist config/online.yaml
 
 # Run on actual hardware
-twinklywall --cards config/online.yaml
+twinkly-cli wall --cards config/online.yaml
 ```
 
 ## Results
