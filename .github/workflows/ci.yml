@@ -6,12 +6,40 @@ on:
   pull_request:
     branches: [main]
   workflow_call:
+    inputs:
+      build-binaries:
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  binary-scope:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.scope.outputs.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ !inputs.build-binaries && github.event_name != 'workflow_dispatch' }}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Decide whether to build binaries
+        id: scope
+        env:
+          FORCE_BINARY_BUILD: ${{ inputs.build-binaries || github.event_name == 'workflow_dispatch' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ "$FORCE_BINARY_BUILD" == true ]]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            build=$(bash scripts/cli_changed.sh "$GITHUB_EVENT_NAME" "$BASE_SHA" "$HEAD_SHA")
+            echo "build=$build" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +75,8 @@ jobs:
       - run: uv run --locked ruff format --check src/ tests/ scripts/ packaging/
 
   macos-binary:
+    needs: binary-scope
+    if: needs.binary-scope.outputs.build == 'true'
     runs-on: macos-15
     outputs:
       artifact-name: ${{ steps.binary-version.outputs.artifact-name }}
@@ -101,6 +131,8 @@ jobs:
           bash "$GITHUB_WORKSPACE/scripts/smoke_installer.sh" darwin-arm64 "$PWD"/twinkly-cli-*-darwin-arm64.tar.gz
 
   ubuntu-binaries:
+    needs: binary-scope
+    if: needs.binary-scope.outputs.build == 'true'
     runs-on: ubuntu-24.04-arm
     outputs:
       version: ${{ steps.binary-version.outputs.value }}
