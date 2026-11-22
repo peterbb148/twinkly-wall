@@ -81,6 +81,8 @@ class TwinklyDaemon:
 
             self._terminal = TerminalOutput(
                 orientation=self.settings.twinkly.orientation,
+                mirror_h=self.settings.twinkly.mirror_h,
+                mirror_v=self.settings.twinkly.mirror_v,
             )
             outputs.append(self._terminal)
             logger.info("Terminal output enabled")
@@ -166,6 +168,7 @@ class TwinklyDaemon:
             outputs=outputs,
             mcp_client=self._mcp_client,
             operating_hours=self.settings.operating_hours,
+            orientation=self.settings.twinkly.orientation,
         )
 
         # Start outputs

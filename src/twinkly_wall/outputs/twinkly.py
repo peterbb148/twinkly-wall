@@ -8,7 +8,15 @@ from dataclasses import dataclass
 
 import requests
 
-from ..types import Frame, Orientation, apply_orientation
+from ..types import (
+    HEIGHT,
+    WIDTH,
+    Frame,
+    Orientation,
+    apply_orientation,
+    rotate_frame_ccw,
+    rotate_frame_cw,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -305,20 +313,8 @@ class TwinklyOutput:
             Binary data for the frame
         """
         data = bytearray()
-        frame_height = len(frame)  # 10 rows
-        frame_width = len(frame[0]) if frame_height > 0 else 0  # 50 cols
-
-        # Helper to get pixel with mirroring applied
-        def get_pixel(row: int, col: int) -> tuple[int, int, int]:
-            # Apply horizontal mirror (flip left-right)
-            if self.mirror_h:
-                col = frame_width - 1 - col
-            # Apply vertical mirror (flip top-bottom)
-            if self.mirror_v:
-                row = frame_height - 1 - row
-            if 0 <= row < frame_height and 0 <= col < frame_width:
-                return frame[row][col]
-            return (0, 0, 0)
+        if len(frame) != HEIGHT or any(len(row) != WIDTH for row in frame):
+            raise ValueError(f"Twinkly frames must be {WIDTH}×{HEIGHT} after mapping")
 
         # After 90° clockwise rotation:
         # Physical strand = 9 - frame_row
@@ -331,16 +327,16 @@ class TwinklyOutput:
         for strand_idx, (physical_strand, frame_row) in enumerate(strip1_mapping):
             if strand_idx % 2 == 0:
                 # Even strand index in strip: LED 0 at bottom, so traverse cols in reverse
-                for col in range(frame_width - 1, -1, -1):
-                    r, g, b = get_pixel(frame_row, col)
+                for col in range(WIDTH - 1, -1, -1):
+                    r, g, b = frame[frame_row][col]
                     if self.led_profile == "RGBW":
                         data.extend([r, g, b, 0])
                     else:
                         data.extend([r, g, b])
             else:
                 # Odd strand index in strip: LED 0 at top, so traverse cols forward
-                for col in range(frame_width):
-                    r, g, b = get_pixel(frame_row, col)
+                for col in range(WIDTH):
+                    r, g, b = frame[frame_row][col]
                     if self.led_profile == "RGBW":
                         data.extend([r, g, b, 0])
                     else:
@@ -353,16 +349,16 @@ class TwinklyOutput:
         for strand_idx, (physical_strand, frame_row) in enumerate(strip2_mapping):
             if strand_idx % 2 == 0:
                 # Even strand index in strip: LED 0 at bottom, so traverse cols in reverse
-                for col in range(frame_width - 1, -1, -1):
-                    r, g, b = get_pixel(frame_row, col)
+                for col in range(WIDTH - 1, -1, -1):
+                    r, g, b = frame[frame_row][col]
                     if self.led_profile == "RGBW":
                         data.extend([r, g, b, 0])
                     else:
                         data.extend([r, g, b])
             else:
                 # Odd strand index in strip: LED 0 at top, so traverse cols forward
-                for col in range(frame_width):
-                    r, g, b = get_pixel(frame_row, col)
+                for col in range(WIDTH):
+                    r, g, b = frame[frame_row][col]
                     if self.led_profile == "RGBW":
                         data.extend([r, g, b, 0])
                     else:
@@ -378,8 +374,15 @@ class TwinklyOutput:
         """
         self.client.ensure_auth()
 
-        oriented = apply_orientation(frame, self.orientation)
-        frame_data = self._frame_to_bytes(oriented)
+        viewed = apply_orientation(
+            frame, self.orientation, mirror_h=self.mirror_h, mirror_v=self.mirror_v
+        )
+        # Undo the physical mount rotation before encoding the fixed strand layout.
+        if self.orientation == "vertical_left":
+            viewed = rotate_frame_cw(viewed)
+        elif self.orientation == "vertical_right":
+            viewed = rotate_frame_ccw(viewed)
+        frame_data = self._frame_to_bytes(viewed)
 
         try:
             self.client._request(
