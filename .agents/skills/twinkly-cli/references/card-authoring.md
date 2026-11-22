@@ -18,7 +18,36 @@ Use `twinkly-cli say list --playlist ./cards.yaml` to get the entry ID and `twin
 
 Follow the [card contract and registry](../../../../src/twinkly_wall/cards/base.py). Subclass `Card`, choose a unique `card_type`, apply `@register_card`, and import the class in [the cards package](../../../../src/twinkly_wall/cards/__init__.py) so the decorator runs when the CLI loads the package. Follow the package's `__all__` convention for the new class.
 
-`frames(ctx)` yields `(frame, delay)` pairs. The delay is in seconds. Build frames in the native coordinate system of 50 columns and 10 rows, using `frame[y][x]` with RGB tuples. `Canvas()` starts at the native size. Terminal and device outputs apply the configured orientation, so the card's coordinates describe the native frame.
+`frames(ctx)` yields `(frame, delay)` pairs. The delay is in seconds, and
+`frame[y][x]` is an RGB tuple. Choose the canvas for the card's intended layout.
+
+| Layout | Width × height | Canvas |
+| --- | --- | --- |
+| Landscape | 50 × 10 | `Canvas()` or `Canvas(WIDTH, HEIGHT)` |
+| Portrait | 10 × 50 | `Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)` |
+
+Import the dimension constants from `..types`. Draw with the origin at the
+upper-left of the card's logical canvas. Terminal previews and hardware output
+apply the [mount and mirror settings](../../../../docs/CLI.md#display-orientation-and-mirroring).
+When the card layout differs from the mount, the output turns it sideways to
+fill the display. `mirror_h` flips viewer-left to viewer-right and `mirror_v`
+flips top to bottom.
+
+For a portrait card, use the portrait dimensions both to create the canvas
+and to position elements. For example, draw a marker at the bottom-left of
+the portrait canvas.
+
+```python
+from ..canvas import Canvas
+from ..types import GOLD, PORTRAIT_HEIGHT, PORTRAIT_WIDTH
+
+canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+canvas.fill_rect(0, PORTRAIT_HEIGHT - 3, 5, 3, GOLD)
+```
+
+A portrait frame test should check for 50 rows of 10 pixels and verify that
+the marker reaches the bottom rows. Use `say preview --orientation vertical_left`
+or `vertical_right` to preview a portrait mount.
 
 ## Worked example
 
