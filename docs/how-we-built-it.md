@@ -91,7 +91,7 @@ uv run twinklysay preview pacman
 uv run twinklysay preview --playlist config/online.yaml
 
 # Run on actual hardware
-twinkly-wall --playlist config/online.yaml
+twinklywall --cards config/online.yaml
 ```
 
 ## Results
