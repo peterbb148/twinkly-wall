@@ -125,9 +125,20 @@ twinkly-cli say card clock --settings /path/to/settings.yaml --duration 3
 twinkly-cli say mcp --server https://your-server.example --interval 2
 ```
 
-The existing command names, short options, color formats, card-specific options,
-playlist IDs, orientation values, and default values are retained. Use
-`twinkly-cli say COMMAND --help` for the full option list. `--version` uses the package
+Update scripts and service commands using these mappings:
+
+| Previous command | Twinkly CLI command |
+| --- | --- |
+| `twinkly-wall [OPTIONS]` | `twinkly-cli wall [OPTIONS]` |
+| `twinklysay say "Hello"` | `twinkly-cli say text "Hello"` |
+| `twinklysay card clock` | `twinkly-cli say card clock` |
+| `twinklysay preview clock` | `twinkly-cli say preview clock` |
+| `twinklysay list` | `twinkly-cli say list` |
+| `twinklysay mcp` | `twinkly-cli say mcp` |
+
+The existing short options, color formats, card-specific options, playlist IDs,
+orientation values, and defaults are retained. Use `twinkly-cli say COMMAND --help`
+for the full option list. `--version` uses the package
 version. Invoking `twinkly-cli` without arguments shows help successfully.
 
 Typer replaces argparse help/error formatting and validates option types. Explicit
