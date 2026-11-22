@@ -170,12 +170,17 @@ def test_cleanup_verification_failure_is_visible(monkeypatch):
     monkeypatch.setattr(
         retention, "inventory", lambda *_: [release(1), release(2), current_release(3)]
     )
-    monkeypatch.setattr(retention, "github_api", MagicMock())
-    with pytest.raises(RuntimeError, match="could not be verified"):
+    api = MagicMock()
+    monkeypatch.setattr(retention, "github_api", api)
+    sleep = MagicMock()
+    monkeypatch.setattr(retention.time, "sleep", sleep)
+    with pytest.raises(RuntimeError, match=r"could not be verified: \[10, 11\]"):
         retention.prune("owner/repo", "releases", "v0.3.0", apply=True)
+    assert api.call_count == 2
+    assert [call.args[0] for call in sleep.call_args_list] == [1, 2, 4, 8, 16]
 
 
-def test_ci_cleanup_only_queries_binary_runs_and_verifies_removal(monkeypatch):
+def test_ci_cleanup_rechecks_a_stale_inventory_without_deleting_twice(monkeypatch):
     old = artifact(1, "0.1.0")
     current = current_artifacts(2, "0.1.0")
     unrelated = artifact(3, "other")
@@ -183,11 +188,21 @@ def test_ci_cleanup_only_queries_binary_runs_and_verifies_removal(monkeypatch):
     monkeypatch.setattr(
         retention,
         "inventory",
-        MagicMock(side_effect=[[old, *current, unrelated], [*current, unrelated]]),
+        MagicMock(
+            side_effect=[
+                [old, *current, unrelated],
+                [old, *current, unrelated],
+                [old, *current, unrelated],
+                [*current, unrelated],
+            ]
+        ),
     )
     api = MagicMock(return_value={"status": "completed", "conclusion": "success"})
     monkeypatch.setattr(retention, "github_api", api)
+    sleep = MagicMock()
+    monkeypatch.setattr(retention.time, "sleep", sleep)
     assert retention.prune("owner/repo", "artifacts", "2", apply=True) == [1]
+    assert [call.args[0] for call in sleep.call_args_list] == [1, 2]
     assert api.call_count == 3
     assert api.call_args.args[0] == "repos/owner/repo/actions/artifacts/1"
 
