@@ -612,7 +612,7 @@ SettingsPath = Annotated[
 ]
 
 app = typer.Typer(
-    name="twinklysay",
+    name="say",
     context_settings={"help_option_names": ["-h", "--help"]},
     help="Render text and animations for Twinkly LED displays.",
     add_completion=False,
@@ -623,7 +623,7 @@ app = typer.Typer(
 def _version_callback(value: bool) -> None:
     """Print the application version without requiring a subcommand."""
     if value:
-        typer.echo(f"twinklysay {__version__}")
+        typer.echo(f"twinkly-cli {__version__}")
         raise typer.Exit()
 
 
@@ -652,7 +652,7 @@ def _execute(handler: Callable[[CLIOptions], int], options: CLIOptions) -> None:
     raise typer.Exit(code)
 
 
-@app.command("say")
+@app.command("text")
 def say(
     text: Annotated[str, typer.Argument(help="Text to display")],
     color: Annotated[str, typer.Option("--color", "-c")] = "white",
@@ -781,7 +781,7 @@ def card(
 def main(argv: list[str] | None = None) -> int:
     """Run the Typer application and return its exit code for console entry points."""
     try:
-        app(args=argv, prog_name="twinklysay")
+        app(args=argv, prog_name="twinkly-cli say")
     except SystemExit as error:
         return int(error.code or 0)
     return 0
