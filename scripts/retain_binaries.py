@@ -1,73 +1,109 @@
-"""Retain only the two newest Twinklysay binary versions through the GitHub CLI."""
+"""Retain the two newest binary versions per command and platform."""
 
 import argparse
 import json
 import re
 import subprocess
+from collections import defaultdict
 from typing import Any
 
-ARTIFACT_NAME = re.compile(r"twinklysay-(.+)-darwin-arm64\Z")
+CURRENT_TARGETS = (
+    ("twinkly-cli", "darwin-arm64"),
+    ("twinkly-cli", "ubuntu-arm64"),
+)
+BINARY_TARGETS = CURRENT_TARGETS + (
+    ("twinklysay", "darwin-arm64"),
+    ("twinklysay", "ubuntu-arm64"),
+    ("twinklywall", "ubuntu-arm64"),
+)
+ARTIFACT_NAME = re.compile(
+    r"(twinkly-cli|twinklysay|twinklywall)-(.+)-(darwin-arm64|ubuntu-arm64)\Z"
+)
 LEGACY_ARTIFACT = "twinklysay-darwin-arm64"
 
 
+def artifact_identity(name: str) -> tuple[tuple[str, str], str] | None:
+    """Extract the command, platform, and version of a supported artifact."""
+    match = ARTIFACT_NAME.fullmatch(name)
+    if match:
+        command, version, platform = match.groups()
+        if (command, platform) in BINARY_TARGETS:
+            return (command, platform), version
+    return None
+
+
 def release_deletions(releases: list[dict], current_tag: str) -> list[int]:
-    """Plan removal of older archive/checksum assets, preserving release metadata."""
-    versions = []
-    for release in releases:
-        if release["draft"]:
-            continue
-        version = release["tag_name"].removeprefix("v")
-        archive = f"twinklysay-{version}-darwin-arm64.tar.gz"
-        assets = [a for a in release["assets"] if a["name"] in {archive, archive + ".sha256"}]
-        if assets:
-            versions.append((release, assets))
-    current_assets = [a for r, assets in versions if r["tag_name"] == current_tag for a in assets]
-    if len(current_assets) != 2:
-        raise ValueError("Current release must contain both its binary archive and checksum")
-    versions.sort(key=lambda item: item[0]["published_at"], reverse=True)
-    complete = [(release, assets) for release, assets in versions if len(assets) == 2]
-    keep = {asset["id"] for _, assets in complete[:2] for asset in assets}
-    return [asset["id"] for _, assets in versions for asset in assets if asset["id"] not in keep]
+    """Plan removal of old asset pairs, preserving release metadata."""
+    published = sorted(
+        (release for release in releases if not release["draft"]),
+        key=lambda release: release["published_at"],
+        reverse=True,
+    )
+    deletions = []
+    for command, platform in BINARY_TARGETS:
+        complete_versions = 0
+        current_complete = False
+        for release in published:
+            version = release["tag_name"].removeprefix("v")
+            archive = f"{command}-{version}-{platform}.tar.gz"
+            assets = {
+                asset["name"]: asset["id"]
+                for asset in release["assets"]
+                if asset["name"] in {archive, archive + ".sha256"}
+            }
+            if len(assets) == 2:
+                current_complete |= release["tag_name"] == current_tag
+                complete_versions += 1
+                if complete_versions <= 2:
+                    continue
+            deletions.extend(assets.values())
+        if (command, platform) in CURRENT_TARGETS and not current_complete:
+            raise ValueError(
+                f"Current release must contain the archive and checksum for {command} {platform}"
+            )
+    return deletions
 
 
 def artifact_deletions(artifacts: list[dict], runs: dict[int, dict], current_run: int) -> list[int]:
-    """Keep the newest build of each of the two latest verified binary versions.
+    """Keep the two latest verified versions per target and protect active runs."""
+    candidates = []
+    current_targets = defaultdict(set)
+    for artifact in artifacts:
+        identity = artifact_identity(artifact["name"])
+        if artifact["expired"] or (identity is None and artifact["name"] != LEGACY_ARTIFACT):
+            continue
+        candidates.append((artifact, identity))
+        if (
+            artifact["workflow_run"]["id"] == current_run
+            and identity is not None
+            and identity[0] in CURRENT_TARGETS
+        ):
+            target, version = identity
+            current_targets[version].add(target)
+    if len(current_targets) != 1 or next(iter(current_targets.values())) != set(CURRENT_TARGETS):
+        raise ValueError("Current verified run must have all binary artifacts for one version")
 
-    Other active runs are untouched. Completed failed builds and superseded duplicate
-    builds can be removed once this run has passed its installation tests.
-    """
-    candidates = [
-        a
-        for a in artifacts
-        if not a["expired"] and (ARTIFACT_NAME.fullmatch(a["name"]) or a["name"] == LEGACY_ARTIFACT)
-    ]
-    if not any(
-        a["workflow_run"]["id"] == current_run and ARTIFACT_NAME.fullmatch(a["name"])
-        for a in candidates
+    eligible = []
+    for artifact, identity in candidates:
+        run_id = artifact["workflow_run"]["id"]
+        if run_id == current_run:
+            eligible.append((artifact, identity, True))
+        elif runs[run_id]["status"] == "completed":
+            eligible.append((artifact, identity, runs[run_id]["conclusion"] == "success"))
+
+    keep = set()
+    versions_by_target = defaultdict(set)
+    for artifact, identity, verified in sorted(
+        eligible, key=lambda entry: entry[0]["created_at"], reverse=True
     ):
-        raise ValueError("Current verified run has no versioned binary artifact")
-    eligible = [
-        a
-        for a in candidates
-        if a["workflow_run"]["id"] == current_run
-        or runs[a["workflow_run"]["id"]]["status"] == "completed"
-    ]
-    verified = [
-        a
-        for a in eligible
-        if ARTIFACT_NAME.fullmatch(a["name"])
-        and (
-            a["workflow_run"]["id"] == current_run
-            or runs[a["workflow_run"]["id"]]["conclusion"] == "success"
-        )
-    ]
-    keep, versions = set(), set()
-    for artifact in sorted(verified, key=lambda a: a["created_at"], reverse=True):
-        version = ARTIFACT_NAME.fullmatch(artifact["name"])[1]
+        if identity is None or not verified:
+            continue
+        target, version = identity
+        versions = versions_by_target[target]
         if version not in versions and len(versions) < 2:
             versions.add(version)
             keep.add(artifact["id"])
-    return [a["id"] for a in eligible if a["id"] not in keep]
+    return [artifact["id"] for artifact, _, _ in eligible if artifact["id"] not in keep]
 
 
 def github_api(endpoint: str, *, paginate: bool = False, delete: bool = False) -> Any:
@@ -98,8 +134,7 @@ def prune(repo: str, kind: str, current: str, *, apply: bool = False) -> list[in
         relevant = [
             a
             for a in records
-            if not a["expired"]
-            and (ARTIFACT_NAME.fullmatch(a["name"]) or a["name"] == LEGACY_ARTIFACT)
+            if not a["expired"] and (artifact_identity(a["name"]) or a["name"] == LEGACY_ARTIFACT)
         ]
         run_ids = {a["workflow_run"]["id"] for a in relevant}
         runs = {run_id: github_api(f"repos/{repo}/actions/runs/{run_id}") for run_id in run_ids}

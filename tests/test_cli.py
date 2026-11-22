@@ -86,7 +86,7 @@ def isolate_config(tmp_path, monkeypatch):
     [
         [],
         ["--help"],
-        ["say", "--help"],
+        ["text", "--help"],
         ["preview", "--help"],
         ["card", "--help"],
         ["mcp", "--help"],
@@ -102,12 +102,12 @@ def test_help(command):
 def test_version():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert result.output.strip() == f"twinklysay {__version__}"
+    assert result.output.strip() == f"twinkly-cli {__version__}"
 
 
 @pytest.mark.parametrize(
     "args",
-    [["say", "Hi"], ["say", "Hi", "-c", "red"], ["say", "Hi", "--no-color", "--no-half-blocks"]],
+    [["text", "Hi"], ["text", "Hi", "-c", "red"], ["text", "Hi", "--no-color", "--no-half-blocks"]],
 )
 def test_say(args):
     result = runner.invoke(app, args)
@@ -125,7 +125,7 @@ def test_list_cards():
 @pytest.mark.parametrize(
     "args",
     [
-        ["say"],
+        ["text"],
         ["unknown"],
         ["preview", "unknown"],
         ["card", "unknown"],
@@ -159,7 +159,7 @@ def test_invalid_arguments(args):
         ["preview", "twinklysay"],
         ["card", "text"],
         ["card", "twinklysay"],
-        ["say", "Hi", "-c", "invalid"],
+        ["text", "Hi", "-c", "invalid"],
         ["preview", "clock", "-c", "invalid"],
         ["preview", "text", "-t", "Hi", "-c", "invalid"],
         ["preview", "twinklysay", "-t", "Hi", "-c", "invalid"],
@@ -391,11 +391,11 @@ def test_real_renderer_restores_cursor_and_stops(playlist, monkeypatch, loop_pla
 def test_main_returns_exit_codes(capsys):
     assert main(["--version"]) == 0
     assert __version__ in capsys.readouterr().out
-    assert main(["say", "Hi", "--color", "invalid"]) == 1
+    assert main(["text", "Hi", "--color", "invalid"]) == 1
     assert main(["unknown"]) == 2
 
 
-@pytest.mark.parametrize("command", [[], ["say"], ["preview"], ["card"], ["list"], ["mcp"]])
+@pytest.mark.parametrize("command", [[], ["text"], ["preview"], ["card"], ["list"], ["mcp"]])
 def test_short_help_compatibility(command):
     result = runner.invoke(app, [*command, "-h"])
     assert result.exit_code == 0

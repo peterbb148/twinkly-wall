@@ -7,16 +7,12 @@ import signal
 import sys
 from pathlib import Path
 
+from . import __version__
 from .cards import CardContext
 from .config import load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
 from .scheduler import Scheduler
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 
@@ -199,7 +195,7 @@ class TwinklyDaemon:
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser for the daemon."""
     parser = argparse.ArgumentParser(
-        prog="twinkly-wall",
+        prog="twinkly-cli wall",
         description="Run the Twinkly Wall LED display daemon",
     )
     parser.add_argument(
@@ -244,7 +240,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 0.1.0",
+        version=f"twinkly-cli {__version__}",
     )
     return parser
 
@@ -254,8 +250,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     daemon = TwinklyDaemon(
         settings_path=args.settings,

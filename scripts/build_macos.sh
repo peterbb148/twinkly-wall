@@ -9,16 +9,16 @@ if [[ "$(uname -s)" != Darwin || "$(uname -m)" != arm64 ]]; then
 fi
 
 uv sync --locked --no-dev --group build
-uv run --locked --no-sync pyinstaller --clean --noconfirm packaging/twinklysay.spec
-test "$(lipo -archs dist/twinklysay)" = arm64
-codesign --verify --strict dist/twinklysay
-uv run --locked --no-sync python scripts/smoke_binary.py dist/twinklysay
+uv run --locked --no-sync pyinstaller --clean --noconfirm packaging/twinkly-cli.spec
+test "$(lipo -archs dist/twinkly-cli)" = arm64
+codesign --verify --strict dist/twinkly-cli
+uv run --locked --no-sync python scripts/smoke_binary.py dist/twinkly-cli
 
 version="$(uv run --locked --no-sync python -c 'from twinkly_wall import __version__; print(__version__)')"
-archive="twinklysay-${version}-darwin-arm64.tar.gz"
+archive="twinkly-cli-${version}-darwin-arm64.tar.gz"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
-cp dist/twinklysay "$stage/twinklysay"
+cp dist/twinkly-cli "$stage/twinkly-cli"
 mkdir -p "$stage/examples" "$stage/assets" "$stage/checks"
 cp config/cards.example.yaml config/settings.example.yaml "$stage/examples/"
 cp assets/carlsberg.png "$stage/assets/"

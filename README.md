@@ -4,7 +4,8 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Features
 
-- **CLI Preview Tool** (`twinklysay`) - Preview animations in your terminal
+- **Wall Daemon** (`twinkly-cli wall`) - Run the configured playlist on the LED wall
+- **On-demand CLI** (`twinkly-cli say`) - Send a card to the wall or preview it in your terminal
 - **Display Cards** - Clock, weather, leaderboards, custom messages
 - **Animations** - Pac-Man eating Christmas trees, beer bubbles, snowfall
 - **Configurable Playlist** - YAML-based card rotation
@@ -24,44 +25,44 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Quick Start
 
-The Typer-based `twinklysay` CLI is also distributed as a self-contained
-**macOS Apple Silicon (ARM64)** executable. See [CLI installation and releases](docs/CLI.md)
-for downloads, supported macOS versions, checksums, and the initial signing status.
+GitHub Releases provides `twinkly-cli` for **Ubuntu ARM64** and **macOS Apple
+Silicon**. See [CLI installation and releases](docs/CLI.md) for installers,
+supported versions, checksum verification, and setup.
 
 ```bash
 # Install with UV
 uv sync --locked --no-dev
 
 # Run the CLI
-uv run --locked --no-dev twinklysay --help
+uv run --locked --no-dev twinkly-cli --help
 ```
 
-## CLI Usage (`twinklysay`)
+## CLI Usage (`twinkly-cli say`)
 
-The `twinklysay` command provides two subcommands for terminal preview and testing.
+Use `twinkly-cli say` to list or preview cards, or send a card directly to the wall.
 
 - List registered cards (and optionally the playlist with ids):
 
 ```bash
-uv run twinklysay list --playlist config/cards.yaml
+uv run twinkly-cli say list --playlist config/cards.yaml
 ```
 
-### Display Text (`say`)
+### Display Text (`text`)
 
 Render a static text message in your terminal:
 
 ```bash
 # Basic text (white)
-uv run twinklysay say "Hello World"
+uv run twinkly-cli say text "Hello World"
 
 # Colored text (by name)
-uv run twinklysay say "Merry Christmas" --color red
+uv run twinkly-cli say text "Merry Christmas" --color red
 
 # Colored text (hex)
-uv run twinklysay say "Happy New Year" --color "#FFD700"
+uv run twinkly-cli say text "Happy New Year" --color "#FFD700"
 
 # Colored text (RGB)
-uv run twinklysay say "Cheers!" --color 255,165,0
+uv run twinkly-cli say text "Cheers!" --color 255,165,0
 ```
 
 **Supported color names:** black, white, red, green, blue, yellow, cyan, magenta, orange, gold
@@ -72,46 +73,46 @@ Preview card animations in your terminal:
 
 ```bash
 # Clock (24-hour format, blinking colon)
-uv run twinklysay preview clock
+uv run twinkly-cli say preview clock
 
 # Clock (12-hour format)
-uv run twinklysay preview clock --twelve-hour
+uv run twinkly-cli say preview clock --twelve-hour
 
 # Scrolling text
-uv run twinklysay preview text --text "Hello from the Twinkly Wall!"
+uv run twinkly-cli say preview text --text "Hello from the Twinkly Wall!"
 
 # Pac-Man eating Christmas trees
-uv run twinklysay preview pacman --theme trees
+uv run twinkly-cli say preview pacman --theme trees
 
 # Pac-Man eating beer mugs
-uv run twinklysay preview pacman --theme beer
+uv run twinkly-cli say preview pacman --theme beer
 
 # Snowfall
-uv run twinklysay preview snow
+uv run twinkly-cli say preview snow
 
 # Snowfall with wind and accumulation
-uv run twinklysay preview snow --wind 0.5 --accumulate
+uv run twinkly-cli say preview snow --wind 0.5 --accumulate
 
 # Beer bubbles
-uv run twinklysay preview beer
+uv run twinkly-cli say preview beer
 
 # Rainbow effects
-uv run twinklysay preview rainbow --mode plasma
+uv run twinkly-cli say preview rainbow --mode plasma
 
 # Vertical-friendly cards
-uv run twinklysay preview rain
-uv run twinklysay preview vertical_bars
-uv run twinklysay preview stories --duration 8
-uv run twinklysay preview score_tower --playlist config/leaderboard.yaml
+uv run twinkly-cli say preview rain
+uv run twinkly-cli say preview vertical_bars
+uv run twinkly-cli say preview stories --duration 8
+uv run twinkly-cli say preview score_tower --playlist config/leaderboard.yaml
 
 # Twinklysay (scrolling message, used for remote messages)
-uv run twinklysay preview twinklysay --text "Remote message!" --color gold
+uv run twinkly-cli say preview twinklysay --text "Remote message!" --color gold
 
 # Send a card to the LED device (one-shot)
-uv run twinklysay card twinklysay --text "Hello LED!" --color gold
+uv run twinkly-cli say card twinklysay --text "Hello LED!" --color gold
 
 # Send a playlist card by id (uses cards.yaml)
-uv run twinklysay card --id 3 --playlist config/cards.yaml
+uv run twinkly-cli say card --id 3 --playlist config/cards.yaml
 ```
 
 **Available cards:** clock, text, pacman, beer, beer_vertical, snow, rainbow, test_pattern, carlsberg_lab, candle_vertical, twinklysay, rain, vertical_bars, stories, score_tower
@@ -142,7 +143,7 @@ The daemon supports remote control via the [twinkly-mcp](https://github.com/pete
                                                    ▼
                                           ┌──────────────────┐
                                           │  Raspberry Pi    │
-                                          │  (twinkly-wall)  │
+                                          │  (twinkly-cli wall)   │
                                           └──────────────────┘
 ```
 
@@ -150,16 +151,16 @@ The daemon supports remote control via the [twinkly-mcp](https://github.com/pete
 
 ```bash
 # Run daemon with MCP enabled (on Raspberry Pi)
-twinkly-wall --mcp
+twinkly-cli wall --mcp
 
 # Run in terminal mode for testing (no LED hardware)
-twinkly-wall -t --mcp
+twinkly-cli wall -t --mcp
 
 # Custom MCP server
-twinkly-wall --mcp --mcp-server https://your-server.com
+twinkly-cli wall --mcp --mcp-server https://your-server.com
 
 # With API key authentication
-twinkly-wall --mcp --mcp-api-key YOUR_KEY
+twinkly-cli wall --mcp --mcp-api-key YOUR_KEY
 ```
 
 ### Environment Variables
@@ -184,10 +185,10 @@ For testing without the full daemon:
 
 ```bash
 # Start MCP polling client (terminal output only)
-uv run twinklysay mcp
+uv run twinkly-cli say mcp
 
 # Custom poll interval
-uv run twinklysay mcp -i 5
+uv run twinkly-cli say mcp -i 5
 ```
 
 ## Development
@@ -219,8 +220,8 @@ twinkly-wall/
 │   ├── effects.py      # Scroll, fade, transitions
 │   ├── cards/          # Display card implementations
 │   ├── outputs/        # Terminal and Twinkly renderers
-│   ├── cli.py          # CLI entry point (twinklysay)
-│   ├── daemon.py       # Main daemon (twinkly-wall)
+│   ├── cli.py          # On-demand commands (twinkly-cli say)
+│   ├── daemon.py       # Main daemon (twinkly-cli wall)
 │   ├── scheduler.py    # Card playlist scheduler
 │   └── mcp_client.py   # MCP server polling client
 ├── config/
