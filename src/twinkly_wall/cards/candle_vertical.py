@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 CANDLE_BODY: RGB = (230, 230, 255)
@@ -44,8 +44,8 @@ class CandleVerticalCard(Card):
         """Create initial snowflakes as (x, y, speed)."""
         flakes: list[tuple[float, float, float]] = []
         for _ in range(self.snow_density):
-            x = random.uniform(0, WIDTH - 1)
-            y = random.uniform(0, HEIGHT - 1)
+            x = random.uniform(0, PORTRAIT_WIDTH - 1)
+            y = random.uniform(0, PORTRAIT_HEIGHT - 1)
             speed = random.uniform(0.6, 1.4)
             flakes.append((x, y, speed))
         return flakes
@@ -54,11 +54,11 @@ class CandleVerticalCard(Card):
         """Draw candle body and flickering flame in the center."""
         # Make a narrow candle in the horizontal center
         candle_width = 6
-        x0 = (WIDTH - candle_width) // 2
+        x0 = (PORTRAIT_WIDTH - candle_width) // 2
         x1 = x0 + candle_width - 1
 
         # Body (bottom half of display)
-        for y in range(HEIGHT // 2, HEIGHT):
+        for y in range(PORTRAIT_HEIGHT // 2, PORTRAIT_HEIGHT):
             for x in range(x0, x1 + 1):
                 color = CANDLE_BODY
                 if x == x0 or x == x1:
@@ -66,7 +66,7 @@ class CandleVerticalCard(Card):
                 canvas.set_pixel(x, y, color)
 
         # Flame position (just above body)
-        flame_base_y = HEIGHT // 2 - 1
+        flame_base_y = PORTRAIT_HEIGHT // 2 - 1
         flame_x = (x0 + x1) // 2
 
         # Simple flicker: small vertical jitter and color variation
@@ -89,7 +89,7 @@ class CandleVerticalCard(Card):
         time_offset: float,
     ) -> Frame:
         """Render a single frame with candle, snow, and accumulation."""
-        canvas = Canvas(WIDTH, HEIGHT)
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
         canvas.clear(BLACK)
 
         # Draw candle + flame first
@@ -98,7 +98,7 @@ class CandleVerticalCard(Card):
         # Draw accumulation at base
         if self.accumulate:
             for x, height in enumerate(accumulation):
-                for y in range(HEIGHT - height, HEIGHT):
+                for y in range(PORTRAIT_HEIGHT - height, PORTRAIT_HEIGHT):
                     color = SNOW_LIGHT if (x + y) % 3 == 0 else SNOW_WHITE
                     canvas.set_pixel(x, y, color)
 
@@ -106,7 +106,7 @@ class CandleVerticalCard(Card):
         for x, y, _ in snowflakes:
             ix = int(x)
             iy = int(y)
-            if 0 <= ix < WIDTH and 0 <= iy < HEIGHT:
+            if 0 <= ix < PORTRAIT_WIDTH and 0 <= iy < PORTRAIT_HEIGHT:
                 color = SNOW_WHITE if (ix + iy) % 2 == 0 else SNOW_LIGHT
                 canvas.set_pixel(ix, iy, color)
 
@@ -115,7 +115,7 @@ class CandleVerticalCard(Card):
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate candle with snowfall frames."""
         snowflakes = self._init_snow()
-        accumulation: list[int] = [0] * WIDTH
+        accumulation: list[int] = [0] * PORTRAIT_WIDTH
         max_accum = 3
 
         start_time = time.time()
@@ -130,22 +130,26 @@ class CandleVerticalCard(Card):
                 x += (self.wind + random.uniform(-0.3, 0.3)) * frame_delay
 
                 if x < 0:
-                    x += WIDTH
-                elif x >= WIDTH:
-                    x -= WIDTH
+                    x += PORTRAIT_WIDTH
+                elif x >= PORTRAIT_WIDTH:
+                    x -= PORTRAIT_WIDTH
 
-                bottom_limit = HEIGHT - 1
+                bottom_limit = PORTRAIT_HEIGHT - 1
                 col = int(x)
-                if self.accumulate and 0 <= col < WIDTH:
-                    bottom_limit = HEIGHT - 1 - accumulation[col]
+                if self.accumulate and 0 <= col < PORTRAIT_WIDTH:
+                    bottom_limit = PORTRAIT_HEIGHT - 1 - accumulation[col]
 
                 if y >= bottom_limit:
-                    if self.accumulate and 0 <= col < WIDTH and accumulation[col] < max_accum:
+                    if (
+                        self.accumulate
+                        and 0 <= col < PORTRAIT_WIDTH
+                        and accumulation[col] < max_accum
+                    ):
                         if random.random() < 0.15:
                             accumulation[col] += 1
 
                     # Respawn at top
-                    x = random.uniform(0, WIDTH - 1)
+                    x = random.uniform(0, PORTRAIT_WIDTH - 1)
                     y = 0.0
                     speed = random.uniform(0.6, 1.4)
 

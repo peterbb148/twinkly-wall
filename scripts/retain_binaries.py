@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import subprocess
+import time
 from collections import defaultdict
 from typing import Any
 
@@ -144,14 +145,23 @@ def prune(repo: str, kind: str, current: str, *, apply: bool = False) -> list[in
     if apply and ids:
         for item_id in ids:
             github_api(f"repos/{repo}/{endpoint}/{item_id}", delete=True)
-        remaining = inventory(repo, kind)
-        remaining_ids = (
-            {a["id"] for r in remaining for a in r["assets"]}
-            if kind == "releases"
-            else {a["id"] for a in remaining}
-        )
-        if remaining_ids.intersection(ids):
-            raise RuntimeError("Binary retention deletion could not be verified")
+        # GitHub can still list deleted records briefly after accepting the DELETE.
+        for delay in (0, 1, 2, 4, 8, 16):
+            if delay:
+                time.sleep(delay)
+            remaining = inventory(repo, kind)
+            remaining_ids = (
+                {asset["id"] for release in remaining for asset in release["assets"]}
+                if kind == "releases"
+                else {artifact["id"] for artifact in remaining}
+            )
+            stale_ids = remaining_ids.intersection(ids)
+            if not stale_ids:
+                break
+        else:
+            raise RuntimeError(
+                f"Binary retention deletion could not be verified: {sorted(stale_ids)}"
+            )
     return ids
 
 

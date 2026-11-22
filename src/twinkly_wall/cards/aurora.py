@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame, blend_color
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame, blend_color
 from .base import Card, CardContext, register_card
 
 
@@ -31,8 +31,8 @@ class AuroraCard(Card):
     def _color_at(self, x: float, y: float, t: float) -> RGB:
         """Calculate aurora color at a given position and time."""
         # Two layered sine waves across width and height
-        nx = x / WIDTH
-        ny = y / HEIGHT
+        nx = x / PORTRAIT_WIDTH
+        ny = y / PORTRAIT_HEIGHT
 
         wave1 = math.sin(2 * math.pi * (nx * 1.2 + t * 0.1 * self.speed))
         wave2 = math.sin(2 * math.pi * (ny * 0.7 - t * 0.07 * self.speed))
@@ -67,11 +67,11 @@ class AuroraCard(Card):
 
         while time.time() - start < self.duration:
             t = time.time() - start
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
-            for y in range(HEIGHT):
-                for x in range(WIDTH):
+            for y in range(PORTRAIT_HEIGHT):
+                for x in range(PORTRAIT_WIDTH):
                     canvas.set_pixel(x, y, self._color_at(x, y, t))
 
             yield canvas.copy(), frame_delay
