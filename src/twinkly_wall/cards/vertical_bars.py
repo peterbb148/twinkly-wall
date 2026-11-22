@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, GREEN, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, GREEN, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -37,21 +37,21 @@ class VerticalBarsCard(Card):
         total_frames = max(1, int(self.duration / frame_delay))
 
         bars_span = self.bar_width + self.gap
-        bar_count = max(1, WIDTH // bars_span)
+        bar_count = max(1, PORTRAIT_WIDTH // bars_span)
 
         for frame_index in range(total_frames):
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             for i in range(bar_count):
                 # Phase-shifted sine waves for each bar height
                 phase = (frame_index * self.speed / 10.0) + (i * 0.8)
                 value = (math.sin(phase) + 1.0) / 2.0  # 0..1
-                bar_height = max(1, int(value * HEIGHT))
+                bar_height = max(1, int(value * PORTRAIT_HEIGHT))
 
                 x_start = i * bars_span
-                for x in range(x_start, min(x_start + self.bar_width, WIDTH)):
-                    for y in range(HEIGHT - bar_height, HEIGHT):
+                for x in range(x_start, min(x_start + self.bar_width, PORTRAIT_WIDTH)):
+                    for y in range(PORTRAIT_HEIGHT - bar_height, PORTRAIT_HEIGHT):
                         canvas.set_pixel(x, y, self.color)
 
             yield canvas.copy(), frame_delay

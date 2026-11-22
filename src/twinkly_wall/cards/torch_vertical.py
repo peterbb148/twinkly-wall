@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame, blend_color
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame, blend_color
 from .base import Card, CardContext, register_card
 
 
@@ -37,21 +37,21 @@ class TorchVerticalCard(Card):
         # Embers as (x, y, speed)
         embers: list[tuple[float, float, float]] = []
         for _ in range(self.ember_density):
-            x = random.uniform(0, WIDTH - 1)
-            y = random.uniform(0, HEIGHT // 2)
+            x = random.uniform(0, PORTRAIT_WIDTH - 1)
+            y = random.uniform(0, PORTRAIT_HEIGHT // 2)
             speed = random.uniform(0.5, 1.5)
             embers.append((x, y, speed))
 
         while time.time() - start < self.duration:
             t = time.time() - start
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             # Base flame at bottom using noise-like sin waves
-            for y in range(HEIGHT // 2, HEIGHT):
-                vertical = (y - HEIGHT // 2) / (HEIGHT // 2)
-                for x in range(WIDTH):
-                    nx = x / WIDTH
+            for y in range(PORTRAIT_HEIGHT // 2, PORTRAIT_HEIGHT):
+                vertical = (y - PORTRAIT_HEIGHT // 2) / (PORTRAIT_HEIGHT // 2)
+                for x in range(PORTRAIT_WIDTH):
+                    nx = x / PORTRAIT_WIDTH
                     noise = math.sin((nx * 5 + t * 5) * self.intensity)
                     height_mask = max(0.0, 1.0 - vertical * 1.5)
                     strength = max(0.0, noise * 0.5 + height_mask)
@@ -69,12 +69,12 @@ class TorchVerticalCard(Card):
                 x += random.uniform(-0.2, 0.2)
                 if x < 0:
                     x = 0
-                if x >= WIDTH:
-                    x = WIDTH - 1
+                if x >= PORTRAIT_WIDTH:
+                    x = PORTRAIT_WIDTH - 1
                 if y < 0:
                     # Respawn near base of flame
-                    x = random.uniform(0, WIDTH - 1)
-                    y = random.uniform(HEIGHT // 2, HEIGHT - 2)
+                    x = random.uniform(0, PORTRAIT_WIDTH - 1)
+                    y = random.uniform(PORTRAIT_HEIGHT // 2, PORTRAIT_HEIGHT - 2)
                     speed = random.uniform(0.5, 1.5)
 
                 new_embers.append((x, y, speed))
