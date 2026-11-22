@@ -73,6 +73,26 @@ def main() -> None:
         output = run("say", "preview", "--id", "1", "--playlist", str(playlist), "--no-color")
         assert "Failed to load image" not in output
         assert any(block in output for block in "░▒▓█")
+        catalog = root / "config/cards.d"
+        catalog.mkdir(parents=True)
+        definition = catalog / "party-flame.yaml"
+        definition.write_text("type: image\nlayout: portrait\npath: flame.ppm\nscroll: false\n")
+        asset = catalog / "flame.ppm"
+        asset.write_bytes(b"P6\n10 50\n255\n" + bytes(1500))
+        assert f"party-flame ({definition.resolve()})" in run("say", "list")
+        preview = (
+            "say",
+            "preview",
+            "party-flame",
+            "--settings",
+            str(settings),
+            "--duration",
+            "0.03",
+            "--no-color",
+        )
+        assert "█" not in run(*preview)
+        asset.write_bytes(b"P6\n10 50\n255\n" + bytes([255]) * 1500)
+        assert "█" * 10 in run(*preview)
         playlist.write_text("[")
         run("say", "list", "--playlist", str(playlist), code=2)
         assert "Error" in run("say", "text", "Hello", "--color", "invalid", code=1)

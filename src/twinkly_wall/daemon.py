@@ -9,6 +9,7 @@ from pathlib import Path
 
 from . import __version__
 from .cards import CardContext
+from .cards.base import load_card_definitions
 from .config import load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
 from .scheduler import Scheduler
@@ -156,6 +157,7 @@ class TwinklyDaemon:
             logger.error("No cards configured in playlist")
             sys.exit(1)
 
+        load_card_definitions()
         logger.info(f"Starting Twinkly Wall daemon with {len(self.playlist.cards)} cards")
 
         outputs = self._create_outputs()
