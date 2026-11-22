@@ -132,7 +132,9 @@ daemon, single-card playback and terminal preview use the same mapping.
 `say preview --orientation` overrides the mount in settings for that preview.
 
 Portrait effects such as `torch_vertical`, `candle_vertical`, and
-`beer_vertical` draw on a 10×50 canvas. Landscape cards such as `clock`
+`beer_vertical` draw on a 10×50 canvas. The torch has a bright base,
+uneven flickering tips, and dimming embers. Set `intensity` to adjust flicker
+speed or `ember_density` to adjust the number of sparks. Landscape cards such as `clock`
 draw on a 50×10 canvas. When a card and the mount have different aspect
 orientations, the card turns sideways to fill the panel at native resolution.
 Both layouts and crossfades between them use all 500 LEDs.
