@@ -211,11 +211,15 @@ variables. The API key is not printed in CLI startup output.
 
 ## External cards
 
-Create a YAML file per named card in `~/.config/twinkly-wall/cards.d`, or set
-`TWINKLY_CARD_DIR` to a directory on a portable drive. The filename without
-`.yaml` or `.yml` becomes the card name. Names start with a lowercase letter and
-can also contain lowercase letters, digits, underscores, and hyphens. Choose a
-name distinct from built-in card names and other definitions.
+Create one YAML file per card in `config/cards.d` when running from the
+repository root. The CLI also discovers definitions in
+`~/.config/twinkly-wall/cards.d`. Set `TWINKLY_CARD_DIR` to use a single explicit
+directory, for example on a portable drive.
+
+The filename without `.yaml` or `.yml` becomes the card name. Names start with
+a lowercase letter and can also contain lowercase letters, digits, underscores,
+and hyphens. Names must be unique across both directories and the built-in
+catalog.
 
 For example, save this as `party-flame.yaml` with the GIF beside it.
 

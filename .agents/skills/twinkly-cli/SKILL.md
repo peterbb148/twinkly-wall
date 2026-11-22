@@ -24,4 +24,8 @@ For physical output, use settings with the intended wall's `twinkly.host`. `twin
 
 ## Create or configure a card
 
-Use the [card authoring guide](references/card-authoring.md) for YAML entries, implementing a new card type, registration, and a worked example with a focused test. Preview new types from the updated source checkout. Distributing a new type in a standalone executable requires a rebuild.
+For a named YAML card backed by a built-in renderer, put its definition and assets
+in `config/cards.d` at the repository root or `~/.config/twinkly-wall/cards.d`.
+Use [external cards](../../../docs/CLI.md#external-cards) for the definition format.
+
+Use the [card authoring guide](references/card-authoring.md) for YAML entries, implementing a new card type, registration, and a worked example with a focused test. Preview new types from the updated source checkout. Bundling a new Python renderer in a standalone executable requires a rebuild.
