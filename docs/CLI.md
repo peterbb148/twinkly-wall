@@ -237,9 +237,21 @@ runs smoke tests with an empty executable search path outside the checkout, then
 creates the archive and checksum in `dist/`. A local build is validated only on
 its host OS; use the macOS 15 CI artifact for the documented release target.
 
-PR CI builds the executable and tests the downloaded archive on a second macOS 15
-runner with no source checkout or build environment. Only the test harness uses
-the runner's Python; the executable receives no Python/UV on `PATH`.
+On PRs and pushes to `main`, CI always runs tests, lint, formatting, and
+dependency auditing. It builds and smoke-tests both platform archives only when
+one of these CLI source files changes:
+
+- `src/twinkly_wall/command.py` (entry point and command dispatcher)
+- `src/twinkly_wall/cli.py` (the `say` commands)
+- `src/twinkly_wall/daemon.py` (the `wall` command)
+
+Changes to cards (including registration), docs, YAML configs, assets, and
+other files outside this list skip binary builds, install jobs, and artifact
+cleanup. A manual CI dispatch or a version-tag release still builds both platforms.
+
+Mac CI tests the downloaded archive on a second macOS 15 runner. Only the test
+harness uses the runner's Python. The executable receives no Python or UV on
+`PATH`.
 
 To build the Ubuntu archive locally, run `bash scripts/build_ubuntu.sh` on
 native Ubuntu 24.04 ARM64 with UV, Python 3.11, and binutils installed. Each
