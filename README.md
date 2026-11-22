@@ -126,6 +126,8 @@ uv run twinkly-cli say card --id 3 --playlist config/cards.yaml
 | `--no-color` | Grayscale output |
 | `--orientation` | Preview orientation: horizontal, vertical_left, vertical_right (matches `twinkly.orientation`) |
 
+Configure the physical mount and mirror axes in settings. See [display orientation and mirroring](docs/CLI.md#display-orientation-and-mirroring).
+
 ## Remote Control (MCP Integration)
 
 The daemon supports remote control via the [twinkly-mcp](https://github.com/peterbb148/twinkly-mcp) server. When enabled, Claude Desktop can send commands to display messages or run cards on the LED wall.

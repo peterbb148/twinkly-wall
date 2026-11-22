@@ -112,6 +112,35 @@ For an existing service, update its startup command to point to the new executab
 and pass absolute settings and playlist paths. Supply optional MCP credentials
 through the service environment.
 
+## Display orientation and mirroring
+
+Set `twinkly.orientation` in the settings file to match the panel mount.
+Use `horizontal` for landscape, `vertical_left` when the panel is rotated
+counterclockwise from landscape, or `vertical_right` for clockwise.
+
+```yaml
+twinkly:
+  host: 192.168.1.137
+  orientation: vertical_left
+  mirror_h: false
+  mirror_v: false
+```
+
+Use `mirror_h` to flip left to right and `mirror_v` to flip top to bottom as
+viewed on the mounted panel. Either or both can be enabled. The playlist
+daemon, single-card playback and terminal preview use the same mapping.
+`say preview --orientation` overrides the mount in settings for that preview.
+
+Portrait effects such as `torch_vertical`, `candle_vertical`, and
+`beer_vertical` draw on a 10×50 canvas. Landscape cards such as `clock`
+draw on a 50×10 canvas. When a card and the mount have different aspect
+orientations, the card turns sideways to fill the panel at native resolution.
+Both layouts and crossfades between them use all 500 LEDs.
+
+```bash
+twinkly-cli say card torch_vertical --settings config/settings.yaml --duration 12
+```
+
 ## Commands and compatibility
 
 ```bash

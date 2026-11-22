@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, BLUE, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, BLUE, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 
@@ -32,11 +32,11 @@ class RainCard(Card):
         self.speed: float = float(self.config.get("speed", 1.0))
 
         # Precompute random phase offsets per column so motion feels organic
-        active_columns = max(1, int(WIDTH * self.density))
-        active_indices = set(random.sample(range(WIDTH), active_columns))
+        active_columns = max(1, int(PORTRAIT_WIDTH * self.density))
+        active_indices = set(random.sample(range(PORTRAIT_WIDTH), active_columns))
         self._column_offsets: list[int] = [
-            random.randint(0, HEIGHT + self.tail_length) if x in active_indices else -1
-            for x in range(WIDTH)
+            random.randint(0, PORTRAIT_HEIGHT + self.tail_length) if x in active_indices else -1
+            for x in range(PORTRAIT_WIDTH)
         ]
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
@@ -45,22 +45,22 @@ class RainCard(Card):
         total_frames = max(1, int(self.duration / frame_delay))
 
         for frame_index in range(total_frames):
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
-            for x in range(WIDTH):
+            for x in range(PORTRAIT_WIDTH):
                 offset = self._column_offsets[x]
                 if offset < 0:
                     continue
 
                 # Head of drop moves down the column; wrap with a longer period so columns desync
-                period = HEIGHT + self.tail_length + 5
+                period = PORTRAIT_HEIGHT + self.tail_length + 5
                 head = int((frame_index * self.speed + offset) % period) - self.tail_length
 
                 # Draw head + tail with simple brightness falloff
                 for i in range(self.tail_length):
                     y = head - i
-                    if 0 <= y < HEIGHT:
+                    if 0 <= y < PORTRAIT_HEIGHT:
                         fade = 1.0 - (i / max(1, self.tail_length))
                         r = int(self.color[0] * fade)
                         g = int(self.color[1] * fade)

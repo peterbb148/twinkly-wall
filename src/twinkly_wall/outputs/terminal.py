@@ -127,6 +127,9 @@ def animate_frames(
     use_half_blocks: bool = True,
     clear_between: bool = True,
     orientation: Orientation = "horizontal",
+    *,
+    mirror_h: bool = False,
+    mirror_v: bool = False,
 ) -> None:
     """
     Animate a sequence of frames in the terminal.
@@ -142,7 +145,7 @@ def animate_frames(
         first_frame = True
 
         for frame, delay in frames:
-            oriented = apply_orientation(frame, orientation)
+            oriented = apply_orientation(frame, orientation, mirror_h=mirror_h, mirror_v=mirror_v)
 
             if clear_between:
                 clear_screen()
@@ -186,6 +189,9 @@ class TerminalOutput:
         color_mode: bool = True,
         use_half_blocks: bool = True,
         orientation: Orientation = "horizontal",
+        *,
+        mirror_h: bool = False,
+        mirror_v: bool = False,
     ):
         """Initialize terminal output.
 
@@ -196,6 +202,8 @@ class TerminalOutput:
         self.color_mode = color_mode
         self.use_half_blocks = use_half_blocks
         self.orientation = orientation
+        self.mirror_h = mirror_h
+        self.mirror_v = mirror_v
         self._first_frame = True
         self._last_height = 0
 
@@ -212,7 +220,9 @@ class TerminalOutput:
 
     def send_frame(self, frame: Frame) -> None:
         """Send a frame to the terminal."""
-        oriented = apply_orientation(frame, self.orientation)
+        oriented = apply_orientation(
+            frame, self.orientation, mirror_h=self.mirror_h, mirror_v=self.mirror_v
+        )
 
         if not self._first_frame and self._last_height > 0:
             move_cursor_up(self._last_height)
