@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package each Ubuntu ARM64 executable with its own checksum.
+# Package the Ubuntu ARM64 executable with its own checksum.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -15,25 +15,20 @@ if [[ "$ID" != ubuntu || "$VERSION_ID" != 24.04 ]]; then
 fi
 
 uv sync --locked --no-dev --group build
-uv run --locked --no-sync pyinstaller --clean --noconfirm packaging/twinklysay.spec
-uv run --locked --no-sync pyinstaller --clean --noconfirm --onefile \
-  --specpath build --name twinklywall --paths "$PWD/src" "$PWD/packaging/daemon_entrypoint.py"
+uv run --locked --no-sync pyinstaller --clean --noconfirm packaging/twinkly-cli.spec
 
 version="$(uv run --locked --no-sync python -c 'from twinkly_wall import __version__; print(__version__)')"
+archive="twinkly-cli-$version-ubuntu-arm64.tar.gz"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 
-for command in twinklywall twinklysay; do
-  destination="$stage/$command"
-  mkdir -p "$destination/examples" "$destination/assets"
-  cp "dist/$command" "$destination/"
-  cp config/cards.example.yaml config/settings.example.yaml "$destination/examples/"
-  cp assets/carlsberg.png "$destination/assets/"
-  archive="$command-$version-ubuntu-arm64.tar.gz"
-  tar -czf "dist/$archive" -C "$destination" .
-  (
-    cd dist
-    sha256sum "$archive" > "$archive.sha256"
-  )
-  echo "Built dist/$archive and dist/$archive.sha256"
-done
+mkdir -p "$stage/examples" "$stage/assets"
+cp dist/twinkly-cli "$stage/"
+cp config/cards.example.yaml config/settings.example.yaml "$stage/examples/"
+cp assets/carlsberg.png "$stage/assets/"
+tar -czf "dist/$archive" -C "$stage" .
+(
+  cd dist
+  sha256sum "$archive" > "$archive.sha256"
+)
+echo "Built dist/$archive and dist/$archive.sha256"

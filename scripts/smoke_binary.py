@@ -10,7 +10,7 @@ from pathlib import Path
 def main() -> None:
     """Verify bundled runtime, rendering, YAML, and expected input failures."""
     binary = Path(sys.argv[1]).resolve(strict=True)
-    with tempfile.TemporaryDirectory(prefix="twinklysay-smoke-") as directory:
+    with tempfile.TemporaryDirectory(prefix="twinkly-cli-smoke-") as directory:
         root = Path(directory)
         # The child receives no Python, UV, source checkout, or developer configuration.
         env = {
@@ -40,19 +40,22 @@ def main() -> None:
                 )
             return result.stdout + result.stderr
 
-        assert "Usage:" in run("--help")
-        assert "Usage:" in run("-h")
-        assert "Usage:" in run("preview", "-h")
-        assert "twinklysay " in run("--version")
-        assert "clock" in run("list")
-        assert run("say", "Hello", "--no-color").strip()
-        assert "Previewing" in run("preview", "clock", "--duration", "0.03", "--no-color")
+        assert "{wall,say}" in run("--help")
+        assert "{wall,say}" in run("-h")
+        assert "usage: twinkly-cli wall" in run("wall", "--help")
+        assert "Usage:" in run("say", "--help")
+        assert "Usage:" in run("say", "preview", "-h")
+        assert "twinkly-cli " in run("--version")
+        assert "clock" in run("say", "list")
+        assert run("say", "text", "Hello", "--no-color").strip()
+        assert "Previewing" in run("say", "preview", "clock", "--duration", "0.03", "--no-color")
         settings = root / "settings.yaml"
         settings.write_text("twinkly: {orientation: '${DISPLAY_ORIENTATION}'}\n")
         playlist = root / "cards.yaml"
         playlist.write_text("cards:\n  - type: '${CARD_TYPE}'\n    duration: 0.03\n")
-        assert "[1] clock" in run("list", "--playlist", str(playlist))
+        assert "[1] clock" in run("say", "list", "--playlist", str(playlist))
         assert "1:clock" in run(
+            "say",
             "preview",
             "--id",
             "1",
@@ -67,14 +70,14 @@ def main() -> None:
             (Path(__file__).resolve().parents[1] / "assets/carlsberg.png").read_bytes()
         )
         playlist.write_text(f"cards:\n  - type: image\n    path: {image}\n    duration: 0.03\n")
-        output = run("preview", "--id", "1", "--playlist", str(playlist), "--no-color")
+        output = run("say", "preview", "--id", "1", "--playlist", str(playlist), "--no-color")
         assert "Failed to load image" not in output
         assert any(block in output for block in "░▒▓█")
         playlist.write_text("[")
-        run("list", "--playlist", str(playlist), code=2)
-        assert "Error" in run("say", "Hello", "--color", "invalid", code=1)
-        run("list", "--playlist", str(root / "missing.yaml"), code=2)
-        run("card", "clock", code=1)
+        run("say", "list", "--playlist", str(playlist), code=2)
+        assert "Error" in run("say", "text", "Hello", "--color", "invalid", code=1)
+        run("say", "list", "--playlist", str(root / "missing.yaml"), code=2)
+        run("say", "card", "clock", code=1)
     print("Packaged CLI smoke tests passed (isolated directory, empty executable PATH).")
 
 

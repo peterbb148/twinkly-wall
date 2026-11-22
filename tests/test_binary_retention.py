@@ -11,7 +11,7 @@ from scripts import retain_binaries as retention
 
 def release(number, *, draft=False):
     version = f"0.{number}.0"
-    archive = f"twinklysay-{version}-darwin-arm64.tar.gz"
+    archive = f"twinkly-cli-{version}-darwin-arm64.tar.gz"
     return {
         "tag_name": f"v{version}",
         "draft": draft,
@@ -24,21 +24,20 @@ def release(number, *, draft=False):
     }
 
 
-def ubuntu_assets(number, command):
+def ubuntu_assets(number):
     version = f"0.{number}.0"
-    archive = f"{command}-{version}-ubuntu-arm64.tar.gz"
-    base_id = number * 10 + (3 if command == "twinklysay" else 5)
+    archive = f"twinkly-cli-{version}-ubuntu-arm64.tar.gz"
+    base_id = number * 10 + 3
     return [{"id": base_id, "name": archive}, {"id": base_id + 1, "name": archive + ".sha256"}]
 
 
 def current_release(number):
     record = release(number)
-    record["assets"].extend(ubuntu_assets(number, "twinklysay"))
-    record["assets"].extend(ubuntu_assets(number, "twinklywall"))
+    record["assets"].extend(ubuntu_assets(number))
     return record
 
 
-def artifact(number, version, *, run=None, expired=False, target=("twinklysay", "darwin-arm64")):
+def artifact(number, version, *, run=None, expired=False, target=("twinkly-cli", "darwin-arm64")):
     command, platform = target
     return {
         "id": number,
@@ -52,7 +51,7 @@ def artifact(number, version, *, run=None, expired=False, target=("twinklysay", 
 def current_artifacts(number, version):
     return [
         artifact(number + 10 * index, version, run=number, target=target)
-        for index, target in enumerate(retention.BINARY_TARGETS)
+        for index, target in enumerate(retention.CURRENT_TARGETS)
     ]
 
 
@@ -265,18 +264,18 @@ def test_release_retains_complete_versions_for_each_target():
     second["assets"] = second["assets"][:-1]
     records = [first, second, current_release(3)]
 
-    assert retention.release_deletions(records, "v0.3.0") == [10, 11, 13, 14, 25]
+    assert retention.release_deletions(records, "v0.3.0") == [10, 11, 23]
 
 
 def test_current_release_missing_ubuntu_asset_blocks_all_deletions():
     current = current_release(3)
     current["assets"].pop()
-    with pytest.raises(ValueError, match="twinklywall ubuntu-arm64"):
+    with pytest.raises(ValueError, match="twinkly-cli ubuntu-arm64"):
         retention.release_deletions([release(1), release(2), current], "v0.3.0")
 
 
 def test_ci_retains_versions_independently_for_each_target():
-    say_ubuntu = ("twinklysay", "ubuntu-arm64")
+    say_ubuntu = ("twinkly-cli", "ubuntu-arm64")
     wall_ubuntu = ("twinklywall", "ubuntu-arm64")
     records = [
         artifact(1, "0.1.0"),
@@ -290,7 +289,7 @@ def test_ci_retains_versions_independently_for_each_target():
     ]
     runs = success_runs(1, 2, 3, 4, 5)
     runs[8] = {"status": "in_progress", "conclusion": None}
-    assert retention.artifact_deletions(records, runs, 6) == [2, 3]
+    assert retention.artifact_deletions(records, runs, 6) == [2]
 
 
 @pytest.mark.parametrize("missing_target", [True, False])
@@ -299,6 +298,13 @@ def test_ci_requires_matching_versions_for_all_current_targets(missing_target):
     if missing_target:
         records.pop()
     else:
-        records[-1]["name"] = "twinklywall-0.4.0-ubuntu-arm64"
+        records[-1]["name"] = "twinkly-cli-0.4.0-ubuntu-arm64"
     with pytest.raises(ValueError, match="all binary artifacts for one version"):
         retention.artifact_deletions(records, {}, 5)
+
+
+def test_new_release_preserves_legacy_macos_assets():
+    legacy = release(1)
+    for asset in legacy["assets"][:2]:
+        asset["name"] = asset["name"].replace("twinkly-cli", "twinklysay")
+    assert retention.release_deletions([legacy, current_release(2)], "v0.2.0") == []

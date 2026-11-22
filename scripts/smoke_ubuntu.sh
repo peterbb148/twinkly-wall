@@ -15,6 +15,7 @@ for tool in python python3 uv; do
   fi
 done
 
+scripts_dir="$(cd "$(dirname "$0")" && pwd)"
 downloads="${1:?Expected the directory containing downloaded artifacts}"
 version="${2:?Expected the package version}"
 work="$(mktemp -d)"
@@ -28,20 +29,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for command in twinklywall twinklysay; do
-  artifact="$command-$version-ubuntu-arm64"
-  archive="$artifact.tar.gz"
-  mkdir "$work/$command"
-  (
-    cd "$downloads/$artifact"
-    sha256sum --strict --check "$archive.sha256"
-    tar -xzf "$archive" -C "$work/$command"
-  )
-  binary="$work/$command/$command"
-  read -r elf_format < <(od -An -tx1 -N6 "$binary")
-  read -r elf_machine < <(od -An -tx1 -j18 -N2 "$binary")
-  [[ "$elf_format" == "7f 45 4c 46 02 01" && "$elf_machine" == "b7 00" ]]
-done
+artifact="twinkly-cli-$version-ubuntu-arm64"
+archive="$artifact.tar.gz"
+(
+  cd "$downloads/$artifact"
+  sha256sum --strict --check "$archive.sha256"
+  tar -xzf "$archive" -C "$work"
+)
+binary="$work/twinkly-cli"
+read -r elf_format < <(od -An -tx1 -N6 "$binary")
+read -r elf_machine < <(od -An -tx1 -j18 -N2 "$binary")
+[[ "$elf_format" == "7f 45 4c 46 02 01" && "$elf_machine" == "b7 00" ]]
 
 cd "$work"
 export HOME="$work"
@@ -54,35 +52,32 @@ cards:
     duration: 10
 YAML
 
-say="$work/twinklysay/twinklysay"
-wall="$work/twinklywall/twinklywall"
-[[ "$("$say" --version)" == "twinklysay $version" ]]
-"$say" --help > help.log
+[[ "$("$binary" --version)" == "twinkly-cli $version" ]]
+"$binary" say --help > help.log
 grep -Fq 'Usage:' help.log
-"$say" say Hello --no-color > text.log
+"$binary" say text Hello --no-color > text.log
 grep -Eq '[░▒▓█]' text.log
-"$say" list --playlist cards.yaml > list.log
+"$binary" say list --playlist cards.yaml > list.log
 grep -Fq '[1] clock' list.log
-"$say" preview --id 1 --playlist cards.yaml --settings settings.yaml \
+"$binary" say preview --id 1 --playlist cards.yaml --settings settings.yaml \
   --duration 0.1 --no-color > preview.log
 grep -Eq '[░▒▓█]' preview.log
 cat > image-cards.yaml <<YAML
 cards:
   - type: image
-    path: $work/twinklysay/assets/carlsberg.png
+    path: $work/assets/carlsberg.png
     duration: 0.1
 YAML
-"$say" preview --id 1 --playlist image-cards.yaml --no-color > image.log 2>&1
+"$binary" say preview --id 1 --playlist image-cards.yaml --no-color > image.log 2>&1
 grep -Eq '[░▒▓█]' image.log
 if grep -Fq 'Failed to load image' image.log; then
   cat image.log >&2
   exit 1
 fi
 
-[[ "$("$wall" --version)" == "twinklywall $version" ]]
-"$wall" --help > help.log
-grep -Fq 'usage: twinklywall ' help.log
-"$wall" --terminal --settings settings.yaml --cards cards.yaml > wall.log 2>&1 &
+"$binary" wall --help > help.log
+grep -Fq 'usage: twinkly-cli wall ' help.log
+"$binary" wall --terminal --settings settings.yaml --cards cards.yaml > wall.log 2>&1 &
 daemon_pid=$!
 for _ in {1..100}; do
   if grep -Fq '▀' wall.log; then
@@ -112,4 +107,6 @@ fi
 wait "$daemon_pid"
 daemon_pid=
 grep -Fq 'Daemon stopped' wall.log
-echo "Both Ubuntu ARM64 binaries passed smoke tests."
+echo "Both modes of the Ubuntu ARM64 binary passed smoke tests."
+
+bash "$scripts_dir/smoke_installer.sh" ubuntu-arm64 "$downloads/$artifact/$archive"

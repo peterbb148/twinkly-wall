@@ -16,7 +16,7 @@ exe = EXE(
     a.scripts,
     a.binaries,
     a.datas,
-    name="twinklysay",
+    name="twinkly-cli",
     console=True,
     target_arch="arm64" if sys.platform == "darwin" else None,
     codesign_identity=None,
