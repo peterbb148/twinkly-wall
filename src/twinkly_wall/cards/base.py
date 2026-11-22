@@ -1,9 +1,14 @@
 """Base classes for the card system."""
 
+import os
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from ..types import Frame
 
@@ -80,9 +85,65 @@ def get_card_class(card_type: str) -> type[Card] | None:
     return _card_registry.get(card_type)
 
 
-def list_card_types() -> list[str]:
-    """Return list of all registered card type names."""
-    return list(_card_registry.keys())
+@dataclass(frozen=True)
+class CardDefinition:
+    """A named configuration for an existing renderer."""
+
+    renderer: str
+    config: dict[str, Any]
+    source: Path
+
+
+def load_card_definitions() -> dict[str, CardDefinition]:
+    """Discover user-defined cards from the configured directory."""
+    override = os.environ.get("TWINKLY_CARD_DIR")
+    directory = (
+        Path(override).expanduser()
+        if override is not None
+        else Path.home() / ".config" / "twinkly-wall" / "cards.d"
+    )
+    if override is None and not directory.exists():
+        return {}
+    if not directory.is_dir():
+        raise ValueError(
+            f"Card definition directory does not exist or is not a directory: {directory}"
+        )
+
+    definitions = {}
+    for source in sorted(directory.iterdir()):
+        if source.suffix not in {".yaml", ".yml"} or not source.is_file():
+            continue
+        name = source.stem
+        if not re.fullmatch(r"[a-z][a-z0-9_-]*", name):
+            raise ValueError(f"{source}: card name must use lowercase letters, digits, _, or -")
+        if name in _card_registry or name in definitions:
+            raise ValueError(f"{source}: card name '{name}' is already in use")
+        try:
+            data = yaml.safe_load(source.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, yaml.YAMLError) as error:
+            raise ValueError(f"{source}: could not read card definition: {error}") from error
+        if not isinstance(data, dict) or not all(isinstance(key, str) for key in data):
+            raise ValueError(f"{source}: expected a YAML mapping with string keys")
+        renderer = data.pop("type", None)
+        if not isinstance(renderer, str) or renderer not in _card_registry:
+            raise ValueError(f"{source}: 'type' must name a built-in card renderer")
+        if renderer == "image":
+            asset_path = data.get("path")
+            if not isinstance(asset_path, str) or not asset_path:
+                raise ValueError(f"{source}: image cards require an asset path")
+            asset = (source.parent / asset_path).resolve()
+            if not asset.is_file():
+                raise ValueError(f"{source}: image does not exist: {asset}")
+            data["path"] = str(asset)
+        definitions[name] = CardDefinition(renderer, data, source.resolve())
+    return definitions
+
+
+def list_card_types(definitions: dict[str, CardDefinition] | None = None) -> list[str]:
+    """Return the names of built-in renderers and external cards."""
+    if definitions is None:
+        definitions = load_card_definitions()
+    return [*_card_registry, *definitions]
 
 
 def create_card(card_type: str, config: dict[str, Any] | None = None) -> Card | None:
@@ -96,6 +157,9 @@ def create_card(card_type: str, config: dict[str, Any] | None = None) -> Card | 
         Card instance or None if type not found
     """
     card_class = get_card_class(card_type)
-    if card_class is None:
+    if card_class is not None:
+        return card_class(config)
+    definition = load_card_definitions().get(card_type)
+    if definition is None:
         return None
-    return card_class(config)
+    return _card_registry[definition.renderer]({**definition.config, **(config or {})})

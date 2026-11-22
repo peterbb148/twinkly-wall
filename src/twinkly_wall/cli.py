@@ -28,6 +28,7 @@ from .cards import (
     create_card,
     list_card_types,
 )
+from .cards.base import load_card_definitions
 from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
@@ -350,10 +351,14 @@ def cmd_card(args: CLIOptions) -> int:
 
 def cmd_list(args: CLIOptions) -> int:
     """List available registered cards and optional playlist entries."""
-    types = sorted(list_card_types())
+    definitions = load_card_definitions()
     print("Registered cards:")
-    for name in types:
-        print(f" - {name}")
+    for name in sorted(list_card_types(definitions)):
+        definition = definitions.get(name)
+        if definition is None:
+            print(f" - {name}")
+        else:
+            print(f" - {name} ({definition.source})")
 
     if args.playlist:
         playlist = load_playlist(args.playlist)
@@ -533,11 +538,19 @@ class PatternMode(StrEnum):
 
 def _validate_card(value: str | None) -> str | None:
     """Reject unknown card names before starting rendering or contacting hardware."""
-    if value is not None and value not in list_card_types():
+    if value is not None and value not in _registered_card_names():
         raise typer.BadParameter(
             f"Unknown card '{value}'. Use 'twinklysay list' for available cards."
         )
     return value
+
+
+def _registered_card_names() -> set[str]:
+    """Resolve card names for Typer validation and report catalog errors."""
+    try:
+        return set(list_card_types())
+    except (OSError, ValueError) as error:
+        raise typer.BadParameter(str(error)) from error
 
 
 def _validate_config_path(value: Path | None, *, playlist: bool) -> Path | None:
@@ -557,8 +570,13 @@ def _validate_config_path(value: Path | None, *, playlist: bool) -> Path | None:
         cards = data.get("cards", [])
         if not isinstance(cards, list):
             raise typer.BadParameter("Playlist cards must be a list")
+        names = _registered_card_names()
         for item in cards:
-            if not isinstance(item, dict) or item.get("type") not in list_card_types():
+            if (
+                not isinstance(item, dict)
+                or not isinstance(item.get("type"), str)
+                or item["type"] not in names
+            ):
                 raise typer.BadParameter("Each playlist card must have a registered type")
     else:
         for section in ("twinkly", "weather", "operating_hours"):

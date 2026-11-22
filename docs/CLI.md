@@ -209,6 +209,39 @@ The MCP client still supports `TWINKLY_MCP_URL` and `TWINKLY_API_KEY`;
 `--server` and `--api-key` take precedence over the corresponding environment
 variables. The API key is not printed in CLI startup output.
 
+## External cards
+
+Create a YAML file per named card in `~/.config/twinkly-wall/cards.d`, or set
+`TWINKLY_CARD_DIR` to a directory on a portable drive. The filename without
+`.yaml` or `.yml` becomes the card name. Names start with a lowercase letter and
+can also contain lowercase letters, digits, underscores, and hyphens. Choose a
+name distinct from built-in card names and other definitions.
+
+For example, save this as `party-flame.yaml` with the GIF beside it.
+
+```yaml
+type: image
+layout: portrait
+path: flame.gif
+scroll: false
+```
+
+`type` selects an existing renderer and the remaining keys are its options.
+An image path in the definition is relative to the YAML file unless it is
+absolute. The portrait image layout is 10×50 and the default landscape layout
+is 50×10. Playback duration comes from the command or playlist entry.
+
+```bash
+twinkly-cli say list
+twinkly-cli say preview party-flame --orientation vertical_left --duration 3
+twinkly-cli say card party-flame --settings ~/.config/twinkly-wall/portrait.yaml --duration 12
+```
+
+The list includes each external definition's path. For playlist playback, add
+an entry with `type: party-flame`. Editing the YAML or replacing the GIF takes
+effect when the card is next loaded. Configuration uses the existing renderers
+and works with the same installed executable.
+
 ## Develop, build, and release
 
 Use UV and Python 3.11 for source installations:
