@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from .cards import Card, CardContext, create_card
 from .config import CardConfig, OperatingHoursConfig, PlaylistConfig, is_within_operating_hours
 from .effects import crossfade
-from .types import HEIGHT, WIDTH, Frame
+from .types import HEIGHT, WIDTH, Frame, Orientation, apply_orientation
 
 if TYPE_CHECKING:
     from .mcp_client import MCPClient
@@ -55,6 +55,7 @@ class Scheduler:
         outputs: list[Output] | None = None,
         mcp_client: "MCPClient | None" = None,
         operating_hours: OperatingHoursConfig | None = None,
+        orientation: Orientation = "horizontal",
     ):
         """Initialize the scheduler.
 
@@ -64,12 +65,14 @@ class Scheduler:
             outputs: Optional list of output targets
             mcp_client: Optional MCP client for remote control
             operating_hours: Optional operating hours configuration
+            orientation: Display mount used when blending cards
         """
         self.playlist = playlist
         self.context = context or CardContext()
         self.outputs = outputs or []
         self.mcp_client = mcp_client
         self.operating_hours = operating_hours or OperatingHoursConfig()
+        self.orientation = orientation
         self.state = SchedulerState()
         self._transition_steps = 15  # Steps for crossfade transitions
         self._last_mcp_poll = 0.0  # Track last MCP poll time
@@ -125,7 +128,11 @@ class Scheduler:
             return
 
         if transition == "crossfade":
-            yield from crossfade(from_frame, to_frame, self._transition_steps)
+            yield from crossfade(
+                apply_orientation(from_frame, self.orientation),
+                apply_orientation(to_frame, self.orientation),
+                self._transition_steps,
+            )
         else:
             # Unknown transition, just switch
             yield to_frame
@@ -330,8 +337,8 @@ class Scheduler:
                         # Yield transition frames
                         transition_type = card_config.transition
                         if transition_type == "crossfade":
-                            for t_frame in crossfade(
-                                self.state.last_frame, frame, self._transition_steps
+                            for t_frame in self._apply_transition(
+                                self.state.last_frame, frame, transition_type
                             ):
                                 yield t_frame, 0.03
                         first_frame = False

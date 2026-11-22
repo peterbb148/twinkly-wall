@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 LAVA_ORANGE: RGB = (255, 140, 60)
@@ -44,9 +44,9 @@ class LavaColumnCard(Card):
 
     def _init_blobs(self) -> list[Blob]:
         blobs: list[Blob] = []
-        column_x = WIDTH // 2
+        column_x = PORTRAIT_WIDTH // 2
         for _ in range(self.blobs_count):
-            y = random.uniform(0, HEIGHT - 1)
+            y = random.uniform(0, PORTRAIT_HEIGHT - 1)
             radius = random.randint(1, 3)
             speed = random.uniform(0.5, 1.5) * self.speed
             direction = random.choice([-1, 1])
@@ -62,7 +62,7 @@ class LavaColumnCard(Card):
         blobs = self._init_blobs()
 
         while time.time() - start < self.duration:
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             # Draw blobs
@@ -71,13 +71,13 @@ class LavaColumnCard(Card):
                     for dx in range(-1, 2):
                         x = int(blob.x + dx)
                         y = int(blob.y + dy)
-                        if 0 <= x < WIDTH and 0 <= y < HEIGHT:
+                        if 0 <= x < PORTRAIT_WIDTH and 0 <= y < PORTRAIT_HEIGHT:
                             color = LAVA_ORANGE if abs(dy) < blob.radius else LAVA_RED
                             canvas.set_pixel(x, y, color)
 
             # Dim background
-            for y in range(HEIGHT):
-                for x in range(WIDTH):
+            for y in range(PORTRAIT_HEIGHT):
+                for x in range(PORTRAIT_WIDTH):
                     r, g, b = canvas.get_pixel(x, y)
                     if (r, g, b) == (0, 0, 0):
                         canvas.set_pixel(x, y, LAVA_DARK)
@@ -88,8 +88,8 @@ class LavaColumnCard(Card):
                 if blob.y < 0:
                     blob.y = 0
                     blob.direction = 1
-                elif blob.y > HEIGHT - 1:
-                    blob.y = HEIGHT - 1
+                elif blob.y > PORTRAIT_HEIGHT - 1:
+                    blob.y = PORTRAIT_HEIGHT - 1
                     blob.direction = -1
 
             yield canvas.copy(), frame_delay

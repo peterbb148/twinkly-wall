@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
 from .base import Card, CardContext, register_card
 
 VINE_GREEN: RGB = (0, 160, 80)
@@ -49,24 +49,24 @@ class VinesCard(Card):
 
         vines: list[Vine] = []
         for _ in range(self.count):
-            x = random.randint(1, WIDTH - 2)
-            vines.append(Vine(x=x, y=HEIGHT - 1, age=0.0, speed=self.speed))
+            x = random.randint(1, PORTRAIT_WIDTH - 2)
+            vines.append(Vine(x=x, y=PORTRAIT_HEIGHT - 1, age=0.0, speed=self.speed))
 
         while time.time() - start < self.duration:
-            canvas = Canvas(WIDTH, HEIGHT)
+            canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
             canvas.clear(BLACK)
 
             # Draw and update vines
             for vine in vines:
                 # Draw the vine up to its current y
-                for y in range(vine.y, HEIGHT):
+                for y in range(vine.y, PORTRAIT_HEIGHT):
                     canvas.set_pixel(vine.x, y, VINE_GREEN)
 
                 # Random leaves
                 if random.random() < 0.2:
                     side = random.choice([-1, 1])
-                    lx = max(0, min(WIDTH - 1, vine.x + side))
-                    ly = min(HEIGHT - 1, vine.y + random.randint(-1, 1))
+                    lx = max(0, min(PORTRAIT_WIDTH - 1, vine.x + side))
+                    ly = min(PORTRAIT_HEIGHT - 1, vine.y + random.randint(-1, 1))
                     canvas.set_pixel(lx, ly, LEAF_GREEN)
 
                 # Grow upward

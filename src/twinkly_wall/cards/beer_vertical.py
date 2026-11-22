@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame, blend_color
+from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame, blend_color
 from .base import Card, CardContext, register_card
 
 BEER_GOLD: RGB = (255, 198, 41)
@@ -41,14 +41,14 @@ class BeerVerticalCard(Card):
     def _glass_bounds(self) -> tuple[int, int]:
         """Return (x0, x1) inclusive bounds of the glass interior."""
         glass_width = 10
-        x0 = (WIDTH - glass_width) // 2
+        x0 = (PORTRAIT_WIDTH - glass_width) // 2
         x1 = x0 + glass_width - 1
         return x0, x1
 
     def _draw_glass_outline(self, canvas: Canvas) -> None:
         """Draw a simple beer glass outline."""
         x0, x1 = self._glass_bounds()
-        for y in range(HEIGHT):
+        for y in range(PORTRAIT_HEIGHT):
             canvas.set_pixel(x0, y, GLASS_OUTLINE)
             canvas.set_pixel(x1, y, GLASS_OUTLINE)
 
@@ -58,7 +58,7 @@ class BeerVerticalCard(Card):
         bubbles: list[tuple[float, float, float]] = []
         for _ in range(self.bubble_count):
             x = random.uniform(x0 + 1, x1 - 1)
-            y = random.uniform(0, HEIGHT - 1)
+            y = random.uniform(0, PORTRAIT_HEIGHT - 1)
             speed = random.uniform(1.5, 3.0)
             bubbles.append((x, y, speed))
         return bubbles
@@ -70,22 +70,22 @@ class BeerVerticalCard(Card):
         time_offset: float,
     ) -> Frame:
         """Render a single frame for the beer glass animation."""
-        canvas = Canvas(WIDTH, HEIGHT)
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
         canvas.clear(BLACK)
 
         x0, x1 = self._glass_bounds()
-        beer_height = int((HEIGHT - 2) * fill_ratio)
+        beer_height = int((PORTRAIT_HEIGHT - 2) * fill_ratio)
 
         # Draw beer inside glass
-        for y in range(HEIGHT - 1, HEIGHT - 1 - beer_height, -1):
-            t = (HEIGHT - 1 - y) / max(1, beer_height)
+        for y in range(PORTRAIT_HEIGHT - 1, PORTRAIT_HEIGHT - 1 - beer_height, -1):
+            t = (PORTRAIT_HEIGHT - 1 - y) / max(1, beer_height)
             color = blend_color(BEER_GOLD, BEER_DARK, t * 0.5)
             for x in range(x0 + 1, x1):
                 canvas.set_pixel(x, y, color)
 
         # Draw foam at top of beer
         if beer_height > 0:
-            foam_y = HEIGHT - 1 - beer_height
+            foam_y = PORTRAIT_HEIGHT - 1 - beer_height
             for x in range(x0 + 1, x1):
                 c = FOAM_WHITE if (x + int(time_offset * 5)) % 3 == 0 else FOAM_CREAM
                 canvas.set_pixel(x, foam_y, c)
@@ -94,7 +94,7 @@ class BeerVerticalCard(Card):
         for x, y, _ in bubbles:
             ix = int(x)
             iy = int(y)
-            if x0 + 1 <= ix < x1 and iy >= HEIGHT - beer_height:
+            if x0 + 1 <= ix < x1 and iy >= PORTRAIT_HEIGHT - beer_height:
                 canvas.set_pixel(ix, iy, BUBBLE_COLOR)
 
         # Draw glass outline on top
@@ -121,8 +121,8 @@ class BeerVerticalCard(Card):
 
             # Update bubbles
             x0, x1 = self._glass_bounds()
-            max_beer_y = HEIGHT - 1
-            beer_height = int((HEIGHT - 2) * fill_ratio)
+            max_beer_y = PORTRAIT_HEIGHT - 1
+            beer_height = int((PORTRAIT_HEIGHT - 2) * fill_ratio)
             beer_top_y = max_beer_y - beer_height
 
             new_bubbles: list[tuple[float, float, float]] = []
