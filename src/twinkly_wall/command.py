@@ -27,6 +27,3 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.print_help()
     return 0
-
-
-# Temporary CI scope verification.
