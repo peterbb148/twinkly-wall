@@ -7,6 +7,7 @@ import signal
 import sys
 from pathlib import Path
 
+from . import __version__
 from .cards import CardContext
 from .config import load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
@@ -199,7 +200,7 @@ class TwinklyDaemon:
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser for the daemon."""
     parser = argparse.ArgumentParser(
-        prog="twinkly-wall",
+        prog="twinklywall",
         description="Run the Twinkly Wall LED display daemon",
     )
     parser.add_argument(
@@ -244,7 +245,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 0.1.0",
+        version=f"%(prog)s {__version__}",
     )
     return parser
 

@@ -1,14 +1,14 @@
 # Twinklysay CLI
 
 `twinklysay` uses Typer and supports `say`, `preview`, `card`, `list`, and `mcp`.
-The separate `twinkly-wall` daemon remains available for source-based Raspberry Pi
-installations; it is not part of the initial executable release.
+`twinklywall` is the separate daemon that runs the configured wall playlist.
+Existing scripts and services should replace the old `twinkly-wall` command with
+`twinklywall`. Existing settings and playlists use the same paths.
 
 ## Install on Apple Silicon macOS
 
 The initial binary target is **macOS 15 (Sequoia) or newer, Apple Silicon ARM64**.
-Release builds and installation tests run natively on macOS 15. Intel macOS,
-Rosetta, Linux, and Windows binaries are not supplied.
+Release builds and installation tests run natively on macOS 15.
 
 Download `twinklysay-VERSION-darwin-arm64.tar.gz` and its `.sha256` file from
 [GitHub Releases](https://github.com/peterbb148/twinkly-wall/releases). Artifacts
@@ -54,6 +54,54 @@ Future Developer ID signing/notarization requires an Apple Developer membership,
 a Developer ID Application certificate and its private key/password in CI secrets,
 and notarization credentials (an App Store Connect API key or suitable Apple ID
 credentials). These credentials are not configured by this change.
+
+## Install on Ubuntu ARM64
+
+The Ubuntu builds support **Ubuntu 24.04 LTS and 26.04 LTS on ARM64** (`aarch64`).
+Each executable bundles Python and its Python dependencies. It uses the host
+glibc and needs writable, executable temporary space to unpack at startup.
+Use an Ubuntu 24.04 or 26.04 userspace with the standard runtime libraries.
+
+Each executable has its own archive and SHA-256 sidecar in
+[GitHub Releases](https://github.com/peterbb148/twinkly-wall/releases).
+Download both files for the command you want. Verify the checksum from the
+download directory, then extract and install that command. Replace `VERSION`
+with the release version without the leading `v`.
+
+| Command | Archive | Use |
+| --- | --- | --- |
+| `twinklywall` | `twinklywall-VERSION-ubuntu-arm64.tar.gz` | Run the wall playlist continuously |
+| `twinklysay` | `twinklysay-VERSION-ubuntu-arm64.tar.gz` | Play a card on demand or preview it in the terminal |
+
+```bash
+# Choose twinklywall or twinklysay.
+command_name=twinklywall
+version=VERSION
+archive="$command_name-$version-ubuntu-arm64.tar.gz"
+sha256sum --strict --check "$archive.sha256" &&
+  mkdir -p "$command_name-$version" "$HOME/.local/bin" &&
+  tar -xzf "$archive" -C "$command_name-$version" &&
+  install -m 755 "$command_name-$version/$command_name" "$HOME/.local/bin/$command_name"
+```
+
+Add `$HOME/.local/bin` to your `PATH` if needed, and run the installed command
+with `--version` to verify it starts. Repeat with the other command if you want
+both. Each archive includes example settings, a playlist, and a sample image.
+
+### Start the wall daemon
+
+Copy the daemon archive's example YAML files to a directory outside the extracted
+archive. Set `twinkly.host` to your wall's address and edit the playlist. Try terminal
+playback first, then start the daemon on the physical wall with the same files.
+
+```bash
+twinklywall --terminal --settings /path/to/settings.yaml --cards /path/to/cards.yaml
+twinklywall --settings /path/to/settings.yaml --cards /path/to/cards.yaml
+```
+
+For an existing service, update its startup command to point to the new executable
+and pass absolute settings and playlist paths. Supply optional MCP credentials
+through the service environment.
 
 ## Commands and compatibility
 
@@ -119,8 +167,8 @@ uv sync --locked
 uv run --locked twinklysay --help
 uv run --locked pytest --cov=twinkly_wall.cli --cov=scripts.retain_binaries --cov-branch --cov-report=term-missing --cov-fail-under=81
 uv run --locked coverage report --include='scripts/retain_binaries.py' --fail-under=81
-uv run --locked ruff check src/ tests/ scripts/ packaging/entrypoint.py
-uv run --locked ruff format --check src/ tests/ scripts/ packaging/entrypoint.py
+uv run --locked ruff check src/ tests/ scripts/ packaging/
+uv run --locked ruff format --check src/ tests/ scripts/ packaging/
 ```
 
 The full test suite runs; CI measures coverage for the CLI being migrated,
@@ -144,12 +192,18 @@ PR CI builds the executable and tests the downloaded archive on a second macOS 1
 runner with no source checkout or build environment. Only the test harness uses
 the runner's Python; the executable receives no Python/UV on `PATH`.
 
+To build both Ubuntu archives locally, run `bash scripts/build_ubuntu.sh` on
+native Ubuntu 24.04 ARM64 with UV, Python 3.11, and binutils installed. Each
+Ubuntu CI install job downloads both archives and verifies their checksums,
+executable architecture, CLI rendering, and daemon terminal playback and
+shutdown in a clean Ubuntu ARM64 container without Python or UV installed.
+
 For a release, update both `pyproject.toml` and `twinkly_wall.__version__`, update
 the lockfile, and deliver the changes through a reviewed PR. Once merged, create
 the corresponding `vVERSION` tag. `.github/workflows/release.yml` checks that the
 tag matches both versions, runs the same tests and native build/install jobs,
-and publishes the verified archive/checksum to GitHub Releases. A failed build or
-test prevents publication. Creating a workflow does not itself publish a release.
+and publishes the verified archive and checksum for each command and platform
+to GitHub Releases. A failed build or test prevents publication. Creating a workflow does not itself publish a release.
 
 ## Binary retention
 

@@ -4,7 +4,8 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Features
 
-- **CLI Preview Tool** (`twinklysay`) - Preview animations in your terminal
+- **Wall Daemon** (`twinklywall`) - Run the configured playlist on the LED wall
+- **On-demand CLI** (`twinklysay`) - Send a card to the wall or preview it in your terminal
 - **Display Cards** - Clock, weather, leaderboards, custom messages
 - **Animations** - Pac-Man eating Christmas trees, beer bubbles, snowfall
 - **Configurable Playlist** - YAML-based card rotation
@@ -24,9 +25,10 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Quick Start
 
-The Typer-based `twinklysay` CLI is also distributed as a self-contained
-**macOS Apple Silicon (ARM64)** executable. See [CLI installation and releases](docs/CLI.md)
-for downloads, supported macOS versions, checksums, and the initial signing status.
+GitHub Releases provides separate standalone downloads for `twinklywall` and
+`twinklysay` on **Ubuntu ARM64**, and `twinklysay` on **macOS Apple Silicon**.
+See [CLI installation and releases](docs/CLI.md) for supported versions, checksum
+verification, and setup.
 
 ```bash
 # Install with UV
@@ -38,7 +40,7 @@ uv run --locked --no-dev twinklysay --help
 
 ## CLI Usage (`twinklysay`)
 
-The `twinklysay` command provides two subcommands for terminal preview and testing.
+Use `twinklysay` to list or preview cards, or send a card directly to the wall.
 
 - List registered cards (and optionally the playlist with ids):
 
@@ -142,7 +144,7 @@ The daemon supports remote control via the [twinkly-mcp](https://github.com/pete
                                                    ▼
                                           ┌──────────────────┐
                                           │  Raspberry Pi    │
-                                          │  (twinkly-wall)  │
+                                          │  (twinklywall)   │
                                           └──────────────────┘
 ```
 
@@ -150,16 +152,16 @@ The daemon supports remote control via the [twinkly-mcp](https://github.com/pete
 
 ```bash
 # Run daemon with MCP enabled (on Raspberry Pi)
-twinkly-wall --mcp
+twinklywall --mcp
 
 # Run in terminal mode for testing (no LED hardware)
-twinkly-wall -t --mcp
+twinklywall -t --mcp
 
 # Custom MCP server
-twinkly-wall --mcp --mcp-server https://your-server.com
+twinklywall --mcp --mcp-server https://your-server.com
 
 # With API key authentication
-twinkly-wall --mcp --mcp-api-key YOUR_KEY
+twinklywall --mcp --mcp-api-key YOUR_KEY
 ```
 
 ### Environment Variables
@@ -220,7 +222,7 @@ twinkly-wall/
 │   ├── cards/          # Display card implementations
 │   ├── outputs/        # Terminal and Twinkly renderers
 │   ├── cli.py          # CLI entry point (twinklysay)
-│   ├── daemon.py       # Main daemon (twinkly-wall)
+│   ├── daemon.py       # Main daemon (twinklywall)
 │   ├── scheduler.py    # Card playlist scheduler
 │   └── mcp_client.py   # MCP server polling client
 ├── config/

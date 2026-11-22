@@ -1,5 +1,6 @@
 # PyInstaller bundles the Python runtime, embedded bitmap fonts, and dependency data.
 # User settings and images remain external; never embed local config/settings.yaml.
+import sys
 from pathlib import Path
 
 root = Path(SPECPATH).parent
@@ -17,7 +18,7 @@ exe = EXE(
     a.datas,
     name="twinklysay",
     console=True,
-    target_arch="arm64",
+    target_arch="arm64" if sys.platform == "darwin" else None,
     codesign_identity=None,
     strip=False,
     upx=False,
