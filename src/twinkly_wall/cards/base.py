@@ -95,29 +95,39 @@ class CardDefinition:
 
 
 def load_card_definitions() -> dict[str, CardDefinition]:
-    """Discover user-defined cards from the configured directory."""
+    """Discover cards in repository and user directories or an explicit override."""
     override = os.environ.get("TWINKLY_CARD_DIR")
-    directory = (
-        Path(override).expanduser()
+    directories = (
+        [Path(override).expanduser()]
         if override is not None
-        else Path.home() / ".config" / "twinkly-wall" / "cards.d"
+        else [
+            Path.cwd() / "config" / "cards.d",
+            Path.home() / ".config" / "twinkly-wall" / "cards.d",
+        ]
     )
-    if override is None and not directory.exists():
-        return {}
-    if not directory.is_dir():
-        raise ValueError(
-            f"Card definition directory does not exist or is not a directory: {directory}"
-        )
+    sources = []
+    for directory in dict.fromkeys(path.resolve() for path in directories):
+        if override is None and not directory.exists():
+            continue
+        if not directory.is_dir():
+            raise ValueError(
+                f"Card definition directory does not exist or is not a directory: {directory}"
+            )
+        sources.extend(sorted(directory.iterdir()))
 
     definitions = {}
-    for source in sorted(directory.iterdir()):
+    for source in sources:
         if source.suffix not in {".yaml", ".yml"} or not source.is_file():
             continue
         name = source.stem
         if not re.fullmatch(r"[a-z][a-z0-9_-]*", name):
             raise ValueError(f"{source}: card name must use lowercase letters, digits, _, or -")
-        if name in _card_registry or name in definitions:
-            raise ValueError(f"{source}: card name '{name}' is already in use")
+        if name in _card_registry:
+            raise ValueError(f"{source}: card name '{name}' is already in use by a built-in card")
+        if name in definitions:
+            raise ValueError(
+                f"{source}: card name '{name}' is already in use by {definitions[name].source}"
+            )
         try:
             data = yaml.safe_load(source.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, yaml.YAMLError) as error:

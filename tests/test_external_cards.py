@@ -89,3 +89,45 @@ def test_create_card_uses_definition_options_with_playlist_overrides(catalog: Pa
     assert card.config["scroll"] is False
     assert card.config["text"] == "Welcome"
     assert card.duration == 4
+
+
+def test_discovers_repository_and_user_catalogs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkout = tmp_path / "checkout"
+    repo_cards = checkout / "config" / "cards.d"
+    repo_cards.mkdir(parents=True)
+    home = tmp_path / "home"
+    user_cards = home / ".config" / "twinkly-wall" / "cards.d"
+    user_cards.mkdir(parents=True)
+    monkeypatch.chdir(checkout)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("TWINKLY_CARD_DIR", raising=False)
+
+    definition = repo_cards / "repo-flame.yaml"
+    definition.write_text("type: image\npath: flame.gif\nlayout: portrait\n")
+    asset = repo_cards / "flame.gif"
+    Image.new("RGB", (10, 50), (255, 100, 0)).save(asset)
+    user_definition = user_cards / "user-clock.yaml"
+    user_definition.write_text("type: clock\n")
+
+    runner = CliRunner()
+    listed = runner.invoke(cli.app, ["list"])
+    assert listed.exit_code == 0, listed.output
+    assert f"repo-flame ({definition.resolve()})" in listed.output
+    assert f"user-clock ({user_definition.resolve()})" in listed.output
+    card = create_card("repo-flame")
+    assert card is not None and card.config["path"] == str(asset.resolve())
+
+    duplicate = user_cards / definition.name
+    duplicate.write_text("type: clock\n")
+    conflict = runner.invoke(cli.app, ["list"])
+    assert conflict.exit_code == 1
+    assert str(duplicate.resolve()) in conflict.output
+    assert str(definition.resolve()) in conflict.output
+
+    monkeypatch.setenv("TWINKLY_CARD_DIR", str(repo_cards))
+    overridden = runner.invoke(cli.app, ["list"])
+    assert overridden.exit_code == 0, overridden.output
+    assert "repo-flame" in overridden.output
+    assert "user-clock" not in overridden.output

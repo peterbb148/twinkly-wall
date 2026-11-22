@@ -73,7 +73,7 @@ def main() -> None:
         output = run("say", "preview", "--id", "1", "--playlist", str(playlist), "--no-color")
         assert "Failed to load image" not in output
         assert any(block in output for block in "░▒▓█")
-        catalog = root / ".config/twinkly-wall/cards.d"
+        catalog = root / "config/cards.d"
         catalog.mkdir(parents=True)
         definition = catalog / "party-flame.yaml"
         definition.write_text("type: image\nlayout: portrait\npath: flame.ppm\nscroll: false\n")
