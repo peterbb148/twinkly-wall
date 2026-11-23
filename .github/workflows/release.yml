@@ -41,7 +41,8 @@ jobs:
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           assets=()
-          for name in "twinkly-cli-$version-darwin-arm64" "twinkly-cli-$version-ubuntu-arm64"; do
+          for platform in darwin-arm64 ubuntu-arm64 raspberry-pi-arm64; do
+            name="twinkly-cli-$version-$platform"
             archive="$name.tar.gz"
             test -s "dist/$name/$archive"
             (cd "dist/$name" && sha256sum --strict --check "$archive.sha256")
@@ -49,7 +50,7 @@ jobs:
           done
           gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
             --verify-tag --title "Twinkly Wall $GITHUB_REF_NAME" --generate-notes \
-            --notes "Twinkly CLI includes wall and say modes. Supports Ubuntu 24.04 and 26.04 LTS ARM64 and macOS 15 or newer on Apple Silicon. The macOS executable is ad-hoc signed. Verify the SHA-256 checksum before installing. See docs/CLI.md in the tagged source."
+            --notes "Twinkly CLI includes wall and say modes. Supports 64-bit Raspberry Pi OS (Trixie), Ubuntu 24.04 and 26.04 LTS ARM64, and macOS 15 or newer on Apple Silicon. The macOS executable is ad-hoc signed. Verify the SHA-256 checksum before installing. See docs/CLI.md in the tagged source."
       - name: Keep current and previous binary versions
         env:
           GH_TOKEN: ${{ github.token }}

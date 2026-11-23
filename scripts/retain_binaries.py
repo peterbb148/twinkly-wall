@@ -11,6 +11,7 @@ from typing import Any
 CURRENT_TARGETS = (
     ("twinkly-cli", "darwin-arm64"),
     ("twinkly-cli", "ubuntu-arm64"),
+    ("twinkly-cli", "raspberry-pi-arm64"),
 )
 BINARY_TARGETS = CURRENT_TARGETS + (
     ("twinklysay", "darwin-arm64"),
@@ -18,7 +19,7 @@ BINARY_TARGETS = CURRENT_TARGETS + (
     ("twinklywall", "ubuntu-arm64"),
 )
 ARTIFACT_NAME = re.compile(
-    r"(twinkly-cli|twinklysay|twinklywall)-(.+)-(darwin-arm64|ubuntu-arm64)\Z"
+    r"(twinkly-cli|twinklysay|twinklywall)-(.+)-(darwin-arm64|ubuntu-arm64|raspberry-pi-arm64)\Z"
 )
 LEGACY_ARTIFACT = "twinklysay-darwin-arm64"
 

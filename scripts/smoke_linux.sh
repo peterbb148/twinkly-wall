@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run in a clean, native ARM64 Ubuntu container with the downloaded release assets.
+# Run on native ARM64 with the downloaded release assets and a runtime-only PATH.
 set -euo pipefail
 export LC_ALL=C.UTF-8
 export TERM=dumb
@@ -18,6 +18,7 @@ done
 scripts_dir="$(cd "$(dirname "$0")" && pwd)"
 downloads="${1:?Expected the directory containing downloaded artifacts}"
 version="${2:?Expected the package version}"
+platform="${3:?Expected the release platform}"
 work="$(mktemp -d)"
 daemon_pid=
 cleanup() {
@@ -29,7 +30,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-artifact="twinkly-cli-$version-ubuntu-arm64"
+artifact="twinkly-cli-$version-$platform"
 archive="$artifact.tar.gz"
 (
   cd "$downloads/$artifact"
@@ -134,6 +135,6 @@ fi
 wait "$daemon_pid"
 daemon_pid=
 grep -Fq 'Daemon stopped' wall.log
-echo "Both modes of the Ubuntu ARM64 binary passed smoke tests."
+echo "Both modes of the $platform binary passed smoke tests."
 
-bash "$scripts_dir/smoke_installer.sh" ubuntu-arm64 "$downloads/$artifact/$archive"
+bash "$scripts_dir/smoke_installer.sh" "$platform" "$downloads/$artifact/$archive"
