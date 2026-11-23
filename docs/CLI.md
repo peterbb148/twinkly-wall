@@ -12,6 +12,7 @@ access the repository. Run the script for your platform:
 ```bash
 bash scripts/install_macos.sh     # Apple Silicon, macOS 15 or newer
 bash scripts/install_ubuntu.sh    # Ubuntu 24.04 or 26.04 LTS, ARM64
+bash scripts/install_raspberry_pi.sh  # 64-bit Raspberry Pi OS (Trixie)
 ```
 
 Each script downloads the latest release, checks the published SHA-256, and
@@ -97,7 +98,35 @@ sha256sum --strict --check "$archive.sha256" &&
 
 The archive includes example settings, a playlist, and a sample image.
 
-### Start the wall daemon
+## Install on Raspberry Pi OS
+
+The Raspberry Pi package targets **64-bit Raspberry Pi OS (Trixie)** with an
+ARM64 userspace and a minimum supported runtime of **glibc 2.41**. Debian 13
+ARM64 provides the compatible userspace used in CI. You can check your Pi with
+`dpkg --print-architecture` (expected `arm64`) and `getconf GNU_LIBC_VERSION`.
+The executable bundles Python and its Python dependencies. It needs writable,
+executable temporary space to unpack at startup.
+
+Use `bash scripts/install_raspberry_pi.sh` with authenticated `gh`, or download
+the matching archive and checksum from [GitHub Releases](https://github.com/peterbb148/twinkly-wall/releases)
+once a release includes the Raspberry Pi package. Replace `VERSION` with that
+release version without its leading `v`.
+
+```bash
+version=VERSION
+archive="twinkly-cli-$version-raspberry-pi-arm64.tar.gz"
+sha256sum --strict --check "$archive.sha256" &&
+  mkdir -p "twinkly-cli-$version" "$HOME/.local/bin" &&
+  tar -xzf "$archive" -C "twinkly-cli-$version" &&
+  install -m 755 "twinkly-cli-$version/twinkly-cli" "$HOME/.local/bin" &&
+  "$HOME/.local/bin/twinkly-cli" --version
+```
+
+Keep settings and playlists outside the archive. The archive includes example
+YAML files and a sample image. Store optional credentials in the environment
+of the account running the daemon.
+
+## Start the wall daemon
 
 Copy the daemon archive's example YAML files to a directory outside the extracted
 archive. Set `twinkly.host` to your wall's address and edit the playlist. Try terminal
@@ -108,9 +137,14 @@ twinkly-cli wall --terminal --settings /path/to/settings.yaml --cards /path/to/c
 twinkly-cli wall --settings /path/to/settings.yaml --cards /path/to/cards.yaml
 ```
 
-For an existing service, update its startup command to point to the new executable
-and pass absolute settings and playlist paths. Supply optional MCP credentials
-through the service environment.
+For an existing systemd service on the Pi, set `ExecStart` to the absolute
+path of the installed binary followed by `wall --settings /absolute/settings.yaml
+--cards /absolute/cards.yaml`. Give the service account access to those files
+and supply optional MCP credentials through its environment. After editing
+the unit, reload systemd with `sudo systemctl daemon-reload`, restart the service,
+and inspect its log with `journalctl -u twinkly-wall.service`. Use the service's
+actual unit name if it differs. Verify a card on the physical LED wall before
+accepting a deployment.
 
 ## Display orientation and mirroring
 
@@ -287,7 +321,7 @@ creates the archive and checksum in `dist/`. A local build is validated only on
 its host OS; use the macOS 15 CI artifact for the documented release target.
 
 On PRs and pushes to `main`, CI always runs tests, lint, formatting, and
-dependency auditing. It builds and smoke-tests both platform archives only when
+dependency auditing. It builds and smoke-tests the platform archives only when
 one of these CLI source files changes:
 
 - `src/twinkly_wall/command.py` (entry point and command dispatcher)
@@ -296,7 +330,7 @@ one of these CLI source files changes:
 
 Changes to cards (including registration), docs, YAML configs, assets, and
 other files outside this list skip binary builds, install jobs, and artifact
-cleanup. A manual CI dispatch or a version-tag release still builds both platforms.
+cleanup. A manual CI dispatch or a version-tag release builds every platform.
 
 Mac CI tests the downloaded archive on a second macOS 15 runner. Only the test
 harness uses the runner's Python. The executable receives no Python or UV on
@@ -307,6 +341,13 @@ native Ubuntu 24.04 ARM64 with UV, Python 3.11, and binutils installed. Each
 Ubuntu CI install job downloads the archive and verifies its checksum,
 executable architecture, CLI rendering, and daemon terminal playback and
 shutdown in a clean Ubuntu ARM64 container without Python or UV installed.
+
+To build the Raspberry Pi archive locally, run `bash scripts/build_raspberry_pi.sh`
+on a 64-bit Trixie system with UV, system Python 3.13, its shared library
+(`libpython3.13`), and binutils installed. CI builds on an ARM64 runner in a
+Debian Trixie userspace, then downloads the archive into a clean Trixie
+userspace without Python or UV. The smoke test checks the checksum, the ARM64
+executable, both CLI modes, and the installer.
 
 For a release, update both `pyproject.toml` and `twinkly_wall.__version__`, update
 the lockfile, and deliver the changes through a reviewed PR. Once merged, create
