@@ -197,6 +197,9 @@ jobs:
     if: needs.binary-scope.outputs.build == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -243,18 +246,28 @@ jobs:
             dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz
             dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz.sha256
           if-no-files-found: error
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: ${{ steps.pi-build.outputs.artifact-name }}
-          path: ${{ runner.temp }}/pi-downloads/${{ steps.pi-build.outputs.artifact-name }}
       - name: Verify the downloaded archive in a clean Trixie ARM64 userspace
         env:
           ARTIFACT_NAME: ${{ steps.pi-build.outputs.artifact-name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          downloads="$RUNNER_TEMP/pi-downloads"
+          mkdir "$downloads"
+          # GitHub may not list an artifact immediately after upload succeeds.
+          for delay in 0 2 4 8 16; do
+            sleep "$delay"
+            download=$(mktemp -d "$RUNNER_TEMP/pi-artifact.XXXXXX")
+            if gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --name "$ARTIFACT_NAME" --dir "$download"; then
+              mv "$download" "$downloads/$ARTIFACT_NAME"
+              break
+            fi
+          done
+          test -d "$downloads/$ARTIFACT_NAME"
           runtime="$RUNNER_TEMP/pi-runtime"
           sudo cp -a scripts "$runtime/checks"
-          sudo cp -a "$RUNNER_TEMP/pi-downloads" "$runtime/downloads"
+          sudo cp -a "$downloads" "$runtime/downloads"
           sudo mount -t proc proc "$runtime/proc"
           trap 'sudo umount "$runtime/proc"' EXIT
           version="${ARTIFACT_NAME#twinkly-cli-}"
