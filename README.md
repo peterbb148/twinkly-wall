@@ -25,9 +25,9 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 
 ## Quick Start
 
-GitHub Releases provides `twinkly-cli` for **Ubuntu ARM64** and **macOS Apple
-Silicon**. See [CLI installation and releases](docs/CLI.md) for installers,
-supported versions, checksum verification, and setup.
+Twinkly CLI release targets include **64-bit Raspberry Pi OS (Trixie)**,
+**Ubuntu ARM64**, and **macOS Apple Silicon**. See [CLI installation and
+releases](docs/CLI.md) for installers, supported versions, and setup.
 
 ```bash
 # Install with UV

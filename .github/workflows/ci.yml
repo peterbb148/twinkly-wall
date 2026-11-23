@@ -176,7 +176,7 @@ jobs:
             scripts/install_ubuntu.sh
             scripts/install_release_binary.sh
             scripts/smoke_installer.sh
-            scripts/smoke_ubuntu.sh
+            scripts/smoke_linux.sh
           sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -190,10 +190,79 @@ jobs:
           docker run --rm --platform linux/arm64 --network none \
             --mount "type=bind,source=$RUNNER_TEMP/ubuntu-downloads,target=/downloads,readonly" \
             --mount "type=bind,source=$PWD/scripts,target=/checks,readonly" \
-            "ubuntu:$UBUNTU_RELEASE" bash /checks/smoke_ubuntu.sh /downloads "$PACKAGE_VERSION"
+            "ubuntu:$UBUNTU_RELEASE" bash /checks/smoke_linux.sh /downloads "$PACKAGE_VERSION" ubuntu-arm64
+
+  raspberry-pi-binary:
+    needs: binary-scope
+    if: needs.binary-scope.outputs.build == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.12.5"
+      - name: Build against the Trixie ARM64 runtime
+        id: pi-build
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y debootstrap
+          runtime="$RUNNER_TEMP/pi-runtime"
+          build="$RUNNER_TEMP/pi-build"
+          keyring_package="$RUNNER_TEMP/debian-archive-keyring.deb"
+          curl --fail --silent --show-error \
+            https://deb.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2025.1_all.deb \
+            -o "$keyring_package"
+          printf '%s  %s\n' 9ea7778e443144ca490668737a8ab22dd3e748bb99e805e22ec055abeb3c7fac "$keyring_package" \
+            | sha256sum --strict --check
+          dpkg-deb -x "$keyring_package" "$RUNNER_TEMP/debian-keys"
+          sudo debootstrap --variant=minbase --include=ca-certificates \
+            --keyring="$RUNNER_TEMP/debian-keys/usr/share/keyrings/debian-archive-keyring.pgp" \
+            trixie "$runtime" https://deb.debian.org/debian
+          sudo cp -a "$runtime" "$build"
+          sudo mount -t proc proc "$build/proc"
+          trap 'sudo umount "$build/proc"' EXIT
+          sudo chroot "$build" apt-get update
+          sudo chroot "$build" apt-get install -y --no-install-recommends binutils libpython3.13 python3
+          sudo install -m 755 "$(command -v uv)" "$build/usr/local/bin/uv"
+          sudo mkdir "$build/src"
+          git archive HEAD | sudo tar -x -C "$build/src"
+          sudo chroot "$build" bash /src/scripts/build_raspberry_pi.sh
+          mkdir -p dist
+          sudo cp "$build"/src/dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz{,.sha256} dist/
+          archive=(dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz)
+          name="${archive[0]##*/}"
+          echo "artifact-name=${name%.tar.gz}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d229ba76410c181273ba90 # v7.0.1
+        with:
+          name: ${{ steps.pi-build.outputs.artifact-name }}
+          path: |
+            dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz
+            dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz.sha256
+          if-no-files-found: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ steps.pi-build.outputs.artifact-name }}
+          path: ${{ runner.temp }}/pi-downloads/${{ steps.pi-build.outputs.artifact-name }}
+      - name: Verify the downloaded archive in a clean Trixie ARM64 userspace
+        env:
+          ARTIFACT_NAME: ${{ steps.pi-build.outputs.artifact-name }}
+        run: |
+          set -euo pipefail
+          runtime="$RUNNER_TEMP/pi-runtime"
+          sudo cp -a scripts "$runtime/checks"
+          sudo cp -a "$RUNNER_TEMP/pi-downloads" "$runtime/downloads"
+          sudo mount -t proc proc "$runtime/proc"
+          trap 'sudo umount "$runtime/proc"' EXIT
+          version="${ARTIFACT_NAME#twinkly-cli-}"
+          version="${version%-raspberry-pi-arm64}"
+          sudo chroot "$runtime" bash /checks/smoke_linux.sh /downloads "$version" raspberry-pi-arm64
 
   retain-binaries:
-    needs: [test, macos-install, ubuntu-install]
+    needs: [test, macos-install, ubuntu-install, raspberry-pi-binary]
     if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     permissions:
