@@ -236,7 +236,7 @@ jobs:
           archive=(dist/twinkly-cli-*-raspberry-pi-arm64.tar.gz)
           name="${archive[0]##*/}"
           echo "artifact-name=${name%.tar.gz}" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d229ba76410c181273ba90 # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.pi-build.outputs.artifact-name }}
           path: |
