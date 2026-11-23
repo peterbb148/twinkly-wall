@@ -34,6 +34,13 @@ def ubuntu_assets(number):
 def current_release(number):
     record = release(number)
     record["assets"].extend(ubuntu_assets(number))
+    pi_archive = f"twinkly-cli-0.{number}.0-raspberry-pi-arm64.tar.gz"
+    record["assets"].extend(
+        [
+            {"id": number * 10 + 5, "name": pi_archive},
+            {"id": number * 10 + 6, "name": pi_archive + ".sha256"},
+        ]
+    )
     return record
 
 
@@ -276,16 +283,17 @@ def test_incomplete_releases_are_removed_while_only_complete_pairs_count_toward_
 def test_release_retains_complete_versions_for_each_target():
     first = current_release(1)
     second = current_release(2)
-    second["assets"] = second["assets"][:-1]
+    second["assets"].pop(4)
     records = [first, second, current_release(3)]
 
-    assert retention.release_deletions(records, "v0.3.0") == [10, 11, 23]
+    assert retention.release_deletions(records, "v0.3.0") == [10, 11, 23, 15, 16]
 
 
-def test_current_release_missing_ubuntu_asset_blocks_all_deletions():
+@pytest.mark.parametrize("platform,asset_index", [("ubuntu", 4), ("raspberry-pi", 6)])
+def test_current_release_missing_linux_asset_blocks_all_deletions(platform, asset_index):
     current = current_release(3)
-    current["assets"].pop()
-    with pytest.raises(ValueError, match="twinkly-cli ubuntu-arm64"):
+    current["assets"].pop(asset_index)
+    with pytest.raises(ValueError, match=f"twinkly-cli {platform}-arm64"):
         retention.release_deletions([release(1), release(2), current], "v0.3.0")
 
 

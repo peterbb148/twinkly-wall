@@ -7,10 +7,12 @@ archive_path="${2:?Expected the downloaded archive}"
 archive="$(basename "$archive_path")"
 version="${archive#twinkly-cli-}"
 version="${version%-"$platform".tar.gz}"
-installer="$scripts_dir/install_${platform%%-*}.sh"
-if [[ "$platform" == darwin-arm64 ]]; then
-  installer="$scripts_dir/install_macos.sh"
-fi
+case "$platform" in
+  darwin-arm64) installer="$scripts_dir/install_macos.sh" ;;
+  ubuntu-arm64) installer="$scripts_dir/install_ubuntu.sh" ;;
+  raspberry-pi-arm64) installer="$scripts_dir/install_raspberry_pi.sh" ;;
+  *) printf 'Unknown release platform: %s\n' "$platform" >&2; exit 2 ;;
+esac
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir "$work/bin" "$work/release"
