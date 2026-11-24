@@ -14,8 +14,8 @@ from ..types import (
     Frame,
     Orientation,
     apply_orientation,
-    rotate_frame_ccw,
-    rotate_frame_cw,
+    mount_rotation,
+    rotate_frame,
 )
 
 logger = logging.getLogger(__name__)
@@ -243,7 +243,7 @@ class TwinklyOutput:
         self.led_profile = led_profile
         self.mirror_h = mirror_h
         self.mirror_v = mirror_v
-        self.orientation: Orientation = "horizontal"
+        self.orientation = Orientation.horizontal
         self._frame_count = 0
 
     def start(self) -> None:
@@ -378,10 +378,9 @@ class TwinklyOutput:
             frame, self.orientation, mirror_h=self.mirror_h, mirror_v=self.mirror_v
         )
         # Undo the physical mount rotation before encoding the fixed strand layout.
-        if self.orientation == "vertical_left":
-            viewed = rotate_frame_cw(viewed)
-        elif self.orientation == "vertical_right":
-            viewed = rotate_frame_ccw(viewed)
+        rotation = mount_rotation(self.orientation)
+        if rotation:
+            viewed = rotate_frame(viewed, -rotation)
         frame_data = self._frame_to_bytes(viewed)
 
         try:
