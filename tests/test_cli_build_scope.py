@@ -99,3 +99,43 @@ def test_release_uses_explicit_binary_build_input() -> None:
     assert validate["with"]["build-binaries"] == "true"
     assert ci["on"]["workflow_call"]["inputs"]["build-binaries"]["type"] == "boolean"
     assert release["jobs"]["publish"]["needs"] == "validate"
+
+
+@pytest.mark.parametrize(
+    ("build", "overrides", "expected_error"),
+    [
+        ("false", {}, ""),
+        ("true", {}, ""),
+        ("false", {"SCOPE_RESULT": "failure"}, "Binary scope or tests did not pass"),
+        ("true", {"TEST_RESULT": "failure"}, "Binary scope or tests did not pass"),
+        ("", {}, "Binary scope did not report"),
+        ("true", {"MACOS_BUILD": "skipped"}, "macos-binary returned skipped"),
+        ("true", {"UBUNTU_INSTALL": "failure"}, "ubuntu-install returned failure"),
+        ("true", {"RASPBERRY_PI": "cancelled"}, "raspberry-pi-binary returned cancelled"),
+        ("false", {"MACOS_INSTALL": "success"}, "macos-install returned success"),
+    ],
+)
+def test_required_ci_gate(build: str, overrides: dict[str, str], expected_error: str) -> None:
+    ci = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(), Loader=yaml.BaseLoader)
+    script = ci["jobs"]["required-ci"]["steps"][0]["run"]
+    binary_result = "success" if build == "true" else "skipped"
+    results = {
+        "SCOPE_RESULT": "success",
+        "TEST_RESULT": "success",
+        "BUILD_BINARIES": build,
+        "MACOS_BUILD": binary_result,
+        "MACOS_INSTALL": binary_result,
+        "UBUNTU_BUILD": binary_result,
+        "UBUNTU_INSTALL": binary_result,
+        "RASPBERRY_PI": binary_result,
+    }
+    result = subprocess.run(
+        ["bash", "-e", "-c", script],
+        env=results | overrides,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == (1 if expected_error else 0), result.stdout + result.stderr
+    if expected_error:
+        assert expected_error in result.stdout

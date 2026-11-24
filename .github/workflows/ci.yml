@@ -274,6 +274,49 @@ jobs:
           version="${version%-raspberry-pi-arm64}"
           sudo chroot "$runtime" bash /checks/smoke_linux.sh /downloads "$version" raspberry-pi-arm64
 
+  required-ci:
+    name: Required CI
+    if: ${{ always() }}
+    needs: [binary-scope, test, macos-binary, macos-install, ubuntu-binaries, ubuntu-install, raspberry-pi-binary]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Verify test and binary results
+        env:
+          SCOPE_RESULT: ${{ needs.binary-scope.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_BINARIES: ${{ needs.binary-scope.outputs.build }}
+          MACOS_BUILD: ${{ needs.macos-binary.result }}
+          MACOS_INSTALL: ${{ needs.macos-install.result }}
+          UBUNTU_BUILD: ${{ needs.ubuntu-binaries.result }}
+          UBUNTU_INSTALL: ${{ needs.ubuntu-install.result }}
+          RASPBERRY_PI: ${{ needs.raspberry-pi-binary.result }}
+        run: |
+          if [[ "$SCOPE_RESULT" != success || "$TEST_RESULT" != success ]]; then
+            echo "::error::Binary scope or tests did not pass (scope: $SCOPE_RESULT, tests: $TEST_RESULT)."
+            exit 1
+          fi
+
+          case "$BUILD_BINARIES" in
+            true) expected=success ;;
+            false) expected=skipped ;;
+            *)
+              echo '::error::Binary scope did not report whether builds are required.'
+              exit 1
+              ;;
+          esac
+
+          for check in "macos-binary:$MACOS_BUILD" "macos-install:$MACOS_INSTALL" \
+                       "ubuntu-binaries:$UBUNTU_BUILD" "ubuntu-install:$UBUNTU_INSTALL" \
+                       "raspberry-pi-binary:$RASPBERRY_PI"; do
+            job="${check%%:*}"
+            result="${check#*:}"
+            if [[ "$result" != "$expected" ]]; then
+              echo "::error::$job returned $result, expected $expected."
+              exit 1
+            fi
+          done
+
   retain-binaries:
     needs: [test, macos-install, ubuntu-install, raspberry-pi-binary]
     if: ${{ !startsWith(github.ref, 'refs/tags/') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
