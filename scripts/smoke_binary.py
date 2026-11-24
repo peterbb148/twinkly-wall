@@ -65,10 +65,8 @@ def main() -> None:
             str(settings),
             "--no-color",
         )
-        image = root / "sample.png"
-        image.write_bytes(
-            (Path(__file__).resolve().parents[1] / "assets/carlsberg.png").read_bytes()
-        )
+        image = root / "sample.ppm"
+        image.write_bytes(b"P6\n2 2\n255\n" + bytes([255]) * 12)
         playlist.write_text(f"cards:\n  - type: image\n    path: {image}\n    duration: 0.03\n")
         output = run("say", "preview", "--id", "1", "--playlist", str(playlist), "--no-color")
         assert "Failed to load image" not in output
