@@ -10,7 +10,7 @@ from pathlib import Path
 from . import __version__
 from .cards import CardContext
 from .cards.base import load_card_definitions
-from .config import load_playlist, load_settings
+from .config import PlaylistConfig, load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
 from .scheduler import Scheduler
 from .types import Orientation
@@ -34,6 +34,7 @@ class TwinklyDaemon:
         mcp_server: str | None = None,
         mcp_api_key: str | None = None,
         orientation: Orientation | None = None,
+        mcp_only: bool = False,
     ):
         """Initialize the daemon.
 
@@ -45,16 +46,18 @@ class TwinklyDaemon:
             mcp_server: MCP server URL (default from env or hardcoded)
             mcp_api_key: MCP API key (default from env)
             orientation: Override the display mount from settings for this run
+            mcp_only: Enable remote playback without loading a playlist
         """
         self.settings = load_settings(settings_path)
         if orientation is not None:
             self.settings.twinkly.orientation = orientation
-        self.playlist = load_playlist(cards_path)
+        self.playlist = PlaylistConfig() if mcp_only else load_playlist(cards_path)
         from .outputs.terminal import TerminalOutput
         from .outputs.twinkly import TwinklyOutput
 
         self.terminal_output = terminal_output
-        self.mcp_enabled = mcp_enabled
+        self.mcp_enabled = mcp_enabled or mcp_only
+        self.mcp_only = mcp_only
         self.mcp_server = mcp_server
         self.mcp_api_key = mcp_api_key
         self.scheduler: Scheduler | None = None
@@ -151,14 +154,15 @@ class TwinklyDaemon:
         )
 
         # Register cards with the server
-        client.register_cards()
+        if not client.register_cards() and self.mcp_only:
+            raise RuntimeError("Could not register cards with the MCP server")
 
         logger.info(f"MCP client enabled, polling {server_url}")
         return client
 
     def run(self) -> None:
         """Run the daemon."""
-        if not self.playlist.cards:
+        if not self.playlist.cards and not self.mcp_only:
             logger.error("No cards configured in playlist")
             sys.exit(1)
 
@@ -183,9 +187,11 @@ class TwinklyDaemon:
             self._terminal.start()
         if self._twinkly:
             self._twinkly.start()
+            if self.mcp_only:
+                self._twinkly.turn_off()
 
         try:
-            logger.info("Starting playlist loop...")
+            logger.info("Starting MCP-only loop" if self.mcp_only else "Starting playlist loop")
             self.scheduler.run_loop()
         finally:
             # Clean up outputs
@@ -244,6 +250,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="Enable MCP remote control (polls MCP server for commands)",
     )
     parser.add_argument(
+        "--mcp-only",
+        action="store_true",
+        help="Enable MCP remote control without loading or playing a playlist",
+    )
+    parser.add_argument(
         "--mcp-server",
         type=str,
         help="MCP server URL (default: $TWINKLY_MCP_URL or https://twinkly-mcp.onrender.com)",
@@ -280,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             mcp_server=args.mcp_server,
             mcp_api_key=args.mcp_api_key,
             orientation=args.orientation,
+            mcp_only=args.mcp_only,
         )
         daemon.run()
     except KeyboardInterrupt:

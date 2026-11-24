@@ -216,8 +216,8 @@ class Scheduler:
         self.state.running = False
 
     def run_loop(self) -> None:
-        """Run the playlist in an infinite loop."""
-        if not self.playlist.cards:
+        """Play the playlist or wait for remote commands until stopped."""
+        if not self.playlist.cards and self.mcp_client is None:
             logger.warning("No cards in playlist")
             return
 
@@ -232,10 +232,7 @@ class Scheduler:
                     # Clear any pending MCP commands when going outside hours
                     if self.mcp_client:
                         self.mcp_client._pending_commands.clear()
-                    # Turn off Twinkly devices properly (not just blank frame)
-                    for output in self.outputs:
-                        if hasattr(output, "turn_off"):
-                            output.turn_off()
+                    self._set_output_power(False)
                 # Sleep until next check
                 time.sleep(60)  # Check every minute
                 continue
@@ -244,10 +241,20 @@ class Scheduler:
             if self._outside_hours_logged:
                 logger.info("Within operating hours - resuming display")
                 self._outside_hours_logged = False
-                # Turn Twinkly devices back on (realtime mode)
-                for output in self.outputs:
-                    if hasattr(output, "turn_on"):
-                        output.turn_on()
+                if self.playlist.cards:
+                    self._set_output_power(True)
+
+            if not self.playlist.cards:
+                if self._check_mcp_commands() and self.state.running:
+                    self._set_output_power(True)
+                    try:
+                        self._play_mcp_cards()
+                    finally:
+                        self._set_output_power(False)
+                    self.state.last_frame = None
+                if self.state.running:
+                    time.sleep(self._mcp_poll_interval)
+                continue
 
             for i, card_config in enumerate(self.playlist.cards):
                 if not self.state.running:
@@ -260,6 +267,13 @@ class Scheduler:
                 self.state.current_card_index = i
                 self._play_card(card_config)
                 self.state.cards_played += 1
+
+    def _set_output_power(self, enabled: bool) -> None:
+        """Set realtime or off mode on outputs with power controls."""
+        for output in self.outputs:
+            set_power = getattr(output, "turn_on" if enabled else "turn_off", None)
+            if set_power is not None:
+                set_power()
 
     def _play_card(self, card_config: CardConfig) -> None:
         """Play a single card.
