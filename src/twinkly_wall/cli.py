@@ -19,7 +19,6 @@ from .cards import (
     CardContext,
     CarlsbergLabCard,
     ClockCard,
-    PacmanCard,
     RainbowCard,
     SnowCard,
     TestPatternCard,
@@ -216,14 +215,15 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
             }
         )
         return card, "text"
-    if card_type == "pacman":
-        return PacmanCard(
+    if card_type in ("pacman", "pacman_up", "pacman_down", "pacman_chase_eat_ghosts"):
+        return create_card(
+            card_type,
             {
                 "duration": duration,
                 "speed": args.speed,
                 "theme": args.theme,
-            }
-        ), "pacman"
+            },
+        ), card_type
     if card_type == "beer":
         return BeerCard(
             {

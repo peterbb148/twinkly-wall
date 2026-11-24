@@ -211,6 +211,17 @@ def test_preview_dispatch(card, monkeypatch):
     assert animate.call_args.kwargs["color_mode"] is False
 
 
+@pytest.mark.parametrize("name", ["pacman_up", "pacman_down"])
+def test_portrait_pacman_cli_theme(name, monkeypatch):
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(app, ["preview", name, "--theme", "snowman"])
+    assert result.exit_code == 0, result.output
+    frame, _ = next(animate.call_args.args[0])
+    assert len(frame) == 50
+    assert any((255, 140, 0) in row for row in frame)
+
+
 def test_card_specific_options(monkeypatch):
     build = MagicMock(return_value=(MagicMock(), "pacman"))
     monkeypatch.setattr(cli, "_build_card", build)

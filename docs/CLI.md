@@ -203,6 +203,11 @@ top-to-bottom chase on a portrait wall. Both names work with `say preview`,
 `say card`, and playlist entries. Pac-Man faces the direction of travel, and
 the ghosts stay upright.
 
+`pacman_up` and `pacman_down` bring the original eating animation to portrait
+walls. Christmas trees are the default. Pass `--theme snowman` or another
+`pacman` theme to change what he eats. Use `pacman_chase_eat_ghosts` to watch
+Pac-Man catch moving ghosts as he travels up the wall.
+
 ## Commands and compatibility
 
 ```bash
