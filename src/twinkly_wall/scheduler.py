@@ -170,6 +170,17 @@ class Scheduler:
             logger.info(f"Playing MCP card: {card.card_type}")
             self._play_card_instance(card)
 
+    def _can_play_remote_frame(self) -> bool:
+        return self.state.running and is_within_operating_hours(self.operating_hours)
+
+    def _wait_for_remote_frame(self, delay: float) -> bool:
+        """Wait between frames, checking for closing time during long holds."""
+        while delay > 0 and self._can_play_remote_frame():
+            interval = min(delay, 0.25) if self.operating_hours.enabled else delay
+            time.sleep(interval)
+            delay -= interval
+        return self._can_play_remote_frame()
+
     def _play_card_instance(self, card: Card) -> None:
         """Play a card instance directly.
 
@@ -179,8 +190,8 @@ class Scheduler:
         try:
             first_frame = True
             for frame, delay in card.frames(self.context):
-                if not self.state.running:
-                    break
+                if not self._can_play_remote_frame():
+                    return
 
                 # Apply transition for first frame
                 if first_frame:
@@ -188,13 +199,14 @@ class Scheduler:
                         self.state.last_frame, frame, "crossfade"
                     ):
                         self._send_frame(t_frame)
-                        time.sleep(0.03)  # ~30fps for transitions
+                        if not self._wait_for_remote_frame(0.03):
+                            return
                     first_frame = False
                 else:
                     self._send_frame(frame)
 
-                if delay > 0:
-                    time.sleep(delay)
+                if not self._wait_for_remote_frame(delay):
+                    return
 
         except Exception as e:
             logger.error(f"Error playing card: {e}")

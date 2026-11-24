@@ -6,10 +6,10 @@ import pytest
 
 from twinkly_wall import scheduler as scheduler_module
 from twinkly_wall.cards import CardContext
-from twinkly_wall.config import CardConfig, PlaylistConfig
+from twinkly_wall.config import CardConfig, OperatingHoursConfig, PlaylistConfig
 from twinkly_wall.mcp_client import MCPClient
 from twinkly_wall.scheduler import Scheduler, SchedulerState
-from twinkly_wall.types import Frame
+from twinkly_wall.types import BLACK, HEIGHT, WHITE, WIDTH, Frame
 
 
 class MockOutput:
@@ -29,10 +29,9 @@ def test_mcp_only_loop_waits_for_hours_and_plays_remote_frames(monkeypatch):
     poll = Mock(side_effect=[[], [{"type": "twinklysay", "payload": {"text": "Hi"}}]])
     monkeypatch.setattr(client, "poll_commands", poll)
     scheduler = Scheduler(PlaylistConfig(), outputs=[output, frame_only_output], mcp_client=client)
-    hours = Mock(side_effect=[False, True, True, True, True])
-    monkeypatch.setattr(scheduler_module, "is_within_operating_hours", hours)
     clock = Mock()
     clock.time.side_effect = [100.0, 102.0]
+    monkeypatch.setattr(scheduler_module, "is_within_operating_hours", lambda _: clock.sleep.called)
 
     def sleep(delay):
         if delay == 2.0 and poll.call_count == 2:
@@ -117,6 +116,63 @@ def test_mcp_only_loop_discards_commands_at_closing(monkeypatch, closes_during):
     else:
         assert played_text == ["First"]
         assert output.method_calls[:2] == [call.turn_on(), call.turn_off()]
+
+
+@pytest.mark.parametrize(
+    ("closes_during", "playback_sleeps", "sent_frames"),
+    [("frame", [], 0), ("transition", [0.03], 1), ("hold", [0.03, 0.25, 0.25], 1)],
+)
+def test_mcp_only_interrupts_active_card_at_closing(
+    monkeypatch, closes_during, playback_sleeps, sent_frames
+):
+    output = Mock()
+    client = MCPClient()
+    scheduler = Scheduler(
+        PlaylistConfig(),
+        outputs=[output],
+        mcp_client=client,
+        operating_hours=OperatingHoursConfig(enabled=True),
+    )
+    if closes_during == "transition":
+        scheduler.state.last_frame = [[BLACK] * WIDTH for _ in range(HEIGHT)]
+    during_hours = True
+    frame = [[WHITE] * WIDTH for _ in range(HEIGHT)]
+
+    def frames(_):
+        nonlocal during_hours
+        if closes_during == "frame":
+            during_hours = False
+        yield frame, 10.0
+        pytest.fail("The card generated another frame after closing")
+
+    card = Mock()
+    card.frames.side_effect = frames
+    monkeypatch.setattr(client, "create_card_from_command", Mock(return_value=card))
+    monkeypatch.setattr(client, "poll_commands", Mock(return_value=[{}, {}]))
+    monkeypatch.setattr(scheduler_module, "is_within_operating_hours", lambda _: during_hours)
+    clock = Mock()
+    clock.time.return_value = 100.0
+
+    def sleep(delay):
+        nonlocal during_hours
+        if delay == 60:
+            scheduler.stop()
+        elif clock.sleep.call_count == len(playback_sleeps):
+            during_hours = False
+
+    clock.sleep.side_effect = sleep
+    monkeypatch.setattr(scheduler_module, "time", clock)
+
+    scheduler.run_loop()
+
+    card.frames.assert_called_once_with(scheduler.context)
+    assert not client.has_pending_commands()
+    methods = [event[0] for event in output.method_calls]
+    assert methods[: sent_frames + 2] == ["turn_on", *["send_frame"] * sent_frames, "turn_off"]
+    assert output.send_frame.call_count == sent_frames
+    if closes_during == "hold":
+        output.send_frame.assert_called_once_with(frame)
+    assert clock.sleep.call_args_list == [call(delay) for delay in [*playback_sleeps, 2, 60]]
 
 
 class TestSchedulerState:
