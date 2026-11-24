@@ -8,7 +8,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 
 @dataclass
@@ -33,6 +33,7 @@ class MeteorShowerCard(Card):
     """
 
     card_type = "meteor_shower"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

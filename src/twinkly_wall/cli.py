@@ -17,9 +17,7 @@ from .canvas import Canvas
 from .cards import (
     BeerCard,
     CardContext,
-    CarlsbergLabCard,
     ClockCard,
-    PacmanCard,
     RainbowCard,
     SnowCard,
     TestPatternCard,
@@ -28,7 +26,7 @@ from .cards import (
     create_card,
     list_card_types,
 )
-from .cards.base import load_card_definitions
+from .cards.base import CardLayout, get_card_layout, load_card_definitions
 from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
@@ -43,6 +41,7 @@ class CLIOptions:
     card: str | None = None
     id: int | None = None
     playlist: Path | None = None
+    layout: CardLayout | None = None
     settings: Path | None = None
     duration: float = 10.0
     color: str | None = None
@@ -54,7 +53,7 @@ class CLIOptions:
     text: str | None = None
     scroll: bool = False
     scroll_direction: str = "horizontal"
-    speed: float = 15.0
+    speed: float | None = None
     theme: str = "trees"
     wind: float = 0.0
     accumulate: bool = False
@@ -216,14 +215,18 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
             }
         )
         return card, "text"
-    if card_type == "pacman":
-        return PacmanCard(
+    speed = 15.0 if args.speed is None else args.speed
+    if card_type in ("pacman_chase_up", "pacman_chase_down") and args.speed is not None:
+        return create_card(card_type, {"duration": duration, "speed": args.speed}), card_type
+    if card_type in ("pacman", "pacman_up", "pacman_down", "pacman_chase_eat_ghosts"):
+        return create_card(
+            card_type,
             {
                 "duration": duration,
-                "speed": args.speed,
+                "speed": speed,
                 "theme": args.theme,
-            }
-        ), "pacman"
+            },
+        ), card_type
     if card_type == "beer":
         return BeerCard(
             {
@@ -243,7 +246,7 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
             {
                 "duration": duration,
                 "mode": args.mode,
-                "speed": args.speed,
+                "speed": speed,
             }
         ), "rainbow"
     if card_type == "test_pattern":
@@ -253,13 +256,14 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
                 "mode": args.pattern_mode,
             }
         ), "test_pattern"
-    if card_type == "carlsberg_lab":
-        return CarlsbergLabCard(
+    if card_type in ("carlsberg_lab", "carlsberg_lab_vertical"):
+        return create_card(
+            card_type,
             {
                 "duration": duration,
-                "scroll_speed": args.speed,
-            }
-        ), "carlsberg_lab"
+                "scroll_speed": speed,
+            },
+        ), card_type
     if card_type == "twinklysay":
         if not args.text:
             print("Error: --text is required for twinklysay card", file=sys.stderr)
@@ -358,18 +362,23 @@ def cmd_list(args: CLIOptions) -> int:
     definitions = load_card_definitions()
     print("Registered cards:")
     for name in sorted(list_card_types(definitions)):
+        layout = get_card_layout(name, definitions)
+        if args.layout is not None and layout != args.layout:
+            continue
         definition = definitions.get(name)
         if definition is None:
-            print(f" - {name}")
+            print(f" - {name} [{layout}]")
         else:
-            print(f" - {name} ({definition.source})")
+            print(f" - {name} ({definition.source}) [{layout}]")
 
     if args.playlist:
         playlist = load_playlist(args.playlist)
         if playlist.cards:
             print(f"\nPlaylist ({args.playlist}):")
             for idx, cfg in enumerate(playlist.cards, start=1):
-                print(f" [{idx}] {cfg.type}")
+                layout = get_card_layout(cfg.type, definitions, cfg.config)
+                if args.layout is None or layout == args.layout:
+                    print(f" [{idx}] {cfg.type} [{layout}]")
         else:
             print(f"\nPlaylist {args.playlist} is empty.")
     return 0
@@ -609,7 +618,7 @@ PlaylistID = Annotated[int | None, typer.Option("--id", min=1, help="Playlist ca
 Duration = Annotated[float, typer.Option("--duration", "-d", min=0.001, help="Duration in seconds")]
 Color = Annotated[str | None, typer.Option("--color", "-c", help="Color name, hex, or R,G,B")]
 Text = Annotated[str | None, typer.Option("--text", "-t", help="Text for text/twinklysay cards")]
-Speed = Annotated[float, typer.Option(min=0.001, help="Animation speed in pixels/sec")]
+Speed = Annotated[float | None, typer.Option(min=0.001, help="Animation speed in pixels/sec")]
 Wind = Annotated[float, typer.Option(min=-1, max=1, help="Snow wind direction")]
 NoColor = Annotated[bool, typer.Option("--no-color", help="Render grayscale terminal output")]
 Mount = Annotated[
@@ -678,9 +687,14 @@ def say(
 
 
 @app.command("list")
-def list_cards(playlist: ConfigPath = None) -> None:
+def list_cards(
+    playlist: ConfigPath = None,
+    layout: Annotated[
+        CardLayout | None, typer.Option("--layout", help="Filter by native card layout")
+    ] = None,
+) -> None:
     """List registered cards and optional numbered playlist entries."""
-    _execute(cmd_list, CLIOptions(playlist=playlist))
+    _execute(cmd_list, CLIOptions(playlist=playlist, layout=layout))
 
 
 @app.command("mcp")
@@ -708,7 +722,7 @@ def preview(
     text: Text = None,
     scroll: bool = False,
     scroll_direction: ScrollDirection = ScrollDirection.horizontal,
-    speed: Speed = 15.0,
+    speed: Speed = None,
     theme: PacmanTheme = PacmanTheme.trees,
     wind: Wind = 0.0,
     accumulate: bool = False,
@@ -757,7 +771,7 @@ def card(
     text: Text = None,
     scroll: bool = False,
     scroll_direction: ScrollDirection = ScrollDirection.horizontal,
-    speed: Speed = 15.0,
+    speed: Speed = None,
     theme: PacmanTheme = PacmanTheme.trees,
     wind: Wind = 0.0,
     accumulate: bool = False,

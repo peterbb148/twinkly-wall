@@ -6,9 +6,16 @@ from datetime import datetime
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import draw_text, text_width
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from ..fonts import (
+    CHAR_WIDTH,
+    draw_text,
+    draw_text_vertical_stacked,
+    text_width,
+    vertical_text_height,
+)
+from ..types import BLACK, HEIGHT, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
+from .base import Card, CardContext, CardLayout, register_card
+from .pacman import draw_sprite
 
 # Small Christmas tree sprite (5x7) - fits in 10px display
 SPRITE_TREE: list[list[int]] = [
@@ -198,56 +205,108 @@ class CountdownCard(Card):
 
         return canvas.copy()
 
+    def _scroll_length(self, countdown_text: str) -> int:
+        return self._get_content_width(countdown_text) + WIDTH + 1
+
+    def _missing_target_frame(self) -> Frame:
+        canvas = Canvas(WIDTH, HEIGHT)
+        draw_text(canvas, 0, 2, "NO DATE", (255, 0, 0))
+        return canvas.copy()
+
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate countdown frames."""
         if not self.target:
             # No valid target, show error
-            canvas = Canvas(WIDTH, HEIGHT)
-            draw_text(canvas, 0, 2, "NO DATE", (255, 0, 0))
-            frame = canvas.copy()
+            frame = self._missing_target_frame()
             start_time = time.time()
             while time.time() - start_time < self.duration:
                 yield frame, 1.0
             return
 
-        # Get initial countdown to check if scrolling needed
-        now = datetime.now()
-        remaining = (self.target - now).total_seconds()
-        countdown_text = self._format_countdown(remaining)
+        countdown_text = self._format_countdown((self.target - datetime.now()).total_seconds())
+        scrolling = self._should_scroll(countdown_text)
+        adaptive = self.layout == CardLayout.portrait and self.scroll == "auto"
+        start_time = time.time()
+        pixels_per_frame = self.scroll_speed / 30.0
+        offset = 0.0
+        scrolls_done = 0
 
-        if self._should_scroll(countdown_text):
-            # Scrolling mode
-            pixels_per_frame = self.scroll_speed / 30.0
-            frame_delay = 1.0 / 30.0
-
-            offset = 0.0
-            scrolls_done = 0
-
-            while scrolls_done < self.repeats:
-                now = datetime.now()
-                remaining = (self.target - now).total_seconds()
-                countdown_text = self._format_countdown(remaining)
-
-                content_width = self._get_content_width(countdown_text)
-                total_scroll = content_width + WIDTH + 1
-
+        while True:
+            if scrolling:
+                if scrolls_done >= self.repeats:
+                    return
                 frame = self._render_frame(countdown_text, int(offset))
-                yield frame, frame_delay
+                yield frame, 1.0 / 30.0
 
                 offset += pixels_per_frame
-
-                if offset >= total_scroll:
+                if offset >= self._scroll_length(countdown_text):
                     scrolls_done += 1
                     offset = 0.0
-        else:
-            # Static mode
-            start_time = time.time()
-            frame_delay = 0.5  # Update twice per second
-
-            while time.time() - start_time < self.duration:
-                now = datetime.now()
-                remaining = (self.target - now).total_seconds()
-
-                countdown_text = self._format_countdown(remaining)
+            else:
+                if time.time() - start_time >= self.duration:
+                    return
+                offset = 0.0
                 frame = self._render_frame(countdown_text)
-                yield frame, frame_delay
+                yield frame, 0.5
+
+            updated_text = self._format_countdown((self.target - datetime.now()).total_seconds())
+            if adaptive and updated_text != countdown_text:
+                scrolling = self._should_scroll(updated_text)
+            countdown_text = updated_text
+
+
+@register_card
+class CountdownVerticalCard(CountdownCard):
+    """Display the target-date countdown with upright letters and decorations."""
+
+    card_type = "countdown_vertical"
+    layout = CardLayout.portrait
+
+    def _get_content_height(self, countdown_text: str) -> int:
+        height = vertical_text_height(countdown_text)
+        if self.label:
+            height += vertical_text_height(self.label) + 2
+        for name in (self.prefix_sprite, self.suffix_sprite):
+            sprite_data = self._get_sprite(name or "")
+            if sprite_data:
+                height += len(sprite_data[0]) + 2
+        return height
+
+    def _should_scroll(self, countdown_text: str) -> bool:
+        if self.scroll == "auto":
+            return self._get_content_height(countdown_text) > PORTRAIT_HEIGHT
+        return bool(self.scroll)
+
+    def _scroll_length(self, countdown_text: str) -> int:
+        return self._get_content_height(countdown_text) + PORTRAIT_HEIGHT + 1
+
+    def _draw_vertical_sprite(self, canvas: Canvas, name: str | None, y: int) -> int:
+        sprite_data = self._get_sprite(name or "")
+        if not sprite_data:
+            return 0
+        sprite, colors = sprite_data
+        draw_sprite(canvas, sprite, (canvas.width - len(sprite[0])) // 2, y, colors)
+        return len(sprite)
+
+    def _render_frame(self, countdown_text: str, offset: int | None = None) -> Frame:
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+        if offset is None:
+            y = (canvas.height - self._get_content_height(countdown_text)) // 2
+        else:
+            y = canvas.height - offset
+        x = (canvas.width - CHAR_WIDTH) // 2
+        prefix_height = self._draw_vertical_sprite(canvas, self.prefix_sprite, y)
+        if prefix_height:
+            y += prefix_height + 2
+        if self.label:
+            y += draw_text_vertical_stacked(canvas, x, y, self.label, (150, 150, 150)) + 2
+        y += draw_text_vertical_stacked(canvas, x, y, countdown_text, self.color) + 2
+        self._draw_vertical_sprite(canvas, self.suffix_sprite, y)
+        return canvas.copy()
+
+    def _missing_target_frame(self) -> Frame:
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+        draw_text_vertical_stacked(
+            canvas, (canvas.width - CHAR_WIDTH) // 2, 0, "NO DATE", (255, 0, 0), spacing=0
+        )
+        return canvas.copy()

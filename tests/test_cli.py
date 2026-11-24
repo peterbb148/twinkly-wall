@@ -211,6 +211,70 @@ def test_preview_dispatch(card, monkeypatch):
     assert animate.call_args.kwargs["color_mode"] is False
 
 
+@pytest.mark.parametrize("name", ["pacman_up", "pacman_down"])
+def test_portrait_pacman_cli_theme(name, monkeypatch):
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(app, ["preview", name, "--theme", "snowman"])
+    assert result.exit_code == 0, result.output
+    frame, _ = next(animate.call_args.args[0])
+    assert len(frame) == 50
+    assert any((255, 140, 0) in row for row in frame)
+
+
+@pytest.mark.parametrize("command", ["preview", "card"])
+@pytest.mark.parametrize("name", ["pacman_chase_up", "pacman_chase_down"])
+@pytest.mark.parametrize("speed_args, expected", [([], 20.0), (["--speed", "5"], 5.0)])
+def test_portrait_chase_cli_speed(command, name, speed_args, expected, tmp_path, monkeypatch):
+    path = tmp_path / "device.yaml"
+    path.write_text("twinkly: {host: localhost}\n")
+    created_cards = []
+    create_card = cli.create_card
+
+    def record_card(card_type, config):
+        card = create_card(card_type, config)
+        created_cards.append(card)
+        return card
+
+    monkeypatch.setattr(cli, "create_card", record_card)
+    monkeypatch.setattr(cli, "animate_frames", MagicMock())
+    monkeypatch.setattr(cli, "TwinklyOutput", MagicMock())
+    monkeypatch.setattr(cli.time, "sleep", MagicMock())
+    result = runner.invoke(app, [command, name, "--settings", str(path), "-d", "0.01", *speed_args])
+    assert result.exit_code == 0, result.output
+    (card,) = created_cards
+    assert card.speed == expected
+
+
+def test_card_layout_filter_preserves_playlist_ids(tmp_path, monkeypatch):
+    catalog = tmp_path / "definitions"
+    catalog.mkdir()
+    monkeypatch.setenv("TWINKLY_CARD_DIR", str(catalog))
+    (catalog / "demo.png").touch()
+    (catalog / "portrait-image.yaml").write_text("type: image\npath: demo.png\nlayout: portrait\n")
+    playlist = tmp_path / "cards.yaml"
+    playlist.write_text(
+        "cards:\n"
+        "  - type: clock\n"
+        "  - type: coffee_vertical\n"
+        "  - type: portrait-image\n"
+        "    layout: landscape\n"
+        "  - type: image\n"
+        "    layout: portrait\n"
+    )
+    result = runner.invoke(app, ["list", "--layout", "portrait", "--playlist", str(playlist)])
+    assert result.exit_code == 0, result.output
+    assert " - coffee_vertical [portrait]" in result.output
+    assert "portrait-image.yaml) [portrait]" in result.output
+    assert " - clock " not in result.output
+    assert " [2] coffee_vertical [portrait]" in result.output
+    assert " [4] image [portrait]" in result.output
+    assert " [3] " not in result.output
+    adaptive = runner.invoke(app, ["list", "--layout", "adaptive"])
+    assert adaptive.exit_code == 0, adaptive.output
+    assert adaptive.output.splitlines() == ["Registered cards:", " - orientation_test [adaptive]"]
+
+
 def test_card_specific_options(monkeypatch):
     build = MagicMock(return_value=(MagicMock(), "pacman"))
     monkeypatch.setattr(cli, "_build_card", build)

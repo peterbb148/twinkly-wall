@@ -5,6 +5,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,14 @@ class CardContext:
     orientation: Orientation = Orientation.horizontal
 
 
+class CardLayout(StrEnum):
+    """Native canvas layout of a registered card."""
+
+    landscape = "landscape"
+    portrait = "portrait"
+    adaptive = "adaptive"
+
+
 class Card(ABC):
     """Abstract base class for display cards.
 
@@ -37,6 +46,17 @@ class Card(ABC):
 
     # Card type name used in configuration
     card_type: str = "base"
+    layout = CardLayout.landscape
+
+    @classmethod
+    def get_layout(cls, config: dict[str, Any] | None = None) -> CardLayout:
+        """Return the card's layout without initializing its renderer."""
+        return cls.layout
+
+    @classmethod
+    def get_layout_source(cls, config: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Return the configured child card when it determines this card's layout."""
+        return None
 
     def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the card with optional configuration.
@@ -156,6 +176,34 @@ def list_card_types(definitions: dict[str, CardDefinition] | None = None) -> lis
     if definitions is None:
         definitions = load_card_definitions()
     return [*_card_registry, *definitions]
+
+
+def get_card_layout(
+    name: str, definitions: dict[str, CardDefinition], config: dict[str, Any] | None = None
+) -> CardLayout:
+    """Resolve a registered name's layout, including external and playlist options."""
+    visited_sources: set[int] = set()
+    while True:
+        definition = definitions.get(name)
+        if definition is not None:
+            name = definition.renderer
+            config = {**definition.config, **(config or {})}
+        card_class = _card_registry[name]
+        source = card_class.get_layout_source(config)
+        if source is None:
+            return card_class.get_layout(config)
+
+        source_type = source.get("type")
+        if not isinstance(source_type, str) or (
+            source_type not in _card_registry and source_type not in definitions
+        ):
+            return card_class.get_layout(config)
+        # Nested uses of the same renderer can still have distinct background configurations.
+        if id(source) in visited_sources:
+            raise ValueError(f"Circular card layout reference to '{source_type}'")
+        visited_sources.add(id(source))
+        name = source_type
+        config = {key: value for key, value in source.items() if key != "type"}
 
 
 def create_card(card_type: str, config: dict[str, Any] | None = None) -> Card | None:
