@@ -8,7 +8,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 LAVA_ORANGE: RGB = (255, 140, 60)
 LAVA_RED: RGB = (220, 60, 40)
@@ -36,6 +36,7 @@ class LavaColumnCard(Card):
     """
 
     card_type = "lava_column"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

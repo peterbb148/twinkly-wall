@@ -14,18 +14,18 @@ from .beer import BeerCard
 from .beer_vertical import BeerVerticalCard
 from .calendar import CalendarCard
 from .candle_vertical import CandleVerticalCard
-from .carlsberg_lab import CarlsbergLabCard
+from .carlsberg_lab import CarlsbergLabCard, CarlsbergLabVerticalCard
 from .chemical_agent import ChemicalAgentCard
 from .clock import ClockCard
-from .coffee import CoffeeCard
+from .coffee import CoffeeCard, CoffeeVerticalCard
 from .confetti import ConfettiCard
-from .countdown import CountdownCard
+from .countdown import CountdownCard, CountdownVerticalCard
 from .countdown_ruler import CountdownRulerCard
 from .dna import DNACard
 from .driving_home import DrivingHomeCard
 from .fire import FireCard
 from .fireworks import FireworksCard
-from .friday import FridayCard
+from .friday import FridayCard, FridayVerticalCard
 from .image import ImageCard
 from .lava import LavaCard
 from .lava_column import LavaColumnCard
@@ -37,8 +37,8 @@ from .news import NewsCard
 from .ocean import OceanCard
 from .orientation_test import OrientationTestCard
 from .overlay import OverlayCard
-from .pacman import PacmanCard
-from .pacman_chase import PacmanChaseCard
+from .pacman import PacmanCard, PacmanChaseEatGhostsCard, PacmanDownCard, PacmanUpCard
+from .pacman_chase import PacmanChaseCard, PacmanChaseDownCard, PacmanChaseUpCard
 from .pomodoro import PomodoroCard
 from .pong import PongCard
 from .pulse import PulseCard
@@ -65,7 +65,7 @@ from .tuborg_truck import TuborgTruckCard
 from .twinklysay import TwinklysayCard
 from .vertical_bars import VerticalBarsCard
 from .vines import VinesCard
-from .weather import WeatherCard
+from .weather import WeatherCard, WeatherVerticalCard
 
 __all__ = [
     "AuroraCard",
@@ -74,6 +74,7 @@ __all__ = [
     "BeerVerticalCard",
     "CalendarCard",
     "CarlsbergLabCard",
+    "CarlsbergLabVerticalCard",
     "CandleVerticalCard",
     "CountdownRulerCard",
     "ChemicalAgentCard",
@@ -81,13 +82,16 @@ __all__ = [
     "CardContext",
     "ClockCard",
     "CoffeeCard",
+    "CoffeeVerticalCard",
     "ConfettiCard",
     "CountdownCard",
+    "CountdownVerticalCard",
     "DNACard",
     "DrivingHomeCard",
     "FireCard",
     "FireworksCard",
     "FridayCard",
+    "FridayVerticalCard",
     "ImageCard",
     "LavaCard",
     "LavaColumnCard",
@@ -101,6 +105,11 @@ __all__ = [
     "OverlayCard",
     "PacmanCard",
     "PacmanChaseCard",
+    "PacmanChaseDownCard",
+    "PacmanChaseEatGhostsCard",
+    "PacmanChaseUpCard",
+    "PacmanDownCard",
+    "PacmanUpCard",
     "PomodoroCard",
     "PongCard",
     "PulseCard",
@@ -128,6 +137,7 @@ __all__ = [
     "VerticalBarsCard",
     "VinesCard",
     "WeatherCard",
+    "WeatherVerticalCard",
     "create_card",
     "get_card_class",
     "list_card_types",

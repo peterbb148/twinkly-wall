@@ -10,7 +10,7 @@ from PIL import Image
 
 from ..canvas import Canvas
 from ..types import BLACK, HEIGHT, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 logger = logging.getLogger(__name__)
 
@@ -149,11 +149,17 @@ class ImageCard(Card):
 
     card_type = "image"
 
+    @classmethod
+    def get_layout(cls, config: dict[str, Any] | None = None) -> CardLayout:
+        """Resolve the configured image canvas."""
+        layout = (config or {}).get("layout", cls.layout)
+        if layout not in (CardLayout.landscape, CardLayout.portrait):
+            raise ValueError("Image layout must be landscape or portrait")
+        return CardLayout(layout)
+
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
-        layout = self.config.get("layout", "landscape")
-        if layout not in ("landscape", "portrait"):
-            raise ValueError("Image layout must be landscape or portrait")
+        layout = self.get_layout(self.config)
         self.width, self.height = (
             (PORTRAIT_WIDTH, PORTRAIT_HEIGHT) if layout == "portrait" else (WIDTH, HEIGHT)
         )
