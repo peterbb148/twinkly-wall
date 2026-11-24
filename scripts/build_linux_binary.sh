@@ -12,10 +12,9 @@ archive="twinkly-cli-$version-$platform.tar.gz"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 
-mkdir -p "$stage/examples" "$stage/assets"
+mkdir -p "$stage/examples"
 cp dist/twinkly-cli "$stage/"
 cp config/cards.example.yaml config/settings.example.yaml "$stage/examples/"
-cp assets/carlsberg.png "$stage/assets/"
 tar -czf "dist/$archive" -C "$stage" .
 (
   cd dist
