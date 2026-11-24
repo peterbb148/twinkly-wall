@@ -1,10 +1,10 @@
 """Pac-Man being chased by ghosts animation card."""
 
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Literal
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 from .pacman import PACMAN_CLOSED, SPRITE_GHOST, draw_sprite
 
@@ -21,6 +21,10 @@ PACMAN_OPEN_LEFT: list[list[int]] = [
 
 PACMAN_CLOSED_LEFT: list[list[int]] = PACMAN_CLOSED  # Closed is symmetrical
 
+# Rotate only the mouth sprite. The ghosts use their upright artwork in both chases.
+PACMAN_OPEN_UP = [list(row) for row in zip(*reversed(PACMAN_OPEN_LEFT), strict=True)]
+PACMAN_OPEN_DOWN = [list(row) for row in zip(*(row[::-1] for row in PACMAN_OPEN_LEFT), strict=True)]
+
 PACMAN_COLOR: RGB = (255, 255, 0)  # Yellow
 GHOST_RED: RGB = (255, 0, 0)
 GHOST_PINK: RGB = (255, 184, 255)
@@ -30,17 +34,19 @@ GHOST_ORANGE: RGB = (255, 184, 82)
 
 @register_card
 class PacmanChaseCard(Card):
-    """Pac-Man being chased by ghosts from right to left.
+    """Pac-Man being chased by ghosts along the display's long axis.
 
     Config options:
         num_ghosts: Number of ghosts chasing (1-4, default: 3)
         ghost_colors: List of RGB colors for ghosts (default: classic colors)
         speed: Pixels per second (default: 20)
         ghost_spacing: Pixels between ghosts (default: 12)
-        animation_complete: Wait for animation to complete before ending (default: true)
+        repeats: Number of complete chases (default: 1)
     """
 
     card_type = "pacman_chase"
+    portrait_direction: Literal["up", "down"] | None = None
+    open_sprite = PACMAN_OPEN_LEFT
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
@@ -57,39 +63,51 @@ class PacmanChaseCard(Card):
         else:
             self.ghost_colors = default_colors[: self.num_ghosts]
 
+    def _sprite_position(self, position: float, sprite: list[list[int]]) -> tuple[int, int]:
+        """Place the sprite along the chase axis in viewer coordinates."""
+        along_axis = int(position)
+        if self.portrait_direction is None:
+            return along_axis, 1
+
+        x = (PORTRAIT_WIDTH - len(sprite[0])) // 2
+        if self.portrait_direction == "down":
+            along_axis = PORTRAIT_HEIGHT - len(sprite) - along_axis
+        return x, along_axis
+
     def _render_frame(
         self,
-        pacman_x: float,
+        pacman_position: float,
         ghost_positions: list[float],
         mouth_open: bool,
     ) -> Frame:
         """Render a single frame of the chase animation."""
-        canvas = Canvas(WIDTH, HEIGHT)
-        canvas.clear(BLACK)
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT) if self.portrait_direction else Canvas()
 
-        # Draw Pac-Man (facing left, running away)
-        pacman_sprite = PACMAN_OPEN_LEFT if mouth_open else PACMAN_CLOSED_LEFT
+        pacman_sprite = self.open_sprite if mouth_open else PACMAN_CLOSED_LEFT
         pacman_color_map = {1: PACMAN_COLOR}
-        draw_sprite(canvas, pacman_sprite, int(pacman_x), 1, pacman_color_map)
+        x, y = self._sprite_position(pacman_position, pacman_sprite)
+        draw_sprite(canvas, pacman_sprite, x, y, pacman_color_map)
 
         # Draw ghosts chasing
-        for i, gx in enumerate(ghost_positions):
+        for i, position in enumerate(ghost_positions):
             color = self.ghost_colors[i % len(self.ghost_colors)]
             ghost_color_map = {
                 1: color,  # Ghost body
                 2: (255, 255, 255),  # White eyes
             }
-            draw_sprite(canvas, SPRITE_GHOST, int(gx), 1, ghost_color_map)
+            x, y = self._sprite_position(position, SPRITE_GHOST)
+            draw_sprite(canvas, SPRITE_GHOST, x, y, ghost_color_map)
 
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate chase animation frames."""
-        # Start positions - Pac-Man on right, ghosts following from further right
-        pacman_x = float(WIDTH)
-        ghost_positions = [
-            float(WIDTH + 10 + i * self.ghost_spacing) for i in range(self.num_ghosts)
+        track_length = PORTRAIT_HEIGHT if self.portrait_direction else WIDTH
+        pacman_position = float(track_length)
+        ghost_starts = [
+            float(track_length + 10 + i * self.ghost_spacing) for i in range(self.num_ghosts)
         ]
+        ghost_positions = ghost_starts
 
         mouth_open = True
         mouth_timer = 0.0
@@ -99,25 +117,41 @@ class PacmanChaseCard(Card):
 
         while cycles_done < self.repeats:
             # Render frame
-            frame = self._render_frame(pacman_x, ghost_positions, mouth_open)
+            frame = self._render_frame(pacman_position, ghost_positions, mouth_open)
             yield frame, frame_delay
 
-            # Move everything left
+            # Each direction uses the same descending chase coordinate.
             movement = self.speed * frame_delay
-            pacman_x -= movement
-            ghost_positions = [gx - movement for gx in ghost_positions]
+            pacman_position -= movement
+            ghost_positions = [position - movement for position in ghost_positions]
 
-            # Loop when everything is off-screen left
+            # Restart after the last ghost exits.
             if ghost_positions[-1] < -10:
                 cycles_done += 1
                 if cycles_done < self.repeats:
-                    pacman_x = float(WIDTH)
-                    ghost_positions = [
-                        float(WIDTH + 10 + i * self.ghost_spacing) for i in range(self.num_ghosts)
-                    ]
+                    pacman_position = float(track_length)
+                    ghost_positions = ghost_starts
 
             # Animate mouth (toggle every 0.12s - faster when running!)
             mouth_timer += frame_delay
             if mouth_timer >= 0.12:
                 mouth_open = not mouth_open
                 mouth_timer = 0.0
+
+
+@register_card
+class PacmanChaseUpCard(PacmanChaseCard):
+    """Chase from the bottom to the top of a portrait wall."""
+
+    card_type = "pacman_chase_up"
+    portrait_direction = "up"
+    open_sprite = PACMAN_OPEN_UP
+
+
+@register_card
+class PacmanChaseDownCard(PacmanChaseCard):
+    """Chase from the top to the bottom of a portrait wall."""
+
+    card_type = "pacman_chase_down"
+    portrait_direction = "down"
+    open_sprite = PACMAN_OPEN_DOWN
