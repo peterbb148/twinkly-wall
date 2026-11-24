@@ -137,6 +137,15 @@ twinkly-cli wall --terminal --settings /path/to/settings.yaml --cards /path/to/c
 twinkly-cli wall --settings /path/to/settings.yaml --cards /path/to/cards.yaml
 ```
 
+To play only commands from the MCP server, start the wall with `--mcp-only`.
+The daemon skips the playlist, polls during configured operating hours, and turns
+the LEDs off between batches of commands. Use `--mcp-server` or `TWINKLY_MCP_URL`
+to select the server and `TWINKLY_API_KEY` if it requires authentication.
+
+```bash
+twinkly-cli wall --mcp-only --settings /path/to/settings.yaml
+```
+
 For an existing systemd service on the Pi, set `ExecStart` to the absolute
 path of the installed binary followed by `wall --settings /absolute/settings.yaml
 --cards /absolute/cards.yaml`. Give the service account access to those files

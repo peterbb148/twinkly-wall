@@ -155,6 +155,9 @@ The daemon supports remote control via the [twinkly-mcp](https://github.com/pete
 # Run daemon with MCP enabled (on Raspberry Pi)
 twinkly-cli wall --mcp
 
+# Play only commands from MCP and keep the wall off between them
+twinkly-cli wall --mcp-only
+
 # Run in terminal mode for testing (no LED hardware)
 twinkly-cli wall -t --mcp
 

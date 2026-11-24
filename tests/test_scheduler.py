@@ -1,7 +1,11 @@
 """Tests for the card scheduler."""
 
+from unittest.mock import Mock, call
+
+from twinkly_wall import scheduler as scheduler_module
 from twinkly_wall.cards import CardContext
 from twinkly_wall.config import CardConfig, PlaylistConfig
+from twinkly_wall.mcp_client import MCPClient
 from twinkly_wall.scheduler import Scheduler, SchedulerState
 from twinkly_wall.types import Frame
 
@@ -14,6 +18,58 @@ class MockOutput:
 
     def send_frame(self, frame: Frame) -> None:
         self.frames.append(frame)
+
+
+def test_mcp_only_loop_waits_for_hours_and_plays_remote_frames(monkeypatch):
+    output = Mock()
+    frame_only_output = MockOutput()
+    client = MCPClient()
+    poll = Mock(side_effect=[[], [{"type": "twinklysay", "payload": {"text": "Hi"}}]])
+    monkeypatch.setattr(client, "poll_commands", poll)
+    scheduler = Scheduler(PlaylistConfig(), outputs=[output, frame_only_output], mcp_client=client)
+    hours = Mock(side_effect=[False, True, True])
+    monkeypatch.setattr(scheduler_module, "is_within_operating_hours", hours)
+    clock = Mock()
+    clock.time.side_effect = [100.0, 102.0]
+
+    def sleep(delay):
+        if delay == 2.0 and poll.call_count == 2:
+            scheduler.stop()
+
+    clock.sleep.side_effect = sleep
+    monkeypatch.setattr(scheduler_module, "time", clock)
+
+    scheduler.run_loop()
+
+    assert poll.call_count == 2
+    assert clock.sleep.call_args_list[:2] == [call(60), call(2.0)]
+    assert scheduler.state.cards_played == 0
+    assert scheduler.state.last_frame is None
+    methods = [event[0] for event in output.method_calls]
+    assert methods[:2] == ["turn_off", "turn_on"]
+    assert methods[2:-1] == ["send_frame"] * output.send_frame.call_count
+    assert output.send_frame.call_count > 0
+    assert methods[-1] == "turn_off"
+    assert len(frame_only_output.frames) == output.send_frame.call_count
+
+
+def test_mcp_only_loop_stays_off_when_stopped_during_poll(monkeypatch):
+    output = Mock()
+    client = MCPClient()
+    scheduler = Scheduler(PlaylistConfig(), outputs=[output], mcp_client=client)
+
+    def poll():
+        scheduler.stop()
+        return [{"type": "twinklysay", "payload": {"text": "Hi"}}]
+
+    monkeypatch.setattr(client, "poll_commands", poll)
+    clock = Mock()
+    clock.time.return_value = 100.0
+    monkeypatch.setattr(scheduler_module, "time", clock)
+    scheduler.run_loop()
+
+    assert output.method_calls == []
+    clock.sleep.assert_not_called()
 
 
 class TestSchedulerState:
@@ -56,7 +112,25 @@ class TestScheduler:
 
         # Should just return without error
         scheduler.run_once()
+        scheduler.run_loop()
         assert scheduler.state.cards_played == 0
+
+    def test_playlist_loop_turns_display_back_on_when_hours_resume(self, monkeypatch):
+        output = Mock()
+        playlist = PlaylistConfig(cards=[CardConfig(type="clock")])
+        scheduler = Scheduler(playlist, outputs=[output])
+        hours = Mock(side_effect=[False, True, True])
+        clock = Mock()
+        play = Mock(side_effect=lambda _: scheduler.stop())
+        monkeypatch.setattr(scheduler_module, "is_within_operating_hours", hours)
+        monkeypatch.setattr(scheduler_module, "time", clock)
+        monkeypatch.setattr(scheduler, "_play_card", play)
+
+        scheduler.run_loop()
+
+        clock.sleep.assert_called_once_with(60)
+        assert output.method_calls == [call.turn_off(), call.turn_on()]
+        play.assert_called_once_with(playlist.cards[0])
 
     def test_scheduler_frames_generator(self):
         """Test scheduler frames generator produces frames."""
