@@ -2,10 +2,10 @@
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from ..canvas import Canvas
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
+from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
 
 # Pac-Man sprites (7x7) - mouth open and closed
@@ -18,6 +18,9 @@ PACMAN_OPEN: list[list[int]] = [
     [0, 1, 1, 1, 1, 1, 0],
     [0, 0, 1, 1, 1, 0, 0],
 ]
+
+PACMAN_OPEN_UP = [list(row) for row in zip(*(row[::-1] for row in PACMAN_OPEN), strict=True)]
+PACMAN_OPEN_DOWN = [list(row) for row in zip(*reversed(PACMAN_OPEN), strict=True)]
 
 PACMAN_CLOSED: list[list[int]] = [
     [0, 0, 1, 1, 1, 0, 0],
@@ -223,14 +226,17 @@ class PacmanCard(Card):
     """Pac-Man eating things animation.
 
     Config options:
-        theme: What to eat - trees, beer, hearts, snow, ghosts, dots (default: trees)
+        theme: Name from THEMES (default: trees)
         pacman_color: RGB tuple for Pac-Man (default: yellow)
         speed: Pixels per second (default: 15)
         num_items: Number of items to place (default: 4)
-        animation_complete: Wait for animation to complete before ending (default: true)
+        repeats: Number of complete passes (default: 1)
     """
 
     card_type = "pacman"
+    portrait_direction: Literal["up", "down"] | None = None
+    open_sprite = PACMAN_OPEN
+    target_speed_ratio = 0.0
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
@@ -241,46 +247,55 @@ class PacmanCard(Card):
         self.num_items: int = self.config.get("num_items", 4)
         self.repeats: int = self.config.get("repeats", 1)
 
+    def _sprite_position(
+        self, position: int, sprite: list[list[int]], landscape_y: int
+    ) -> tuple[int, int]:
+        """Place a sprite along the travel axis while keeping its own orientation."""
+        if self.portrait_direction is None:
+            return position, landscape_y
+        x = (PORTRAIT_WIDTH - len(sprite[0])) // 2
+        y = (
+            PORTRAIT_HEIGHT - len(sprite) - position
+            if self.portrait_direction == "up"
+            else position
+        )
+        return x, y
+
     def _render_frame(
         self,
-        pacman_x: float,
+        pacman_position: int,
         mouth_open: bool,
         item_positions: list[int],
         eaten: set[int],
     ) -> Frame:
         """Render a single frame of the animation."""
-        canvas = Canvas(WIDTH, HEIGHT)
-        canvas.clear(BLACK)
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT) if self.portrait_direction else Canvas()
 
         # Draw items that haven't been eaten
-        for i, ix in enumerate(item_positions):
+        for i, position in enumerate(item_positions):
             if i not in eaten:
-                draw_sprite(
-                    canvas,
-                    self.theme.sprite,
-                    ix,
-                    self.theme.y_offset,
-                    self.theme.color_map,
-                )
+                x, y = self._sprite_position(position, self.theme.sprite, self.theme.y_offset)
+                draw_sprite(canvas, self.theme.sprite, x, y, self.theme.color_map)
 
         # Draw Pac-Man
-        pacman_sprite = PACMAN_OPEN if mouth_open else PACMAN_CLOSED
+        pacman_sprite = self.open_sprite if mouth_open else PACMAN_CLOSED
         pacman_color_map = {1: self.pacman_color}
-        draw_sprite(canvas, pacman_sprite, int(pacman_x), 1, pacman_color_map)
+        x, y = self._sprite_position(pacman_position, pacman_sprite, 1)
+        draw_sprite(canvas, pacman_sprite, x, y, pacman_color_map)
 
         return canvas.copy()
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate Pac-Man animation frames."""
-        # Calculate sprite width for spacing
-        sprite_width = len(self.theme.sprite[0]) if self.theme.sprite else 7
-
-        # Place items evenly across the display
-        item_spacing = (WIDTH - sprite_width) // (self.num_items + 1)
-        item_positions = [item_spacing * (i + 1) for i in range(self.num_items)]
+        track_length = PORTRAIT_HEIGHT if self.portrait_direction else WIDTH
+        sprite = self.theme.sprite
+        sprite_length = len(sprite) if self.portrait_direction else len(sprite[0])
+        item_spacing = (track_length - sprite_length) // (self.num_items + 1)
+        item_starts = [item_spacing * (i + 1) for i in range(self.num_items)]
 
         # Animation state
-        pacman_x = -8.0  # Start off-screen left
+        start = -8.0
+        pacman_position = start
         eaten: set[int] = set()
         mouth_open = True
         mouth_timer = 0.0
@@ -290,23 +305,25 @@ class PacmanCard(Card):
 
         while cycles_done < self.repeats:
             # Check for eating items
-            pacman_front = int(pacman_x) + 7  # Front of Pac-Man
-            for i, ix in enumerate(item_positions):
-                item_center = ix + sprite_width // 2
+            target_offset = int((pacman_position - start) * self.target_speed_ratio)
+            item_positions = [position + target_offset for position in item_starts]
+            pacman_front = int(pacman_position) + len(self.open_sprite)
+            for i, position in enumerate(item_positions):
+                item_center = position + sprite_length // 2
                 if i not in eaten and pacman_front >= item_center:
                     eaten.add(i)
 
             # Render frame
-            frame = self._render_frame(pacman_x, mouth_open, item_positions, eaten)
+            frame = self._render_frame(int(pacman_position), mouth_open, item_positions, eaten)
             yield frame, frame_delay
 
             # Update position
-            pacman_x += self.speed * frame_delay
+            pacman_position += self.speed * frame_delay
 
-            # Loop when off-screen right
-            if pacman_x > WIDTH:
+            # Loop after Pac-Man exits.
+            if pacman_position > track_length:
                 cycles_done += 1
-                pacman_x = -8.0
+                pacman_position = start
                 eaten.clear()
 
             # Animate mouth (toggle every 0.15s)
@@ -314,3 +331,32 @@ class PacmanCard(Card):
             if mouth_timer >= 0.15:
                 mouth_open = not mouth_open
                 mouth_timer = 0.0
+
+
+@register_card
+class PacmanUpCard(PacmanCard):
+    """Eat themed objects from the bottom to the top of a portrait wall."""
+
+    card_type = "pacman_up"
+    portrait_direction = "up"
+    open_sprite = PACMAN_OPEN_UP
+
+
+@register_card
+class PacmanDownCard(PacmanCard):
+    """Eat themed objects from the top to the bottom of a portrait wall."""
+
+    card_type = "pacman_down"
+    portrait_direction = "down"
+    open_sprite = PACMAN_OPEN_DOWN
+
+
+@register_card
+class PacmanChaseEatGhostsCard(PacmanUpCard):
+    """Catch and eat moving ghosts while travelling up a portrait wall."""
+
+    card_type = "pacman_chase_eat_ghosts"
+    target_speed_ratio = 0.25
+
+    def __init__(self, config: dict[str, Any] | None = None):
+        super().__init__({"num_items": 3, **(config or {}), "theme": "ghosts"})

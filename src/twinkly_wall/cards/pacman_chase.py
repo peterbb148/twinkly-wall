@@ -6,7 +6,7 @@ from typing import Any, Literal
 from ..canvas import Canvas
 from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
 from .base import Card, CardContext, register_card
-from .pacman import PACMAN_CLOSED, SPRITE_GHOST, draw_sprite
+from .pacman import PACMAN_CLOSED, PACMAN_OPEN_DOWN, PACMAN_OPEN_UP, SPRITE_GHOST, draw_sprite
 
 # Pac-Man facing left (mouth on left side)
 PACMAN_OPEN_LEFT: list[list[int]] = [
@@ -20,10 +20,6 @@ PACMAN_OPEN_LEFT: list[list[int]] = [
 ]
 
 PACMAN_CLOSED_LEFT: list[list[int]] = PACMAN_CLOSED  # Closed is symmetrical
-
-# Rotate only the mouth sprite. The ghosts use their upright artwork in both chases.
-PACMAN_OPEN_UP = [list(row) for row in zip(*reversed(PACMAN_OPEN_LEFT), strict=True)]
-PACMAN_OPEN_DOWN = [list(row) for row in zip(*(row[::-1] for row in PACMAN_OPEN_LEFT), strict=True)]
 
 PACMAN_COLOR: RGB = (255, 255, 0)  # Yellow
 GHOST_RED: RGB = (255, 0, 0)
