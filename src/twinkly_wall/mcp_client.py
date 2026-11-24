@@ -177,6 +177,10 @@ class MCPClient:
         """Check if there are pending commands to process."""
         return len(self._pending_commands) > 0
 
+    def discard_pending_commands(self) -> None:
+        """Discard commands that have been polled but have not started playback."""
+        self._pending_commands.clear()
+
     def create_card_from_command(self, cmd: dict[str, Any]) -> Card | None:
         """Create a card instance from a command.
 

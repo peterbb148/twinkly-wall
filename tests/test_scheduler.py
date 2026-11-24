@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock, call
 
+import pytest
+
 from twinkly_wall import scheduler as scheduler_module
 from twinkly_wall.cards import CardContext
 from twinkly_wall.config import CardConfig, PlaylistConfig
@@ -27,7 +29,7 @@ def test_mcp_only_loop_waits_for_hours_and_plays_remote_frames(monkeypatch):
     poll = Mock(side_effect=[[], [{"type": "twinklysay", "payload": {"text": "Hi"}}]])
     monkeypatch.setattr(client, "poll_commands", poll)
     scheduler = Scheduler(PlaylistConfig(), outputs=[output, frame_only_output], mcp_client=client)
-    hours = Mock(side_effect=[False, True, True])
+    hours = Mock(side_effect=[False, True, True, True, True])
     monkeypatch.setattr(scheduler_module, "is_within_operating_hours", hours)
     clock = Mock()
     clock.time.side_effect = [100.0, 102.0]
@@ -70,6 +72,51 @@ def test_mcp_only_loop_stays_off_when_stopped_during_poll(monkeypatch):
 
     assert output.method_calls == []
     clock.sleep.assert_not_called()
+
+
+@pytest.mark.parametrize("closes_during", ["poll", "first_card"])
+def test_mcp_only_loop_discards_commands_at_closing(monkeypatch, closes_during):
+    output = Mock()
+    client = MCPClient()
+    scheduler = Scheduler(PlaylistConfig(), outputs=[output], mcp_client=client)
+    during_hours = True
+    played_text = []
+
+    def poll():
+        nonlocal during_hours
+        during_hours = closes_during != "poll"
+        return [
+            {"type": "twinklysay", "payload": {"text": "First"}},
+            {"type": "twinklysay", "payload": {"text": "Second"}},
+        ]
+
+    def play(card):
+        nonlocal during_hours
+        played_text.append(card.text)
+        during_hours = False
+
+    def sleep(delay):
+        if delay == 60:
+            scheduler.stop()
+
+    clock = Mock()
+    clock.time.return_value = 100.0
+    clock.sleep.side_effect = sleep
+    monkeypatch.setattr(client, "poll_commands", poll)
+    monkeypatch.setattr(scheduler, "_play_card_instance", play)
+    monkeypatch.setattr(scheduler_module, "is_within_operating_hours", lambda _: during_hours)
+    monkeypatch.setattr(scheduler_module, "time", clock)
+
+    scheduler.run_loop()
+
+    assert not client.has_pending_commands()
+    if closes_during == "poll":
+        assert played_text == []
+        assert output.method_calls == [call.turn_off()]
+        clock.sleep.assert_called_once_with(60)
+    else:
+        assert played_text == ["First"]
+        assert output.method_calls[:2] == [call.turn_on(), call.turn_off()]
 
 
 class TestSchedulerState:
