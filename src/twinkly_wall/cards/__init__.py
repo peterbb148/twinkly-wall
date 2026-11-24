@@ -38,7 +38,7 @@ from .ocean import OceanCard
 from .orientation_test import OrientationTestCard
 from .overlay import OverlayCard
 from .pacman import PacmanCard
-from .pacman_chase import PacmanChaseCard
+from .pacman_chase import PacmanChaseCard, PacmanChaseDownCard, PacmanChaseUpCard
 from .pomodoro import PomodoroCard
 from .pong import PongCard
 from .pulse import PulseCard
@@ -101,6 +101,8 @@ __all__ = [
     "OverlayCard",
     "PacmanCard",
     "PacmanChaseCard",
+    "PacmanChaseDownCard",
+    "PacmanChaseUpCard",
     "PomodoroCard",
     "PongCard",
     "PulseCard",

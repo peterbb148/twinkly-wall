@@ -198,6 +198,11 @@ Both layouts and crossfades between them use all 500 LEDs.
 twinkly-cli say card torch_vertical --settings config/settings.yaml --duration 12
 ```
 
+Use `pacman_chase_up` for a bottom-to-top chase or `pacman_chase_down` for a
+top-to-bottom chase on a portrait wall. Both names work with `say preview`,
+`say card`, and playlist entries. Pac-Man faces the direction of travel, and
+the ghosts stay upright.
+
 ## Commands and compatibility
 
 ```bash
