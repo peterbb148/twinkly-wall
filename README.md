@@ -245,6 +245,22 @@ weather:
   city_id: "2618425"  # Copenhagen
 ```
 
+## Rules of Engagement
+
+1. Open a GitHub issue to propose an idea, report a bug, or suggest a card. Describe
+   the outcome you want and discuss the scope with the maintainer before starting work.
+2. Use a branch for that issue, with the issue number in its name. Link it from the
+   issue’s **Development** section when you have permission. If you’re contributing
+   from a fork, create the branch there and link the issue in your PR.
+3. Open a draft PR against `main`. Include `Closes #123` in the description, using
+   the actual issue number, and describe what you’re working on. GitHub Actions runs
+   checks on drafts. A maintainer may need to approve the first workflow run from
+   a fork.
+4. When **Required CI** passes and the change is ready, mark the same PR **Ready for
+   review**. Include a short summary and how you tested it.
+5. @peterbb148 reviews and approves changes before they merge. Push fixes to the
+   same branch so reviewers can verify the updated diff and CI can rerun.
+
 ## License
 
 MIT
