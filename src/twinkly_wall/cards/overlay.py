@@ -34,6 +34,15 @@ class OverlayCard(Card):
 
     card_type = "overlay"
 
+    @classmethod
+    def get_layout_source(cls, config: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Use the background's layout when its frames pass through unchanged."""
+        if config and not config.get("text"):
+            background = config.get("background")
+            if isinstance(background, dict):
+                return background
+        return None
+
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.background_config: dict[str, Any] = self.config.get("background", {})

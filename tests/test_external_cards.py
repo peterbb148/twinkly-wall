@@ -91,6 +91,58 @@ def test_create_card_uses_definition_options_with_playlist_overrides(catalog: Pa
     assert card.duration == 4
 
 
+def test_overlay_layout_filter_uses_the_background_for_textless_overlays(
+    catalog: Path, tmp_path: Path
+) -> None:
+    (catalog / "image.gif").touch()
+    (catalog / "portrait-image.yaml").write_text("type: image\nlayout: portrait\npath: image.gif\n")
+    (catalog / "portrait-overlay.yaml").write_text(
+        "type: overlay\nbackground: {type: portrait-image}\n"
+    )
+    playlist = tmp_path / "playlist.yaml"
+    playlist.write_text(
+        "cards:\n"
+        "  - type: overlay\n"
+        "    background: {type: countdown_vertical}\n"
+        "  - type: portrait-overlay\n"
+        "    text: Hello\n"
+        "  - type: overlay\n"
+        "    background: {type: portrait-overlay}\n"
+        "  - type: overlay\n"
+        "    background: {type: orientation_test}\n"
+        "  - type: portrait-overlay\n"
+        "    background: {type: portrait-image, layout: landscape}\n"
+        "  - type: overlay\n"
+        "    background: {type: missing}\n"
+    )
+
+    runner = CliRunner()
+    expected_entries = {
+        "portrait": ["[1] overlay [portrait]", "[3] overlay [portrait]"],
+        "adaptive": ["[4] overlay [adaptive]"],
+        "landscape": [
+            "[2] portrait-overlay [landscape]",
+            "[5] portrait-overlay [landscape]",
+            "[6] overlay [landscape]",
+        ],
+    }
+    for layout, entries in expected_entries.items():
+        result = runner.invoke(cli.app, ["list", "--layout", layout, "--playlist", str(playlist)])
+        assert result.exit_code == 0, result.output
+        assert ("portrait-overlay.yaml) [portrait]" in result.output) == (layout == "portrait")
+        lines = result.output.splitlines()
+        listed_entries = [line.strip() for line in lines if line.startswith(" [")]
+        assert listed_entries == entries
+
+
+def test_catalog_reports_circular_overlay_backgrounds(catalog: Path) -> None:
+    (catalog / "overlay-a.yaml").write_text("type: overlay\nbackground: {type: overlay-b}\n")
+    (catalog / "overlay-b.yaml").write_text("type: overlay\nbackground: {type: overlay-a}\n")
+    result = CliRunner().invoke(cli.app, ["list"])
+    assert result.exit_code == 1
+    assert "Circular card layout reference" in result.output
+
+
 def test_discovers_repository_and_user_catalogs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
