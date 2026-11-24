@@ -12,7 +12,9 @@ from twinkly_wall.scheduler import Scheduler
 
 
 @pytest.mark.parametrize("layout,width,height", [("landscape", 50, 10), ("portrait", 10, 50)])
-@pytest.mark.parametrize("mount", ["horizontal", "vertical_left", "vertical_right"])
+@pytest.mark.parametrize(
+    "mount", ["top", "bottom", "left", "right", "horizontal", "vertical_left", "vertical_right"]
+)
 @pytest.mark.parametrize("mirror_h", [False, True])
 @pytest.mark.parametrize("mirror_v", [False, True])
 def test_send_frame_maps_every_pixel(monkeypatch, layout, width, height, mount, mirror_h, mirror_v):
@@ -32,27 +34,30 @@ def test_send_frame_maps_every_pixel(monkeypatch, layout, width, height, mount, 
     terminal.send_frame(frame)
     preview = display.call_args.args[0]
 
-    view_width, view_height = (50, 10) if mount == "horizontal" else (10, 50)
+    landscape = mount in ("horizontal", "left", "right")
+    view_width, view_height = (50, 10) if landscape else (10, 50)
     assert len(preview) == view_height
     assert all(len(row) == view_width for row in preview)
     row_order = [5, 6, 7, 8, 9, 4, 3, 2, 1, 0]
     for strand, native_y in enumerate(row_order):
         for led in range(50):
             native_x = led if strand % 5 % 2 else 49 - led
-            if mount == "vertical_left":
+            if mount in ("top", "vertical_left"):
                 view_x, view_y = native_y, 49 - native_x
-            elif mount == "vertical_right":
+            elif mount in ("bottom", "vertical_right"):
                 view_x, view_y = 9 - native_y, native_x
+            elif mount == "left":
+                view_x, view_y = 49 - native_x, 9 - native_y
             else:
                 view_x, view_y = native_x, native_y
 
             x = view_width - 1 - view_x if mirror_h else view_x
             y = view_height - 1 - view_y if mirror_v else view_y
-            if mount == "horizontal" and layout == "portrait":
-                x, y = y, 49 - x
-            elif mount == "vertical_left" and layout == "landscape":
+            if landscape and layout == "portrait":
+                x, y = (9 - y, x) if mount == "left" else (y, 49 - x)
+            elif mount in ("top", "vertical_left") and layout == "landscape":
                 x, y = 49 - y, x
-            elif mount == "vertical_right" and layout == "landscape":
+            elif mount in ("bottom", "vertical_right") and layout == "landscape":
                 x, y = y, 9 - x
 
             index = 3 * (50 * strand + led)
@@ -86,7 +91,9 @@ def test_card_logical_dimensions(name, width, height):
     assert all(len(row) == width for row in frame)
 
 
-@pytest.mark.parametrize("mount,width,height", [("horizontal", 50, 10), ("vertical_left", 10, 50)])
+@pytest.mark.parametrize(
+    "mount,width,height", [("left", 50, 10), ("right", 50, 10), ("top", 10, 50), ("bottom", 10, 50)]
+)
 def test_mixed_playlist_crossfades(mount, width, height):
     playlist = PlaylistConfig(
         cards=[

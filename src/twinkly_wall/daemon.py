@@ -13,6 +13,7 @@ from .cards.base import load_card_definitions
 from .config import load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
 from .scheduler import Scheduler
+from .types import Orientation
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class TwinklyDaemon:
         mcp_enabled: bool = False,
         mcp_server: str | None = None,
         mcp_api_key: str | None = None,
+        orientation: Orientation | None = None,
     ):
         """Initialize the daemon.
 
@@ -42,8 +44,11 @@ class TwinklyDaemon:
             mcp_enabled: If True, enable MCP remote control
             mcp_server: MCP server URL (default from env or hardcoded)
             mcp_api_key: MCP API key (default from env)
+            orientation: Override the display mount from settings for this run
         """
         self.settings = load_settings(settings_path)
+        if orientation is not None:
+            self.settings.twinkly.orientation = orientation
         self.playlist = load_playlist(cards_path)
         from .outputs.terminal import TerminalOutput
         from .outputs.twinkly import TwinklyOutput
@@ -222,6 +227,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Output to terminal instead of Twinkly device",
     )
     parser.add_argument(
+        "--orientation",
+        type=Orientation,
+        choices=list(Orientation),
+        help="Wire edge as seen from the front",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -260,16 +271,16 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    daemon = TwinklyDaemon(
-        settings_path=args.settings,
-        cards_path=args.cards,
-        terminal_output=args.terminal,
-        mcp_enabled=args.mcp,
-        mcp_server=args.mcp_server,
-        mcp_api_key=args.mcp_api_key,
-    )
-
     try:
+        daemon = TwinklyDaemon(
+            settings_path=args.settings,
+            cards_path=args.cards,
+            terminal_output=args.terminal,
+            mcp_enabled=args.mcp,
+            mcp_server=args.mcp_server,
+            mcp_api_key=args.mcp_api_key,
+            orientation=args.orientation,
+        )
         daemon.run()
     except KeyboardInterrupt:
         logger.info("Interrupted by user")

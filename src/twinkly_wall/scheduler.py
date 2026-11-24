@@ -55,7 +55,7 @@ class Scheduler:
         outputs: list[Output] | None = None,
         mcp_client: "MCPClient | None" = None,
         operating_hours: OperatingHoursConfig | None = None,
-        orientation: Orientation = "horizontal",
+        orientation: Orientation = Orientation.horizontal,
     ):
         """Initialize the scheduler.
 

@@ -5,8 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from twinkly_wall import __version__, cli
+from twinkly_wall import __version__, cli, daemon
 from twinkly_wall.cli import app, main, parse_color, render_text_centered
+from twinkly_wall.command import main as command_main
 
 
 class TestParseColor:
@@ -324,7 +325,8 @@ def test_unconfigured_device_fails():
 
 
 @pytest.mark.parametrize("fails", [False, True])
-def test_device_send_and_cleanup(tmp_path, monkeypatch, fails):
+@pytest.mark.parametrize("override", [None, "left"])
+def test_device_send_and_cleanup(tmp_path, monkeypatch, fails, override):
     path = tmp_path / "device.yaml"
     path.write_text("twinkly: {host: localhost, port: 8080, orientation: vertical_left}\n")
     output = MagicMock()
@@ -333,14 +335,43 @@ def test_device_send_and_cleanup(tmp_path, monkeypatch, fails):
     factory = MagicMock(return_value=output)
     monkeypatch.setattr(cli, "TwinklyOutput", factory)
     monkeypatch.setattr(cli.time, "sleep", MagicMock())
-    result = runner.invoke(app, ["card", "clock", "-d", "0.001", "--settings", str(path)])
+    args = ["card", "clock", "-d", "0.001", "--settings", str(path)]
+    if override:
+        args.extend(["--orientation", override])
+    result = runner.invoke(app, args)
     assert result.exit_code == (1 if fails else 0), result.output
     factory.assert_called_once_with(host="localhost", port=8080, mirror_h=False, mirror_v=False)
+    assert output.orientation == (override or "vertical_left")
     output.stop.assert_called_once()
     if not fails:
         output.send_frame.assert_called()
     else:
         assert "device unreachable" in result.output
+
+
+@pytest.mark.parametrize("override", [None, "left", "right", "bottom"])
+def test_wire_orientation_defaults_and_overrides(tmp_path, monkeypatch, override):
+    settings = tmp_path / "settings.yaml"
+    content = "twinkly: {orientation: top}\n"
+    settings.write_text(content)
+    (tmp_path / "cards.yaml").write_text("cards: [{type: clock, duration: 0.01}]\n")
+    flag = ["--orientation", override] if override else []
+    expected = override or "top"
+
+    animate = MagicMock()
+    monkeypatch.setattr(cli, "animate_frames", animate)
+    result = runner.invoke(app, ["preview", "clock", *flag])
+    assert result.exit_code == 0, result.output
+    assert animate.call_args.kwargs["orientation"] == expected
+
+    scheduler = MagicMock(wraps=daemon.Scheduler)
+    monkeypatch.setattr(daemon.Scheduler, "run_loop", MagicMock())
+    monkeypatch.setattr(daemon.TwinklyDaemon, "_setup_signals", MagicMock())
+    monkeypatch.setattr(daemon, "Scheduler", scheduler)
+    assert command_main(["wall", "--terminal", *flag]) == 0
+    assert scheduler.call_args.kwargs["orientation"] == expected
+    assert scheduler.call_args.kwargs["outputs"][0].orientation == expected
+    assert settings.read_text() == content
 
 
 @pytest.mark.parametrize("registered", [False, True])
