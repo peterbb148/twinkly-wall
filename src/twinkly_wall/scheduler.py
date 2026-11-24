@@ -155,11 +155,14 @@ class Scheduler:
         return self.mcp_client.has_pending_commands()
 
     def _play_mcp_cards(self) -> None:
-        """Play all pending MCP cards."""
+        """Play pending MCP cards while the wall is within operating hours."""
         if not self.mcp_client:
             return
 
         while self.mcp_client.has_pending_commands() and self.state.running:
+            if not is_within_operating_hours(self.operating_hours):
+                self.mcp_client.discard_pending_commands()
+                return
             card = self.mcp_client.get_next_card()
             if card is None:
                 continue
@@ -231,7 +234,7 @@ class Scheduler:
                     self._outside_hours_logged = True
                     # Clear any pending MCP commands when going outside hours
                     if self.mcp_client:
-                        self.mcp_client._pending_commands.clear()
+                        self.mcp_client.discard_pending_commands()
                     self._set_output_power(False)
                 # Sleep until next check
                 time.sleep(60)  # Check every minute
@@ -246,6 +249,8 @@ class Scheduler:
 
             if not self.playlist.cards:
                 if self._check_mcp_commands() and self.state.running:
+                    if not is_within_operating_hours(self.operating_hours):
+                        continue
                     self._set_output_power(True)
                     try:
                         self._play_mcp_cards()
