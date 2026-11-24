@@ -223,46 +223,36 @@ class CountdownCard(Card):
                 yield frame, 1.0
             return
 
-        # Get initial countdown to check if scrolling needed
-        now = datetime.now()
-        remaining = (self.target - now).total_seconds()
-        countdown_text = self._format_countdown(remaining)
+        countdown_text = self._format_countdown((self.target - datetime.now()).total_seconds())
+        scrolling = self._should_scroll(countdown_text)
+        adaptive = self.layout == CardLayout.portrait and self.scroll == "auto"
+        start_time = time.time()
+        pixels_per_frame = self.scroll_speed / 30.0
+        offset = 0.0
+        scrolls_done = 0
 
-        if self._should_scroll(countdown_text):
-            # Scrolling mode
-            pixels_per_frame = self.scroll_speed / 30.0
-            frame_delay = 1.0 / 30.0
-
-            offset = 0.0
-            scrolls_done = 0
-
-            while scrolls_done < self.repeats:
-                now = datetime.now()
-                remaining = (self.target - now).total_seconds()
-                countdown_text = self._format_countdown(remaining)
-
-                total_scroll = self._scroll_length(countdown_text)
-
+        while True:
+            if scrolling:
+                if scrolls_done >= self.repeats:
+                    return
                 frame = self._render_frame(countdown_text, int(offset))
-                yield frame, frame_delay
+                yield frame, 1.0 / 30.0
 
                 offset += pixels_per_frame
-
-                if offset >= total_scroll:
+                if offset >= self._scroll_length(countdown_text):
                     scrolls_done += 1
                     offset = 0.0
-        else:
-            # Static mode
-            start_time = time.time()
-            frame_delay = 0.5  # Update twice per second
-
-            while time.time() - start_time < self.duration:
-                now = datetime.now()
-                remaining = (self.target - now).total_seconds()
-
-                countdown_text = self._format_countdown(remaining)
+            else:
+                if time.time() - start_time >= self.duration:
+                    return
+                offset = 0.0
                 frame = self._render_frame(countdown_text)
-                yield frame, frame_delay
+                yield frame, 0.5
+
+            updated_text = self._format_countdown((self.target - datetime.now()).total_seconds())
+            if adaptive and updated_text != countdown_text:
+                scrolling = self._should_scroll(updated_text)
+            countdown_text = updated_text
 
 
 @register_card

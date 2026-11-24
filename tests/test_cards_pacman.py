@@ -32,6 +32,18 @@ def test_portrait_pacman_eats_upright_christmas_trees(name, first, last):
         assert pacman[-1] == {last}
 
 
+@pytest.mark.parametrize("name", ["pacman_up", "pacman_down"])
+def test_default_portrait_christmas_trees_do_not_overlap(name):
+    card = create_card(name)
+    assert card is not None
+    frame, _ = next(card.frames(CardContext()))
+    stars = _color_rows(frame, GOLD)
+    trunk = THEMES["trees"].color_map[2]
+    assert len(stars) == 4
+    assert _color_rows(frame, trunk) == {y + offset for y in stars for offset in (7, 8)}
+    assert len(_color_rows(frame, trunk)) == 8
+
+
 def test_reverse_chase_catches_moving_ghosts_before_they_exit():
     card = create_card("pacman_chase_eat_ghosts", {"speed": 30})
     assert card is not None

@@ -291,7 +291,15 @@ class PacmanCard(Card):
         sprite = self.theme.sprite
         sprite_length = len(sprite) if self.portrait_direction else len(sprite[0])
         item_spacing = (track_length - sprite_length) // (self.num_items + 1)
-        item_starts = [item_spacing * (i + 1) for i in range(self.num_items)]
+        first_item = item_spacing
+        if (
+            self.portrait_direction
+            and self.target_speed_ratio == 0
+            and item_spacing < sprite_length
+        ):
+            item_spacing = sprite_length
+            first_item = max(0, (track_length - self.num_items * sprite_length) // 2)
+        item_starts = [first_item + item_spacing * i for i in range(self.num_items)]
 
         # Animation state
         start = -8.0

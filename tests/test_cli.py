@@ -222,6 +222,30 @@ def test_portrait_pacman_cli_theme(name, monkeypatch):
     assert any((255, 140, 0) in row for row in frame)
 
 
+@pytest.mark.parametrize("command", ["preview", "card"])
+@pytest.mark.parametrize("name", ["pacman_chase_up", "pacman_chase_down"])
+@pytest.mark.parametrize("speed_args, expected", [([], 20.0), (["--speed", "5"], 5.0)])
+def test_portrait_chase_cli_speed(command, name, speed_args, expected, tmp_path, monkeypatch):
+    path = tmp_path / "device.yaml"
+    path.write_text("twinkly: {host: localhost}\n")
+    created_cards = []
+    create_card = cli.create_card
+
+    def record_card(card_type, config):
+        card = create_card(card_type, config)
+        created_cards.append(card)
+        return card
+
+    monkeypatch.setattr(cli, "create_card", record_card)
+    monkeypatch.setattr(cli, "animate_frames", MagicMock())
+    monkeypatch.setattr(cli, "TwinklyOutput", MagicMock())
+    monkeypatch.setattr(cli.time, "sleep", MagicMock())
+    result = runner.invoke(app, [command, name, "--settings", str(path), "-d", "0.01", *speed_args])
+    assert result.exit_code == 0, result.output
+    (card,) = created_cards
+    assert card.speed == expected
+
+
 def test_card_layout_filter_preserves_playlist_ids(tmp_path, monkeypatch):
     catalog = tmp_path / "definitions"
     catalog.mkdir()
