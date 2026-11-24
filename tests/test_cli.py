@@ -222,6 +222,35 @@ def test_portrait_pacman_cli_theme(name, monkeypatch):
     assert any((255, 140, 0) in row for row in frame)
 
 
+def test_card_layout_filter_preserves_playlist_ids(tmp_path, monkeypatch):
+    catalog = tmp_path / "definitions"
+    catalog.mkdir()
+    monkeypatch.setenv("TWINKLY_CARD_DIR", str(catalog))
+    (catalog / "demo.png").touch()
+    (catalog / "portrait-image.yaml").write_text("type: image\npath: demo.png\nlayout: portrait\n")
+    playlist = tmp_path / "cards.yaml"
+    playlist.write_text(
+        "cards:\n"
+        "  - type: clock\n"
+        "  - type: coffee_vertical\n"
+        "  - type: portrait-image\n"
+        "    layout: landscape\n"
+        "  - type: image\n"
+        "    layout: portrait\n"
+    )
+    result = runner.invoke(app, ["list", "--layout", "portrait", "--playlist", str(playlist)])
+    assert result.exit_code == 0, result.output
+    assert " - coffee_vertical [portrait]" in result.output
+    assert "portrait-image.yaml) [portrait]" in result.output
+    assert " - clock " not in result.output
+    assert " [2] coffee_vertical [portrait]" in result.output
+    assert " [4] image [portrait]" in result.output
+    assert " [3] " not in result.output
+    adaptive = runner.invoke(app, ["list", "--layout", "adaptive"])
+    assert adaptive.exit_code == 0, adaptive.output
+    assert adaptive.output.splitlines() == ["Registered cards:", " - orientation_test [adaptive]"]
+
+
 def test_card_specific_options(monkeypatch):
     build = MagicMock(return_value=(MagicMock(), "pacman"))
     monkeypatch.setattr(cli, "_build_card", build)

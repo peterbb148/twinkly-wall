@@ -208,6 +208,24 @@ walls. Christmas trees are the default. Pass `--theme snowman` or another
 `pacman` theme to change what he eats. Use `pacman_chase_eat_ghosts` to watch
 Pac-Man catch moving ghosts as he travels up the wall.
 
+The portrait catalog also includes `carlsberg_lab_vertical`, `coffee_vertical`,
+`friday_vertical`, `weather_vertical`, and `countdown_vertical`. These cards
+stack upright letters and artwork on the 10×50 canvas. Configure the target
+date and time for `countdown_vertical` in the playlist, and use the same weather
+settings for `weather_vertical` as for `weather`.
+
+### Find cards by layout
+
+`say list` shows each card’s native layout as `landscape`, `portrait`, or
+`adaptive`. An adaptive card chooses its canvas from the wall settings.
+Configured image cards report their selected layout. A playlist filter
+preserves the original numbered IDs for playback.
+
+```bash
+twinkly-cli say list --layout portrait
+twinkly-cli say list --playlist config/cards.yaml --layout portrait
+```
+
 ## Commands and compatibility
 
 ```bash

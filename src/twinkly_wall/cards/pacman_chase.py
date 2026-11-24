@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from ..canvas import Canvas
 from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 from .pacman import PACMAN_CLOSED, PACMAN_OPEN_DOWN, PACMAN_OPEN_UP, SPRITE_GHOST, draw_sprite
 
 # Pac-Man facing left (mouth on left side)
@@ -140,6 +140,7 @@ class PacmanChaseUpCard(PacmanChaseCard):
     """Chase from the bottom to the top of a portrait wall."""
 
     card_type = "pacman_chase_up"
+    layout = CardLayout.portrait
     portrait_direction = "up"
     open_sprite = PACMAN_OPEN_UP
 
@@ -149,5 +150,6 @@ class PacmanChaseDownCard(PacmanChaseCard):
     """Chase from the top to the bottom of a portrait wall."""
 
     card_type = "pacman_chase_down"
+    layout = CardLayout.portrait
     portrait_direction = "down"
     open_sprite = PACMAN_OPEN_DOWN

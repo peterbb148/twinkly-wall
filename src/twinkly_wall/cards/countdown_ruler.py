@@ -6,7 +6,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, GREEN, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, WHITE, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 
 @register_card
@@ -20,6 +20,7 @@ class CountdownRulerCard(Card):
     """
 
     card_type = "countdown_ruler"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

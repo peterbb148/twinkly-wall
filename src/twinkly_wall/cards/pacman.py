@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from ..canvas import Canvas
 from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 # Pac-Man sprites (7x7) - mouth open and closed
 PACMAN_OPEN: list[list[int]] = [
@@ -338,6 +338,7 @@ class PacmanUpCard(PacmanCard):
     """Eat themed objects from the bottom to the top of a portrait wall."""
 
     card_type = "pacman_up"
+    layout = CardLayout.portrait
     portrait_direction = "up"
     open_sprite = PACMAN_OPEN_UP
 
@@ -347,6 +348,7 @@ class PacmanDownCard(PacmanCard):
     """Eat themed objects from the top to the bottom of a portrait wall."""
 
     card_type = "pacman_down"
+    layout = CardLayout.portrait
     portrait_direction = "down"
     open_sprite = PACMAN_OPEN_DOWN
 

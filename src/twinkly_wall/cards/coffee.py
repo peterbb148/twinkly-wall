@@ -5,9 +5,15 @@ from collections.abc import Iterator
 from typing import Any
 
 from ..canvas import Canvas
-from ..fonts import draw_text, text_width
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from ..fonts import (
+    CHAR_WIDTH,
+    draw_text,
+    draw_text_vertical_stacked,
+    text_width,
+    vertical_text_height,
+)
+from ..types import BLACK, HEIGHT, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
+from .base import Card, CardContext, CardLayout, register_card
 
 # Coffee mug sprite (9x8)
 COFFEE_MUG: list[list[int]] = [
@@ -68,8 +74,7 @@ class CoffeeCard(Card):
                     else:
                         color = MUG_COLORS.get(pixel, (255, 255, 255))
 
-                    if 0 <= px < WIDTH and 0 <= py < HEIGHT:
-                        canvas.set_pixel(px, py, color)
+                    canvas.set_pixel(px, py, color)
 
     def _render_frame(self, frame_num: int) -> Frame:
         """Render the coffee break display."""
@@ -102,3 +107,27 @@ class CoffeeCard(Card):
             frame = self._render_frame(frame_num)
             yield frame, frame_delay
             frame_num += 1
+
+
+@register_card
+class CoffeeVerticalCard(CoffeeCard):
+    """Show a steaming mug above upright lettering on a portrait wall."""
+
+    card_type = "coffee_vertical"
+    layout = CardLayout.portrait
+
+    def _render_frame(self, frame_num: int) -> Frame:
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+        self._draw_mug(canvas, (canvas.width - len(COFFEE_MUG[0])) // 2, 1, frame_num)
+
+        text_top = len(COFFEE_MUG) + 3
+        caption = Canvas(canvas.width, canvas.height - text_top)
+        height = vertical_text_height(self.message)
+        overflow = max(0, height - caption.height)
+        offset = min(overflow, (frame_num // 2) % (overflow + 15))
+        y = max(0, (caption.height - height) // 2) - offset
+        draw_text_vertical_stacked(
+            caption, (canvas.width - CHAR_WIDTH) // 2, y, self.message, self.color
+        )
+        canvas.blit(caption.frame, dest_y=text_top)
+        return canvas.copy()

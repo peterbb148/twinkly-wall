@@ -7,7 +7,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 
 @register_card
@@ -21,6 +21,7 @@ class SparkleCurtainCard(Card):
     """
 
     card_type = "sparkle_curtain"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
