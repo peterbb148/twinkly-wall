@@ -5,6 +5,7 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,14 @@ class CardContext:
     orientation: Orientation = Orientation.horizontal
 
 
+class CardLayout(StrEnum):
+    """Native canvas layout of a registered card."""
+
+    landscape = "landscape"
+    portrait = "portrait"
+    adaptive = "adaptive"
+
+
 class Card(ABC):
     """Abstract base class for display cards.
 
@@ -37,6 +46,12 @@ class Card(ABC):
 
     # Card type name used in configuration
     card_type: str = "base"
+    layout = CardLayout.landscape
+
+    @classmethod
+    def get_layout(cls, config: dict[str, Any] | None = None) -> CardLayout:
+        """Return the card's layout without initializing its renderer."""
+        return cls.layout
 
     def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the card with optional configuration.
@@ -156,6 +171,16 @@ def list_card_types(definitions: dict[str, CardDefinition] | None = None) -> lis
     if definitions is None:
         definitions = load_card_definitions()
     return [*_card_registry, *definitions]
+
+
+def get_card_layout(
+    name: str, definitions: dict[str, CardDefinition], config: dict[str, Any] | None = None
+) -> CardLayout:
+    """Resolve a registered name's layout, including external and playlist options."""
+    definition = definitions.get(name)
+    if definition is None:
+        return _card_registry[name].get_layout(config)
+    return _card_registry[definition.renderer].get_layout({**definition.config, **(config or {})})
 
 
 def create_card(card_type: str, config: dict[str, Any] | None = None) -> Card | None:

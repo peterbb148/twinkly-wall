@@ -6,7 +6,7 @@ from typing import Any
 from ..canvas import Canvas
 from ..fonts import CHAR_HEIGHT, draw_text, text_width
 from ..types import GOLD, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WHITE, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 
 @register_card
@@ -27,6 +27,7 @@ class ScoreTowerCard(Card):
     """
 
     card_type = "score_tower"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

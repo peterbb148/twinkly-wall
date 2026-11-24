@@ -8,7 +8,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 VINE_GREEN: RGB = (0, 160, 80)
 LEAF_GREEN: RGB = (0, 200, 120)
@@ -36,6 +36,7 @@ class VinesCard(Card):
     """
 
     card_type = "vines"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

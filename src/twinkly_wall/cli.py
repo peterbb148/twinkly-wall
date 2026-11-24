@@ -17,7 +17,6 @@ from .canvas import Canvas
 from .cards import (
     BeerCard,
     CardContext,
-    CarlsbergLabCard,
     ClockCard,
     RainbowCard,
     SnowCard,
@@ -27,7 +26,7 @@ from .cards import (
     create_card,
     list_card_types,
 )
-from .cards.base import load_card_definitions
+from .cards.base import CardLayout, get_card_layout, load_card_definitions
 from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
@@ -42,6 +41,7 @@ class CLIOptions:
     card: str | None = None
     id: int | None = None
     playlist: Path | None = None
+    layout: CardLayout | None = None
     settings: Path | None = None
     duration: float = 10.0
     color: str | None = None
@@ -253,13 +253,14 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
                 "mode": args.pattern_mode,
             }
         ), "test_pattern"
-    if card_type == "carlsberg_lab":
-        return CarlsbergLabCard(
+    if card_type in ("carlsberg_lab", "carlsberg_lab_vertical"):
+        return create_card(
+            card_type,
             {
                 "duration": duration,
                 "scroll_speed": args.speed,
-            }
-        ), "carlsberg_lab"
+            },
+        ), card_type
     if card_type == "twinklysay":
         if not args.text:
             print("Error: --text is required for twinklysay card", file=sys.stderr)
@@ -358,18 +359,23 @@ def cmd_list(args: CLIOptions) -> int:
     definitions = load_card_definitions()
     print("Registered cards:")
     for name in sorted(list_card_types(definitions)):
+        layout = get_card_layout(name, definitions)
+        if args.layout is not None and layout != args.layout:
+            continue
         definition = definitions.get(name)
         if definition is None:
-            print(f" - {name}")
+            print(f" - {name} [{layout}]")
         else:
-            print(f" - {name} ({definition.source})")
+            print(f" - {name} ({definition.source}) [{layout}]")
 
     if args.playlist:
         playlist = load_playlist(args.playlist)
         if playlist.cards:
             print(f"\nPlaylist ({args.playlist}):")
             for idx, cfg in enumerate(playlist.cards, start=1):
-                print(f" [{idx}] {cfg.type}")
+                layout = get_card_layout(cfg.type, definitions, cfg.config)
+                if args.layout is None or layout == args.layout:
+                    print(f" [{idx}] {cfg.type} [{layout}]")
         else:
             print(f"\nPlaylist {args.playlist} is empty.")
     return 0
@@ -678,9 +684,14 @@ def say(
 
 
 @app.command("list")
-def list_cards(playlist: ConfigPath = None) -> None:
+def list_cards(
+    playlist: ConfigPath = None,
+    layout: Annotated[
+        CardLayout | None, typer.Option("--layout", help="Filter by native card layout")
+    ] = None,
+) -> None:
     """List registered cards and optional numbered playlist entries."""
-    _execute(cmd_list, CLIOptions(playlist=playlist))
+    _execute(cmd_list, CLIOptions(playlist=playlist, layout=layout))
 
 
 @app.command("mcp")

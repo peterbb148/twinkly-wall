@@ -7,9 +7,15 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..datasources.weather import WeatherData, WeatherError
-from ..fonts import draw_text, text_width
-from ..types import BLACK, HEIGHT, RGB, WIDTH, Frame
-from .base import Card, CardContext, register_card
+from ..fonts import (
+    CHAR_WIDTH,
+    draw_text,
+    draw_text_vertical_stacked,
+    text_width,
+    vertical_text_height,
+)
+from ..types import BLACK, HEIGHT, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, WIDTH, Frame
+from .base import Card, CardContext, CardLayout, register_card
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +76,9 @@ class WeatherCard(Card):
         draw_text(canvas, x, y, text, color)
         return canvas.copy()
 
+    def _scroll_length(self, text: str) -> int:
+        return text_width(text) + WIDTH + 1
+
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Generate scrolling weather text frames."""
         # Get weather datasource from context
@@ -91,8 +100,7 @@ class WeatherCard(Card):
         text = f"{temp:.0f}C {condition}"
 
         color = self._get_color(weather)
-        content_width = text_width(text)
-        total_scroll = content_width + WIDTH + 1
+        total_scroll = self._scroll_length(text)
 
         # Animation
         frame_delay = 1.0 / 30.0
@@ -115,3 +123,20 @@ class WeatherCard(Card):
             elapsed = time.time() - start_time
             if scroll_completed and elapsed >= self.duration:
                 break
+
+
+@register_card
+class WeatherVerticalCard(WeatherCard):
+    """Scroll the current temperature and condition in upright portrait text."""
+
+    card_type = "weather_vertical"
+    layout = CardLayout.portrait
+
+    def _render_frame(self, text: str, color: RGB, offset: int) -> Frame:
+        canvas = Canvas(PORTRAIT_WIDTH, PORTRAIT_HEIGHT)
+        x = (canvas.width - CHAR_WIDTH) // 2
+        draw_text_vertical_stacked(canvas, x, canvas.height - offset, text, color)
+        return canvas.copy()
+
+    def _scroll_length(self, text: str) -> int:
+        return vertical_text_height(text) + PORTRAIT_HEIGHT + 1

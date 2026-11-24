@@ -8,7 +8,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame, blend_color
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 FLAME_CYCLE_SECONDS = 4.16
 HEAT_COLORS: tuple[tuple[float, RGB], ...] = (
@@ -40,6 +40,7 @@ class TorchVerticalCard(Card):
     """
 
     card_type = "torch_vertical"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

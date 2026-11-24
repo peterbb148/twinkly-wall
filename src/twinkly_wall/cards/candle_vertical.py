@@ -7,7 +7,7 @@ from typing import Any
 
 from ..canvas import Canvas
 from ..types import BLACK, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RGB, Frame
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 CANDLE_BODY: RGB = (230, 230, 255)
 CANDLE_OUTLINE: RGB = (200, 200, 230)
@@ -33,6 +33,7 @@ class CandleVerticalCard(Card):
     """
 
     card_type = "candle_vertical"
+    layout = CardLayout.portrait
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)

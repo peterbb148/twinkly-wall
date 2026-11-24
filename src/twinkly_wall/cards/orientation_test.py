@@ -14,7 +14,7 @@ from ..types import (
     Frame,
     mount_rotation,
 )
-from .base import Card, CardContext, register_card
+from .base import Card, CardContext, CardLayout, register_card
 
 
 @register_card
@@ -22,6 +22,7 @@ class OrientationTestCard(Card):
     """Show an up arrow and distinct corner markers in the wall's aspect ratio."""
 
     card_type = "orientation_test"
+    layout = CardLayout.adaptive
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Repeat the pattern so the controller stays in realtime mode."""
