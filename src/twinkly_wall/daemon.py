@@ -131,7 +131,7 @@ class TwinklyDaemon:
                 f"{self.settings.weather.longitude}"
             )
 
-        return CardContext(datasources=datasources)
+        return CardContext(datasources=datasources, orientation=self.settings.twinkly.orientation)
 
     def _create_mcp_client(self) -> MCPClient | None:
         """Create MCP client if enabled.

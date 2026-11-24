@@ -35,6 +35,7 @@ from .menorah import MenorahCard
 from .meteor_shower import MeteorShowerCard
 from .news import NewsCard
 from .ocean import OceanCard
+from .orientation_test import OrientationTestCard
 from .overlay import OverlayCard
 from .pacman import PacmanCard
 from .pacman_chase import PacmanChaseCard
@@ -96,6 +97,7 @@ __all__ = [
     "MenorahCard",
     "NewsCard",
     "OceanCard",
+    "OrientationTestCard",
     "OverlayCard",
     "PacmanCard",
     "PacmanChaseCard",

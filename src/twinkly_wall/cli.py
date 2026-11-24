@@ -65,7 +65,9 @@ class CLIOptions:
     api_key: str | None = None
 
 
-def create_context_with_datasources(settings_path: Path | None = None) -> CardContext:
+def create_context_with_datasources(
+    settings_path: Path | None = None, *, orientation: Orientation | None = None
+) -> CardContext:
     """Create a CardContext with datasources from settings."""
     settings = load_settings(settings_path)
     datasources: dict = {}
@@ -80,7 +82,10 @@ def create_context_with_datasources(settings_path: Path | None = None) -> CardCo
             cache_duration=settings.weather.cache_duration,
         )
 
-    return CardContext(datasources=datasources)
+    return CardContext(
+        datasources=datasources,
+        orientation=orientation or settings.twinkly.orientation,
+    )
 
 
 def parse_color(color_str: str) -> RGB:
@@ -325,9 +330,8 @@ def cmd_card(args: CLIOptions) -> int:
         mirror_h=settings.twinkly.mirror_h,
         mirror_v=settings.twinkly.mirror_v,
     )
-    output.orientation = args.orientation or settings.twinkly.orientation
-
-    ctx = create_context_with_datasources(args.settings)
+    ctx = create_context_with_datasources(args.settings, orientation=args.orientation)
+    output.orientation = ctx.orientation
 
     name = label or card_type
     print(f"Sending '{name}' card to Twinkly at {settings.twinkly.host}...")
@@ -425,7 +429,7 @@ def cmd_preview(args: CLIOptions) -> int:
         return 1
 
     # Create context and run
-    ctx = create_context_with_datasources(args.settings)
+    ctx = create_context_with_datasources(args.settings, orientation=args.orientation)
 
     name = label or card_type
     print(f"Previewing '{name}' card for {duration}s (Ctrl+C to stop)...")
@@ -437,7 +441,7 @@ def cmd_preview(args: CLIOptions) -> int:
         color_mode=not args.no_color,
         use_half_blocks=True,
         clear_between=False,
-        orientation=args.orientation or display.orientation,
+        orientation=ctx.orientation,
         mirror_h=display.mirror_h,
         mirror_v=display.mirror_v,
     )
@@ -452,7 +456,7 @@ def _preview_playlist(args: CLIOptions) -> int:
         print(f"No cards found in playlist: {args.playlist}", file=sys.stderr)
         return 1
 
-    ctx = create_context_with_datasources(args.settings)
+    ctx = create_context_with_datasources(args.settings, orientation=args.orientation)
     display = load_settings(args.settings).twinkly
     total_cards = len(playlist.cards)
 
@@ -474,7 +478,7 @@ def _preview_playlist(args: CLIOptions) -> int:
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
-                    orientation=args.orientation or display.orientation,
+                    orientation=ctx.orientation,
                     mirror_h=display.mirror_h,
                     mirror_v=display.mirror_v,
                 )

@@ -360,9 +360,11 @@ def test_wire_orientation_defaults_and_overrides(tmp_path, monkeypatch, override
 
     animate = MagicMock()
     monkeypatch.setattr(cli, "animate_frames", animate)
-    result = runner.invoke(app, ["preview", "clock", *flag])
+    result = runner.invoke(app, ["preview", "orientation_test", *flag])
     assert result.exit_code == 0, result.output
     assert animate.call_args.kwargs["orientation"] == expected
+    frame, _ = next(animate.call_args.args[0])
+    assert len(frame) == (50 if expected in ("top", "bottom") else 10)
 
     scheduler = MagicMock(wraps=daemon.Scheduler)
     monkeypatch.setattr(daemon.Scheduler, "run_loop", MagicMock())
@@ -370,6 +372,7 @@ def test_wire_orientation_defaults_and_overrides(tmp_path, monkeypatch, override
     monkeypatch.setattr(daemon, "Scheduler", scheduler)
     assert command_main(["wall", "--terminal", *flag]) == 0
     assert scheduler.call_args.kwargs["orientation"] == expected
+    assert scheduler.call_args.kwargs["context"].orientation == expected
     assert scheduler.call_args.kwargs["outputs"][0].orientation == expected
     assert settings.read_text() == content
 
