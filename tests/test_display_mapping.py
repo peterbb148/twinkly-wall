@@ -9,6 +9,7 @@ from twinkly_wall.config import CardConfig, PlaylistConfig
 from twinkly_wall.outputs.terminal import TerminalOutput
 from twinkly_wall.outputs.twinkly import TwinklyOutput
 from twinkly_wall.scheduler import Scheduler
+from twinkly_wall.types import BLUE, GREEN, RED, WHITE, YELLOW, Orientation, apply_orientation
 
 
 @pytest.mark.parametrize("layout,width,height", [("landscape", 50, 10), ("portrait", 10, 50)])
@@ -63,6 +64,40 @@ def test_send_frame_maps_every_pixel(monkeypatch, layout, width, height, mount, 
             index = 3 * (50 * strand + led)
             assert payload[index : index + 3] == bytes(frame[y][x])
             assert preview[view_y][view_x] == frame[y][x]
+
+
+@pytest.mark.parametrize(
+    "mount,width,height",
+    [
+        (Orientation.top, 10, 50),
+        (Orientation.bottom, 10, 50),
+        (Orientation.left, 50, 10),
+        (Orientation.right, 50, 10),
+    ],
+)
+def test_orientation_test_card_marks_viewer_corners(mount, width, height):
+    card = create_card("orientation_test", {"duration": 0.6})
+    assert card is not None
+    frames = list(card.frames(CardContext(orientation=mount)))
+    frame = frames[0][0]
+    assert len(frame) == height
+    assert all(len(row) == width for row in frame)
+    assert all(repeated == frame for repeated, _ in frames)
+    assert sum(delay for _, delay in frames) == pytest.approx(0.6)
+    assert frame[(height - 6) // 2][width // 2] == WHITE
+
+    for mirror_h in (False, True):
+        for mirror_v in (False, True):
+            viewed = apply_orientation(frame, mount, mirror_h=mirror_h, mirror_v=mirror_v)
+            for right, bottom, color, count in (
+                (False, False, RED, 1),
+                (True, False, GREEN, 2),
+                (False, True, BLUE, 3),
+                (True, True, YELLOW, 4),
+            ):
+                x = width - 3 if right != mirror_h else 0
+                y = height - 3 if bottom != mirror_v else 0
+                assert sum(row[x : x + 3].count(color) for row in viewed[y : y + 3]) == count
 
 
 @pytest.mark.parametrize(

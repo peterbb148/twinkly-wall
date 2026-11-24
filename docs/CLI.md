@@ -168,6 +168,24 @@ saved setting for one invocation. The default is `right`. Existing settings
 and commands using `horizontal`, `vertical_left`, or `vertical_right` still
 work and correspond to `right`, `top`, and `bottom`, respectively.
 
+To check the mount and mirrors, send the `orientation_test` card. It uses
+the saved settings and fits the configured portrait or landscape mount.
+
+```bash
+twinkly-cli say card orientation_test --settings config/settings.yaml --duration 10
+```
+
+The white arrow should point up. Read the corner markers while facing the
+wall. Each corner has a distinct color and dot count.
+
+| | Left | Right |
+| --- | --- | --- |
+| Top | 1 red dot | 2 green dots |
+| Bottom | 3 blue dots | 4 yellow dots |
+
+Confirm the configured wire edge first. If the left and right markers swap,
+toggle `mirror_h`. If the top and bottom markers swap, toggle `mirror_v`.
+
 Portrait effects such as `torch_vertical`, `candle_vertical`, and
 `beer_vertical` draw on a 10×50 canvas. The torch has a bright base,
 uneven flickering tips, and dimming embers. Set `intensity` to adjust flicker

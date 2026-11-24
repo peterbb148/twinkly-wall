@@ -68,7 +68,7 @@ class Scheduler:
             orientation: Display mount used when blending cards
         """
         self.playlist = playlist
-        self.context = context or CardContext()
+        self.context = context or CardContext(orientation=orientation)
         self.outputs = outputs or []
         self.mcp_client = mcp_client
         self.operating_hours = operating_hours or OperatingHoursConfig()
