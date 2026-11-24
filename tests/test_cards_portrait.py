@@ -1,11 +1,12 @@
 """Check upright portrait variants and their inherited content."""
 
+from datetime import datetime, timedelta
 from itertools import islice
 from unittest.mock import Mock
 
 import pytest
 
-from twinkly_wall.cards import CardContext, create_card
+from twinkly_wall.cards import CardContext, countdown, create_card
 from twinkly_wall.cards.coffee import MUG_COLORS
 from twinkly_wall.datasources.weather import WeatherData
 from twinkly_wall.types import BLACK, GOLD, RED, WHITE, YELLOW, Frame
@@ -102,3 +103,23 @@ def test_short_portrait_countdown_is_centered_by_default():
     frame, delay = next(card.frames(CardContext()))
     assert delay == 0.5
     assert _colors(frame) == {BLACK, WHITE}
+
+
+def test_portrait_countdown_adapts_auto_scroll_across_format_changes(monkeypatch):
+    target = datetime(2030, 1, 2)
+    day_boundary = target - timedelta(days=1)
+    clock = Mock()
+    clock.now.side_effect = [day_boundary, day_boundary + timedelta(seconds=1), target]
+    monkeypatch.setattr(countdown, "datetime", clock)
+    card = create_card("countdown_vertical")
+    assert card is not None
+    card.target = target
+
+    frames = card.frames(CardContext())
+    day_frame, day_delay = next(frames)
+    scroll_entry, scroll_delay = next(frames)
+    expired_frame, expired_delay = next(frames)
+    assert day_delay == expired_delay == 0.5
+    assert scroll_delay == 1.0 / 30.0
+    assert _colors(day_frame) == _colors(expired_frame) == {BLACK, WHITE}
+    assert _colors(scroll_entry) == {BLACK}
