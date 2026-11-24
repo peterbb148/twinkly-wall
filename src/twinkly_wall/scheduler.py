@@ -55,7 +55,7 @@ class Scheduler:
         outputs: list[Output] | None = None,
         mcp_client: "MCPClient | None" = None,
         operating_hours: OperatingHoursConfig | None = None,
-        orientation: Orientation = "horizontal",
+        orientation: Orientation = Orientation.horizontal,
     ):
         """Initialize the scheduler.
 
@@ -68,7 +68,7 @@ class Scheduler:
             orientation: Display mount used when blending cards
         """
         self.playlist = playlist
-        self.context = context or CardContext()
+        self.context = context or CardContext(orientation=orientation)
         self.outputs = outputs or []
         self.mcp_client = mcp_client
         self.operating_hours = operating_hours or OperatingHoursConfig()

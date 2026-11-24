@@ -20,7 +20,7 @@ class TwinklyConfig:
     port: int = 80
     mirror_h: bool = False
     mirror_v: bool = False
-    orientation: Orientation = "horizontal"
+    orientation: Orientation = Orientation.horizontal
 
 
 @dataclass
@@ -139,12 +139,17 @@ def load_settings(path: Path | str | None = None) -> Settings:
 
     if "twinkly" in data:
         tw = data["twinkly"]
+        orientation = tw.get("orientation", Orientation.horizontal)
+        try:
+            orientation = Orientation(orientation)
+        except ValueError as error:
+            raise ValueError(f"Invalid display orientation: {orientation}") from error
         settings.twinkly = TwinklyConfig(
             host=tw.get("host", ""),
             port=tw.get("port", 80),
             mirror_h=tw.get("mirror_h", False),
             mirror_v=tw.get("mirror_v", False),
-            orientation=tw.get("orientation", "horizontal"),
+            orientation=orientation,
         )
 
     if "weather" in data:

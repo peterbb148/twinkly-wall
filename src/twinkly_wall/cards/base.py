@@ -10,7 +10,7 @@ from typing import Any
 
 import yaml
 
-from ..types import Frame
+from ..types import Frame, Orientation
 
 
 @dataclass
@@ -20,10 +20,12 @@ class CardContext:
     Attributes:
         datasources: Dict of data source instances (weather, leaderboard, etc.)
         config: Card-specific configuration from cards.yaml
+        orientation: Effective display mount for cards that adapt to the wall
     """
 
     datasources: dict[str, Any] = field(default_factory=dict)
     config: dict[str, Any] = field(default_factory=dict)
+    orientation: Orientation = Orientation.horizontal
 
 
 class Card(ABC):
