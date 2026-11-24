@@ -148,22 +148,25 @@ accepting a deployment.
 
 ## Display orientation and mirroring
 
-Set `twinkly.orientation` in the settings file to match the panel mount.
-Use `horizontal` for landscape, `vertical_left` when the panel is rotated
-counterclockwise from landscape, or `vertical_right` for clockwise.
+Face the front of the wall and find the edge where the LED strands connect to
+the controller leads. Set `twinkly.orientation` to that edge. Use `top` or
+`bottom` for portrait and `left` or `right` for landscape.
 
 ```yaml
 twinkly:
   host: 192.168.1.137
-  orientation: vertical_left
+  orientation: top
   mirror_h: false
   mirror_v: false
 ```
 
 Use `mirror_h` to flip left to right and `mirror_v` to flip top to bottom as
 viewed on the mounted panel. Either or both can be enabled. The playlist
-daemon, single-card playback and terminal preview use the same mapping.
-`say preview --orientation` overrides the mount in settings for that preview.
+daemon, single-card playback and terminal preview use the same mapping. Use
+`--orientation` with `say preview`, `say card`, or `wall` to override the
+saved setting for one invocation. The default is `right`. Existing settings
+and commands using `horizontal`, `vertical_left`, or `vertical_right` still
+work and correspond to `right`, `top`, and `bottom`, respectively.
 
 Portrait effects such as `torch_vertical`, `candle_vertical`, and
 `beer_vertical` draw on a 10×50 canvas. The torch has a bright base,
@@ -183,7 +186,7 @@ twinkly-cli say card torch_vertical --settings config/settings.yaml --duration 1
 twinkly-cli say text "Hello" --color gold
 twinkly-cli say list
 twinkly-cli say list --playlist /path/to/cards.yaml
-twinkly-cli say preview clock --duration 3 --orientation vertical_left
+twinkly-cli say preview clock --duration 3 --orientation top
 twinkly-cli say preview text --text "Hello" --scroll --scroll-direction vertical_up
 twinkly-cli say preview --playlist /path/to/cards.yaml --id 1
 twinkly-cli say card clock --settings /path/to/settings.yaml --duration 3
@@ -273,7 +276,7 @@ is 50×10. Playback duration comes from the command or playlist entry.
 
 ```bash
 twinkly-cli say list
-twinkly-cli say preview party-flame --orientation vertical_left --duration 3
+twinkly-cli say preview party-flame --orientation top --duration 3
 twinkly-cli say card party-flame --settings ~/.config/twinkly-wall/portrait.yaml --duration 12
 ```
 
@@ -282,7 +285,7 @@ left to right on the landscape wall. Preview it with your wall's settings so
 the terminal uses the same mirror axes:
 
 ```bash
-twinkly-cli say preview skal --orientation horizontal --settings ./wall-settings.yaml
+twinkly-cli say preview skal --orientation right --settings ./wall-settings.yaml
 ```
 
 The list includes each external definition's path. For playlist playback, add

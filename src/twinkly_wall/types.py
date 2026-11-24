@@ -1,6 +1,7 @@
 """Core types and helpers for Twinkly Wall."""
 
-from typing import Literal, TypeAlias
+from enum import StrEnum
+from typing import TypeAlias
 
 # Display dimensions (Twinkly Matrix 500: 50 columns × 10 rows for horizontal display)
 WIDTH: int = 50
@@ -14,8 +15,33 @@ RGB: TypeAlias = tuple[int, int, int]
 # A frame is a 2D array of RGB values: Frame[y][x] = (r, g, b)
 Frame: TypeAlias = list[list[RGB]]
 
-# Display orientation.
-Orientation: TypeAlias = Literal["horizontal", "vertical_left", "vertical_right"]
+
+class Orientation(StrEnum):
+    """Display mount specified by the wire edge or a legacy mount name."""
+
+    top = "top"
+    bottom = "bottom"
+    left = "left"
+    right = "right"
+    horizontal = "horizontal"
+    vertical_left = "vertical_left"
+    vertical_right = "vertical_right"
+
+
+def mount_rotation(orientation: Orientation) -> int:
+    """Return the clockwise rotation from the native landscape mount in degrees."""
+    # The native strand map puts the wire edge (bottom of the strands)
+    # at the right of the landscape frame.
+    return {
+        Orientation.top: -90,
+        Orientation.bottom: 90,
+        Orientation.left: 180,
+        Orientation.right: 0,
+        Orientation.horizontal: 0,
+        Orientation.vertical_left: -90,
+        Orientation.vertical_right: 90,
+    }[orientation]
+
 
 # Common colors
 BLACK: RGB = (0, 0, 0)
@@ -101,6 +127,16 @@ def rotate_frame_180(frame: Frame) -> Frame:
     return [[frame[height - 1 - y][width - 1 - x] for x in range(width)] for y in range(height)]
 
 
+def rotate_frame(frame: Frame, degrees: int) -> Frame:
+    """Rotate a frame clockwise by a multiple of 90 degrees."""
+    return {
+        0: copy_frame,
+        90: rotate_frame_cw,
+        180: rotate_frame_180,
+        270: rotate_frame_ccw,
+    }[degrees % 360](frame)
+
+
 def apply_orientation(
     frame: Frame,
     orientation: Orientation,
@@ -122,14 +158,14 @@ def apply_orientation(
     if not frame or not frame[0]:
         return copy_frame(frame)
 
+    rotation = mount_rotation(orientation)
     portrait_frame = len(frame) > len(frame[0])
-    portrait_display = orientation != "horizontal"
+    portrait_display = rotation % 180 != 0
     if portrait_frame == portrait_display:
         oriented = copy_frame(frame)
-    elif orientation == "vertical_left":
-        oriented = rotate_frame_ccw(frame)
     else:
-        oriented = rotate_frame_cw(frame)
+        # Opposite mounts use opposite quarter-turns for sideways cards.
+        oriented = rotate_frame(frame, -90 if rotation in (-90, 180) else 90)
 
     if mirror_v:
         oriented.reverse()

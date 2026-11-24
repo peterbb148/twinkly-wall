@@ -4,9 +4,8 @@
 twinkly:
   # IP address of your Twinkly device (or leave empty to use discovery)
   host: ""
-  # Display orientation: horizontal, vertical_left, or vertical_right
-  # vertical_left = counterclockwise mount, vertical_right = clockwise.
-  orientation: horizontal
+  # Wire edge when facing the wall: top/bottom (portrait), left/right (landscape).
+  orientation: right
   # Flip along the viewer's left/right or top/bottom axis after orientation.
   mirror_h: false
   mirror_v: false

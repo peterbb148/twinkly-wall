@@ -33,7 +33,7 @@ from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
 from .outputs.terminal import animate_frames, print_frame
 from .outputs.twinkly import TwinklyOutput
-from .types import HEIGHT, RGB, WHITE, WIDTH
+from .types import HEIGHT, RGB, WHITE, WIDTH, Orientation
 
 
 @dataclass
@@ -48,7 +48,7 @@ class CLIOptions:
     color: str | None = None
     no_color: bool = False
     no_half_blocks: bool = False
-    orientation: str | None = None
+    orientation: Orientation | None = None
     twelve_hour: bool = False
     no_blink: bool = False
     text: str | None = None
@@ -325,7 +325,7 @@ def cmd_card(args: CLIOptions) -> int:
         mirror_h=settings.twinkly.mirror_h,
         mirror_v=settings.twinkly.mirror_v,
     )
-    output.orientation = settings.twinkly.orientation
+    output.orientation = args.orientation or settings.twinkly.orientation
 
     ctx = create_context_with_datasources(args.settings)
 
@@ -485,14 +485,6 @@ def _preview_playlist(args: CLIOptions) -> int:
 
 
 # Typed values shared by the Typer commands.
-class PreviewOrientation(StrEnum):
-    """Supported terminal display orientations."""
-
-    horizontal = "horizontal"
-    vertical_left = "vertical_left"
-    vertical_right = "vertical_right"
-
-
 class ScrollDirection(StrEnum):
     """Text scrolling directions."""
 
@@ -584,7 +576,7 @@ def _validate_config_path(value: Path | None, *, playlist: bool) -> Path | None:
                 raise typer.BadParameter(f"Settings section '{section}' must be a mapping")
         orientation = data.get("twinkly", {}).get("orientation", "horizontal")
         if not isinstance(orientation, str) or orientation not in {
-            item.value for item in PreviewOrientation
+            item.value for item in Orientation
         }:
             raise typer.BadParameter(f"Invalid display orientation: {orientation}")
     return value
@@ -616,6 +608,9 @@ Text = Annotated[str | None, typer.Option("--text", "-t", help="Text for text/tw
 Speed = Annotated[float, typer.Option(min=0.001, help="Animation speed in pixels/sec")]
 Wind = Annotated[float, typer.Option(min=-1, max=1, help="Snow wind direction")]
 NoColor = Annotated[bool, typer.Option("--no-color", help="Render grayscale terminal output")]
+Mount = Annotated[
+    Orientation | None, typer.Option("--orientation", help="Wire edge as seen from the front")
+]
 SettingsPath = Annotated[
     Path | None,
     typer.Option(
@@ -702,7 +697,7 @@ def preview(
     duration: Duration = 10.0,
     color: Color = None,
     no_color: NoColor = False,
-    orientation: PreviewOrientation | None = None,
+    orientation: Mount = None,
     settings: SettingsPath = None,
     twelve_hour: bool = False,
     no_blink: bool = False,
@@ -752,6 +747,7 @@ def card(
     duration: Duration = 10.0,
     color: Color = None,
     no_color: NoColor = False,
+    orientation: Mount = None,
     twelve_hour: bool = False,
     no_blink: bool = False,
     text: Text = None,
@@ -775,6 +771,7 @@ def card(
             duration=duration,
             color=color,
             no_color=no_color,
+            orientation=orientation,
             twelve_hour=twelve_hour,
             no_blink=no_blink,
             text=text,
