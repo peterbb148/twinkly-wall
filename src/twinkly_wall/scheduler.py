@@ -155,17 +155,31 @@ class Scheduler:
         return self.mcp_client.has_pending_commands()
 
     def _play_mcp_cards(self) -> None:
-        """Play all pending MCP cards."""
+        """Play pending MCP cards while the wall is within operating hours."""
         if not self.mcp_client:
             return
 
         while self.mcp_client.has_pending_commands() and self.state.running:
+            if not is_within_operating_hours(self.operating_hours):
+                self.mcp_client.discard_pending_commands()
+                return
             card = self.mcp_client.get_next_card()
             if card is None:
                 continue
 
             logger.info(f"Playing MCP card: {card.card_type}")
             self._play_card_instance(card)
+
+    def _can_play_remote_frame(self) -> bool:
+        return self.state.running and is_within_operating_hours(self.operating_hours)
+
+    def _wait_for_remote_frame(self, delay: float) -> bool:
+        """Wait between frames, checking for closing time during long holds."""
+        while delay > 0 and self._can_play_remote_frame():
+            interval = min(delay, 0.25) if self.operating_hours.enabled else delay
+            time.sleep(interval)
+            delay -= interval
+        return self._can_play_remote_frame()
 
     def _play_card_instance(self, card: Card) -> None:
         """Play a card instance directly.
@@ -176,8 +190,8 @@ class Scheduler:
         try:
             first_frame = True
             for frame, delay in card.frames(self.context):
-                if not self.state.running:
-                    break
+                if not self._can_play_remote_frame():
+                    return
 
                 # Apply transition for first frame
                 if first_frame:
@@ -185,13 +199,14 @@ class Scheduler:
                         self.state.last_frame, frame, "crossfade"
                     ):
                         self._send_frame(t_frame)
-                        time.sleep(0.03)  # ~30fps for transitions
+                        if not self._wait_for_remote_frame(0.03):
+                            return
                     first_frame = False
                 else:
                     self._send_frame(frame)
 
-                if delay > 0:
-                    time.sleep(delay)
+                if not self._wait_for_remote_frame(delay):
+                    return
 
         except Exception as e:
             logger.error(f"Error playing card: {e}")
@@ -216,8 +231,8 @@ class Scheduler:
         self.state.running = False
 
     def run_loop(self) -> None:
-        """Run the playlist in an infinite loop."""
-        if not self.playlist.cards:
+        """Play the playlist or wait for remote commands until stopped."""
+        if not self.playlist.cards and self.mcp_client is None:
             logger.warning("No cards in playlist")
             return
 
@@ -231,11 +246,8 @@ class Scheduler:
                     self._outside_hours_logged = True
                     # Clear any pending MCP commands when going outside hours
                     if self.mcp_client:
-                        self.mcp_client._pending_commands.clear()
-                    # Turn off Twinkly devices properly (not just blank frame)
-                    for output in self.outputs:
-                        if hasattr(output, "turn_off"):
-                            output.turn_off()
+                        self.mcp_client.discard_pending_commands()
+                    self._set_output_power(False)
                 # Sleep until next check
                 time.sleep(60)  # Check every minute
                 continue
@@ -244,10 +256,22 @@ class Scheduler:
             if self._outside_hours_logged:
                 logger.info("Within operating hours - resuming display")
                 self._outside_hours_logged = False
-                # Turn Twinkly devices back on (realtime mode)
-                for output in self.outputs:
-                    if hasattr(output, "turn_on"):
-                        output.turn_on()
+                if self.playlist.cards:
+                    self._set_output_power(True)
+
+            if not self.playlist.cards:
+                if self._check_mcp_commands() and self.state.running:
+                    if not is_within_operating_hours(self.operating_hours):
+                        continue
+                    self._set_output_power(True)
+                    try:
+                        self._play_mcp_cards()
+                    finally:
+                        self._set_output_power(False)
+                    self.state.last_frame = None
+                if self.state.running:
+                    time.sleep(self._mcp_poll_interval)
+                continue
 
             for i, card_config in enumerate(self.playlist.cards):
                 if not self.state.running:
@@ -260,6 +284,13 @@ class Scheduler:
                 self.state.current_card_index = i
                 self._play_card(card_config)
                 self.state.cards_played += 1
+
+    def _set_output_power(self, enabled: bool) -> None:
+        """Set realtime or off mode on outputs with power controls."""
+        for output in self.outputs:
+            set_power = getattr(output, "turn_on" if enabled else "turn_off", None)
+            if set_power is not None:
+                set_power()
 
     def _play_card(self, card_config: CardConfig) -> None:
         """Play a single card.

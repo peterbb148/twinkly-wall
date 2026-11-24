@@ -68,7 +68,9 @@ Useful commands:
 
 Before completing a pull request:
 
-- Request a GitHub Copilot review.
+- Request a GitHub Copilot review after creating the pull request. Run
+  `gh pr edit PR-NUMBER --add-reviewer @copilot`. Passing `@copilot` to
+  `gh pr create --reviewer` can fail with a reviewer lookup error.
 - Ensure test coverage for all new code is greater than 80%.
 - Run the repository's configured test and coverage commands and report the results.
 - Do not claim the coverage requirement passed unless it was measured successfully.
