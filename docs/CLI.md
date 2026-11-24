@@ -48,7 +48,7 @@ install -m 755 twinkly-cli "$HOME/.local/bin/twinkly-cli"
 Add `$HOME/.local/bin` to your shell's `PATH` if necessary. The executable bundles
 Python, Typer, Pillow, YAML support, certificate data, and the built-in bitmap
 fonts. It requires neither Python nor UV to run. The archive also contains example
-configuration files, a sample image, and the optional `checks/smoke_binary.py`
+configuration files and the optional `checks/smoke_binary.py`
 verification harness. Your own settings, playlists, and images remain external.
 
 To upgrade, verify the new archive and replace the executable using the same
@@ -96,7 +96,7 @@ sha256sum --strict --check "$archive.sha256" &&
   install -m 755 "twinkly-cli-$version/twinkly-cli" "$HOME/.local/bin/twinkly-cli"
 ```
 
-The archive includes example settings, a playlist, and a sample image.
+The archive includes example settings and a playlist.
 
 ## Install on Raspberry Pi OS
 
@@ -123,7 +123,7 @@ sha256sum --strict --check "$archive.sha256" &&
 ```
 
 Keep settings and playlists outside the archive. The archive includes example
-YAML files and a sample image. Store optional credentials in the environment
+YAML files. Store optional credentials in the environment
 of the account running the daemon.
 
 ## Start the wall daemon
@@ -276,14 +276,13 @@ a lowercase letter and can also contain lowercase letters, digits, underscores,
 and hyphens. Names must be unique across both directories and the built-in
 catalog.
 
-The repository's [party-flame card](../config/cards.d/party-flame.yaml) uses an
-external 10×50 GIF. To make your own version, save a definition like this with
-its GIF beside it.
+To display your own 10×50 GIF, save the following definition as
+`my-portrait-card.yaml` and put your image beside it as `my-image.gif`.
 
 ```yaml
 type: image
 layout: portrait
-path: flame.gif
+path: my-image.gif
 scroll: false
 ```
 
@@ -294,20 +293,12 @@ is 50×10. Playback duration comes from the command or playlist entry.
 
 ```bash
 twinkly-cli say list
-twinkly-cli say preview party-flame --orientation top --duration 3
-twinkly-cli say card party-flame --settings ~/.config/twinkly-wall/portrait.yaml --duration 12
-```
-
-The [Skål card](../config/cards.d/skal.yaml) displays the fixed text `SKÅL!`
-left to right on the landscape wall. Preview it with your wall's settings so
-the terminal uses the same mirror axes:
-
-```bash
-twinkly-cli say preview skal --orientation right --settings ./wall-settings.yaml
+twinkly-cli say preview my-portrait-card --orientation top --duration 3
+twinkly-cli say card my-portrait-card --settings ~/.config/twinkly-wall/portrait.yaml --duration 12
 ```
 
 The list includes each external definition's path. For playlist playback, add
-an entry with `type: party-flame`. Editing the YAML or replacing the GIF takes
+an entry with `type: my-portrait-card`. Editing the YAML or replacing the GIF takes
 effect when the card is next loaded. Configuration uses the existing renderers
 and works with the same installed executable.
 

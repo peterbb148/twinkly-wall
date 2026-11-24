@@ -19,9 +19,8 @@ archive="twinkly-cli-${version}-darwin-arm64.tar.gz"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 cp dist/twinkly-cli "$stage/twinkly-cli"
-mkdir -p "$stage/examples" "$stage/assets" "$stage/checks"
+mkdir -p "$stage/examples" "$stage/checks"
 cp config/cards.example.yaml config/settings.example.yaml "$stage/examples/"
-cp assets/carlsberg.png "$stage/assets/"
 cp scripts/smoke_binary.py "$stage/checks/"
 tar -czf "dist/$archive" -C "$stage" .
 (
