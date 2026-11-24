@@ -13,7 +13,7 @@ A Raspberry Pi-controlled LED billboard using Twinkly Matrix 500 (10×50 pixel d
 ## Architecture
 
 ```
-[Raspberry Pi] ─── Wi-Fi AP ───> [Twinkly Matrix 500]
+[Raspberry Pi] ──── Network ────> [Twinkly Matrix 500]
       │                              10 × 50 LEDs
       │
    Ethernet

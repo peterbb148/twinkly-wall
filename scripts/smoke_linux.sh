@@ -63,10 +63,14 @@ grep -Fq '[1] clock' list.log
 "$binary" say preview --id 1 --playlist cards.yaml --settings settings.yaml \
   --duration 0.1 --no-color > preview.log
 grep -Eq '[░▒▓█]' preview.log
+{
+  printf 'P6\n2 2\n255\n'
+  head -c 12 /dev/zero | tr '\000' '\377'
+} > sample.ppm
 cat > image-cards.yaml <<YAML
 cards:
   - type: image
-    path: $work/assets/carlsberg.png
+    path: $work/sample.ppm
     duration: 0.1
 YAML
 "$binary" say preview --id 1 --playlist image-cards.yaml --no-color > image.log 2>&1
