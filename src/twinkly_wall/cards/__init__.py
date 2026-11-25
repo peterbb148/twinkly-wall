@@ -16,6 +16,16 @@ from .calendar import CalendarCard
 from .candle_vertical import CandleVerticalCard
 from .carlsberg_lab import CarlsbergLabCard, CarlsbergLabVerticalCard
 from .chemical_agent import ChemicalAgentCard
+from .christmas_vertical import (
+    ChristmasTreeVerticalCard,
+    GiftStackVerticalCard,
+    NisseLabVerticalCard,
+    ReindeerWeatherVaneVerticalCard,
+    SantaChimneyVerticalCard,
+    SantaRocketVerticalCard,
+    TuborgJulebrygVerticalCard,
+    TuborgSnowVerticalCard,
+)
 from .clock import ClockCard
 from .coffee import CoffeeCard, CoffeeVerticalCard
 from .confetti import ConfettiCard
@@ -30,6 +40,7 @@ from .image import ImageCard
 from .lava import LavaCard
 from .lava_column import LavaColumnCard
 from .leaderboard import LeaderboardCard
+from .lunch_vertical import LunchVerticalCard
 from .matrix import MatrixCard
 from .menorah import MenorahCard
 from .meteor_shower import MeteorShowerCard
@@ -78,6 +89,7 @@ __all__ = [
     "CandleVerticalCard",
     "CountdownRulerCard",
     "ChemicalAgentCard",
+    "ChristmasTreeVerticalCard",
     "Card",
     "CardContext",
     "ClockCard",
@@ -92,14 +104,17 @@ __all__ = [
     "FireworksCard",
     "FridayCard",
     "FridayVerticalCard",
+    "GiftStackVerticalCard",
     "ImageCard",
     "LavaCard",
     "LavaColumnCard",
     "LeaderboardCard",
+    "LunchVerticalCard",
     "MatrixCard",
     "MeteorShowerCard",
     "MenorahCard",
     "NewsCard",
+    "NisseLabVerticalCard",
     "OceanCard",
     "OrientationTestCard",
     "OverlayCard",
@@ -115,8 +130,11 @@ __all__ = [
     "PulseCard",
     "QuoteCard",
     "RainbowCard",
+    "ReindeerWeatherVaneVerticalCard",
     "RainCard",
     "SantaCard",
+    "SantaChimneyVerticalCard",
+    "SantaRocketVerticalCard",
     "SciencePaperCard",
     "ScoreTowerCard",
     "SnakeCard",
@@ -131,7 +149,9 @@ __all__ = [
     "TetrisCard",
     "TextCard",
     "TuborgJulebryg",
+    "TuborgJulebrygVerticalCard",
     "TuborgSleighCard",
+    "TuborgSnowVerticalCard",
     "TuborgTruckCard",
     "TwinklysayCard",
     "VerticalBarsCard",

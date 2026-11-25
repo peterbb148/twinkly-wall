@@ -227,6 +227,10 @@ def load_playlist(path: Path | str | None = None) -> PlaylistConfig:
             duration = card_data.pop("duration", playlist.default_duration)
             transition = card_data.pop("transition", playlist.default_transition)
 
+            menu_path = card_data.get("menu_path")
+            if card_type == "lunch_vertical" and isinstance(menu_path, str) and menu_path.strip():
+                card_data["menu_path"] = str((path.parent / Path(menu_path).expanduser()).resolve())
+
             playlist.cards.append(
                 CardConfig(
                     type=card_type,

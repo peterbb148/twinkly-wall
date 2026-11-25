@@ -167,6 +167,9 @@ def load_card_definitions() -> dict[str, CardDefinition]:
             if not asset.is_file():
                 raise ValueError(f"{source}: image does not exist: {asset}")
             data["path"] = str(asset)
+        menu_path = data.get("menu_path")
+        if renderer == "lunch_vertical" and isinstance(menu_path, str) and menu_path.strip():
+            data["menu_path"] = str((source.parent / Path(menu_path).expanduser()).resolve())
         definitions[name] = CardDefinition(renderer, data, source.resolve())
     return definitions
 

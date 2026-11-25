@@ -1,0 +1,16 @@
+# Preview the nine cards on a portrait mount.
+default_duration: 10
+default_transition: none
+
+cards:
+  - type: christmas_tree_vertical
+  - type: santa_rocket_vertical
+  - type: lunch_vertical
+    menu_path: lunch-menu.example.json
+  - type: tuborg_snow_vertical
+    duration: 14
+  - type: tuborg_julebryg_vertical
+  - type: santa_chimney_vertical
+  - type: gift_stack_vertical
+  - type: nisse_lab_vertical
+  - type: reindeer_weather_vane_vertical
