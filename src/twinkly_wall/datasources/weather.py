@@ -117,7 +117,8 @@ class WeatherDataSource:
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException as e:
-            raise WeatherError(f"Failed to fetch weather: {e}") from e
+            # Request errors can include a URL with the configured coordinates.
+            raise WeatherError(f"Failed to fetch weather ({type(e).__name__})") from None
 
         current = data.get("current", {})
 

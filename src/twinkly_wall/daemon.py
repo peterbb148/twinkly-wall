@@ -129,10 +129,7 @@ class TwinklyDaemon:
                 longitude=self.settings.weather.longitude,
                 cache_duration=self.settings.weather.cache_duration,
             )
-            logger.info(
-                f"Weather datasource configured: {self.settings.weather.latitude}, "
-                f"{self.settings.weather.longitude}"
-            )
+            logger.info("Weather datasource configured")
 
         return CardContext(datasources=datasources, orientation=self.settings.twinkly.orientation)
 
