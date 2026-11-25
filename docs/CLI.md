@@ -340,6 +340,34 @@ an entry with `type: my-portrait-card`. Editing the YAML or replacing the GIF ta
 effect when the card is next loaded. Configuration uses the existing renderers
 and works with the same installed executable.
 
+## Preview the portrait Christmas cards
+
+The [Christmas playlist](../config/christmas-vertical.example.yaml) includes the nine Christmas
+cards, six existing animations, and a sample lunch menu. From the source checkout,
+list the cards or preview one by its playlist ID.
+
+```bash
+uv run --locked twinkly-cli say list --playlist config/christmas-vertical.example.yaml --layout portrait
+uv run --locked twinkly-cli say preview --playlist config/christmas-vertical.example.yaml --id 5 --orientation bottom
+```
+
+Set `menu_path` in your playlist or in a named external card to point to a UTF-8
+JSON file. A relative path in the card's definition is relative to that YAML file.
+The renderer reads one menu record each time it plays.
+
+```json
+{
+  "date": "2026-11-25",
+  "name": "Roast chicken",
+  "description": "With crispy potatoes and winter greens"
+}
+```
+
+Use `YYYY-MM-DD` for the date and supply a name and description. The card displays
+the supplied date and gives longer text enough time to scroll through in full.
+For on-demand playback, set `type: lunch_vertical` and `menu_path: menu.json` in a
+named external card and call it by that name.
+
 ## Develop, build, and release
 
 Use UV and Python 3.11 for source installations:
