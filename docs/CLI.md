@@ -342,13 +342,13 @@ and works with the same installed executable.
 
 ## Preview the portrait Christmas cards
 
-The [Christmas playlist](../config/christmas-vertical.example.yaml) contains all nine
-cards and a sample lunch menu. From the source checkout, list the cards or preview
-one by its playlist ID.
+The [Christmas playlist](../config/christmas-vertical.example.yaml) includes the nine Christmas
+cards, six existing animations, and a sample lunch menu. From the source checkout,
+list the cards or preview one by its playlist ID.
 
 ```bash
 uv run --locked twinkly-cli say list --playlist config/christmas-vertical.example.yaml --layout portrait
-uv run --locked twinkly-cli say preview --playlist config/christmas-vertical.example.yaml --id 3 --orientation left
+uv run --locked twinkly-cli say preview --playlist config/christmas-vertical.example.yaml --id 5 --orientation bottom
 ```
 
 Set `menu_path` in your playlist or in a named external card to point to a UTF-8

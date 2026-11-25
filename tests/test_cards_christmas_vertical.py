@@ -2,6 +2,7 @@
 
 import json
 import random
+from itertools import islice
 from pathlib import Path
 
 import pytest
@@ -17,20 +18,50 @@ from twinkly_wall.types import GOLD, PORTRAIT_HEIGHT, PORTRAIT_WIDTH, WHITE
 _EXAMPLE = Path(__file__).resolve().parents[1] / "config/christmas-vertical.example.yaml"
 
 
-def test_all_nine_cards_render_in_portrait_from_the_example_playlist(monkeypatch, tmp_path):
+def test_all_christmas_playlist_cards_render_in_portrait_from_the_example_playlist(
+    monkeypatch, tmp_path
+):
     monkeypatch.chdir(tmp_path)
     playlist = load_playlist(_EXAMPLE)
-    assert len(playlist.cards) == 9
+    assert [entry.type for entry in playlist.cards] == [
+        "christmas_tree_vertical",
+        "pacman_up",
+        "santa_rocket_vertical",
+        "aurora",
+        "lunch_vertical",
+        "tuborg_snow_vertical",
+        "sparkle_curtain",
+        "tuborg_julebryg_vertical",
+        "beer_vertical",
+        "santa_chimney_vertical",
+        "meteor_shower",
+        "gift_stack_vertical",
+        "lava_column",
+        "nisse_lab_vertical",
+        "reindeer_weather_vane_vertical",
+    ]
+    existing_animations = {
+        "pacman_up",
+        "aurora",
+        "sparkle_curtain",
+        "beer_vertical",
+        "meteor_shower",
+        "lava_column",
+    }
     for entry in playlist.cards:
         assert get_card_layout(entry.type, {}) is CardLayout.portrait
         card = create_card(entry.type, {**entry.config, "duration": entry.duration})
         assert card is not None
-        frames = list(card.frames(CardContext()))
+        sequence = card.frames(CardContext())
+        is_existing = entry.type in existing_animations
+        frames = list(islice(sequence, 4) if is_existing else sequence)
+        assert frames
         assert all(len(frame) == PORTRAIT_HEIGHT for frame, _ in frames)
         assert all(len(row) == PORTRAIT_WIDTH for frame, _ in frames for row in frame)
         assert all(delay > 0 for _, delay in frames)
-        assert sum(delay for _, delay in frames) >= entry.duration - 1e-9
-        assert frames[0][0] != frames[-1][0]
+        if not is_existing:
+            assert sum(delay for _, delay in frames) >= entry.duration - 1e-9
+            assert frames[0][0] != frames[-1][0]
 
 
 def test_tree_star_lights_late_and_flashes():

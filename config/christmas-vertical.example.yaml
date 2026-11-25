@@ -1,16 +1,26 @@
-# Preview the nine cards on a portrait mount.
+# Play the Christmas rotation on a portrait mount.
 default_duration: 10
 default_transition: none
 
 cards:
   - type: christmas_tree_vertical
+  - type: pacman_up
+    theme: trees
   - type: santa_rocket_vertical
+  - type: aurora
+    duration: 12
+    brightness: 0.8
   - type: lunch_vertical
     menu_path: lunch-menu.example.json
   - type: tuborg_snow_vertical
     duration: 14
+  - type: sparkle_curtain
   - type: tuborg_julebryg_vertical
+  - type: beer_vertical
+    duration: 12
   - type: santa_chimney_vertical
+  - type: meteor_shower
   - type: gift_stack_vertical
+  - type: lava_column
   - type: nisse_lab_vertical
   - type: reindeer_weather_vane_vertical
