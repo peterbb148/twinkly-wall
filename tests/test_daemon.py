@@ -70,3 +70,25 @@ def test_mcp_only_wall_reports_failed_registration(monkeypatch, caplog):
 
     assert main(["--mcp-only", "--terminal"]) == 1
     assert "Could not register cards with the MCP server" in caplog.text
+
+
+def test_wall_startup_logs_weather_status_without_coordinates(tmp_path, monkeypatch, caplog):
+    latitude, longitude = 12.345678, -98.765432
+    settings = tmp_path / "settings.yaml"
+    settings.write_text(f"weather: {{latitude: {latitude}, longitude: {longitude}}}\n")
+    cards = tmp_path / "cards.yaml"
+    cards.write_text("cards: [{type: clock}]\n")
+    scheduler = Mock(wraps=daemon.Scheduler)
+    monkeypatch.setattr(daemon.TwinklyDaemon, "_setup_signals", Mock())
+    monkeypatch.setattr(daemon.TwinklyDaemon, "_create_outputs", Mock(return_value=[]))
+    monkeypatch.setattr(daemon.Scheduler, "run_loop", Mock())
+    monkeypatch.setattr(daemon, "Scheduler", scheduler)
+    caplog.set_level("INFO", logger=daemon.__name__)
+
+    assert main(["--terminal", "--settings", str(settings), "--cards", str(cards)]) == 0
+
+    weather = scheduler.call_args.kwargs["context"].datasources["weather"]
+    assert (weather.latitude, weather.longitude) == (latitude, longitude)
+    assert "Weather datasource configured" in caplog.messages
+    assert str(latitude) not in caplog.text
+    assert str(longitude) not in caplog.text
