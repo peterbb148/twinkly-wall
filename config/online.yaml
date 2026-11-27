@@ -92,19 +92,6 @@ cards:
     wind_speed: 1.0
     repeats: 3
 
-  # Rubedo artwork announcement
-  - type: pulse
-    color: [255, 0, 0]
-    mode: breathing
-    text: "Rubedo by Zoran Gojkovic"
-    text_color: [255, 255, 255]
-    scroll_speed: 30
-
-  # Chemical Agent Copilot Innovation Challenge win
-  - type: chemical_agent
-    duration: 20
-    scroll_speed: 30
-
   # Danish Superliga standings (top 3)
   - type: superliga
     scroll_speed: 30
