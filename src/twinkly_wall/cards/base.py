@@ -65,6 +65,11 @@ class Card(ABC):
             config: Card-specific configuration dict
         """
         self.config = config or {}
+        self.registered_name = self.card_type
+
+    def replay_inputs(self) -> dict[str, Any] | None:
+        """Return versioned inputs for replaying this instance after its first frame."""
+        return None
 
     @abstractmethod
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
@@ -225,4 +230,6 @@ def create_card(card_type: str, config: dict[str, Any] | None = None) -> Card | 
     definition = load_card_definitions().get(card_type)
     if definition is None:
         return None
-    return _card_registry[definition.renderer]({**definition.config, **(config or {})})
+    card = _card_registry[definition.renderer]({**definition.config, **(config or {})})
+    card.registered_name = card_type
+    return card

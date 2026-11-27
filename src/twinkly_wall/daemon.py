@@ -12,6 +12,7 @@ from .cards import CardContext
 from .cards.base import load_card_definitions
 from .config import PlaylistConfig, load_playlist, load_settings
 from .mcp_client import DEFAULT_SERVER_URL, MCPClient
+from .now_playing import NowPlayingPublisher
 from .scheduler import Scheduler
 from .types import Orientation
 
@@ -169,6 +170,16 @@ class TwinklyDaemon:
         outputs = self._create_outputs()
         context = self._create_context()
         self._mcp_client = self._create_mcp_client()
+        now_playing = None
+        if self._twinkly is not None and self._mcp_client is not None:
+            display = self.settings.twinkly
+            now_playing = NowPlayingPublisher(
+                self._mcp_client.server_url,
+                self._mcp_client.api_key,
+                display.orientation,
+                display.mirror_h,
+                display.mirror_v,
+            )
 
         self.scheduler = Scheduler(
             playlist=self.playlist,
@@ -177,6 +188,7 @@ class TwinklyDaemon:
             mcp_client=self._mcp_client,
             operating_hours=self.settings.operating_hours,
             orientation=self.settings.twinkly.orientation,
+            now_playing=now_playing,
         )
 
         # Start outputs
@@ -186,6 +198,8 @@ class TwinklyDaemon:
             self._twinkly.start()
             if self.mcp_only:
                 self._twinkly.turn_off()
+        if now_playing:
+            now_playing.start("off" if self.mcp_only else "idle")
 
         try:
             logger.info("Starting MCP-only loop" if self.mcp_only else "Starting playlist loop")
@@ -196,6 +210,8 @@ class TwinklyDaemon:
                 self._terminal.stop()
             if self._twinkly:
                 self._twinkly.stop()
+            if now_playing:
+                now_playing.close()
 
         logger.info("Daemon stopped")
 

@@ -4,6 +4,7 @@ import logging
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass
+from time import monotonic
 from typing import TYPE_CHECKING, Any, Protocol
 
 from .cards import Card, CardContext, create_card
@@ -13,6 +14,7 @@ from .types import HEIGHT, WIDTH, Frame, Orientation, apply_orientation
 
 if TYPE_CHECKING:
     from .mcp_client import MCPClient
+    from .now_playing import NowPlayingPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 class Output(Protocol):
     """Protocol for frame output targets."""
 
-    def send_frame(self, frame: Frame) -> None:
+    def send_frame(self, frame: Frame) -> bool | None:
         """Send a frame to the output device."""
         ...
 
@@ -56,6 +58,7 @@ class Scheduler:
         mcp_client: "MCPClient | None" = None,
         operating_hours: OperatingHoursConfig | None = None,
         orientation: Orientation = Orientation.horizontal,
+        now_playing: "NowPlayingPublisher | None" = None,
     ):
         """Initialize the scheduler.
 
@@ -66,11 +69,13 @@ class Scheduler:
             mcp_client: Optional MCP client for remote control
             operating_hours: Optional operating hours configuration
             orientation: Display mount used when blending cards
+            now_playing: Optional publisher for accepted playback on the wall
         """
         self.playlist = playlist
         self.context = context or CardContext(orientation=orientation)
         self.outputs = outputs or []
         self.mcp_client = mcp_client
+        self.now_playing = now_playing
         self.operating_hours = operating_hours or OperatingHoursConfig()
         self.orientation = orientation
         self.state = SchedulerState()
@@ -98,14 +103,16 @@ class Scheduler:
             logger.warning(f"Unknown card type: {card_config.type}")
         return card
 
-    def _send_frame(self, frame: Frame) -> None:
-        """Send a frame to all outputs."""
+    def _send_frame(self, frame: Frame) -> bool:
+        """Send a frame to all outputs and report any controller acknowledgement."""
+        accepted = False
         for output in self.outputs:
             try:
-                output.send_frame(frame)
+                accepted |= output.send_frame(frame) is True
             except Exception as e:
                 logger.error(f"Error sending frame to output: {e}")
         self.state.last_frame = frame
+        return accepted
 
     def _apply_transition(
         self,
@@ -187,29 +194,39 @@ class Scheduler:
         Args:
             card: Card instance to play
         """
+        published = False
+        elapsed = 0.0
         try:
             first_frame = True
             for frame, delay in card.frames(self.context):
                 if not self._can_play_remote_frame():
                     return
 
+                accepted = False
                 # Apply transition for first frame
                 if first_frame:
                     for t_frame in self._apply_transition(
                         self.state.last_frame, frame, "crossfade"
                     ):
-                        self._send_frame(t_frame)
+                        accepted = self._send_frame(t_frame)
                         if not self._wait_for_remote_frame(0.03):
                             return
                     first_frame = False
                 else:
-                    self._send_frame(frame)
+                    accepted = self._send_frame(frame)
 
+                if accepted and not published and self.now_playing:
+                    self.now_playing.playing(card, monotonic() - elapsed)
+                    published = True
+                elapsed += delay
                 if not self._wait_for_remote_frame(delay):
                     return
 
         except Exception as e:
             logger.error(f"Error playing card: {e}")
+        finally:
+            if published and self.now_playing:
+                self.now_playing.set_state("idle")
 
     def run_once(self) -> None:
         """Run through the playlist once."""
@@ -298,6 +315,8 @@ class Scheduler:
             set_power = getattr(output, "turn_on" if enabled else "turn_off", None)
             if set_power is not None:
                 set_power()
+        if self.now_playing:
+            self.now_playing.set_state("idle" if enabled else "off")
 
     def _play_card(self, card_config: CardConfig) -> bool:
         """Play a card and report whether it produced a displayed frame."""
@@ -308,6 +327,8 @@ class Scheduler:
 
         self.state.mcp_interrupt = False
         first_frame = True
+        published = False
+        elapsed = 0.0
 
         try:
             for frame, delay in card.frames(self.context):
@@ -322,6 +343,7 @@ class Scheduler:
                     # After MCP cards, break out to resume playlist
                     break
 
+                accepted = False
                 # Apply transition for first frame
                 if first_frame:
                     logger.info(f"Playing card: {card_config.type} for {card_config.duration}s")
@@ -329,18 +351,25 @@ class Scheduler:
                     for t_frame in self._apply_transition(
                         self.state.last_frame, frame, transition_type
                     ):
-                        self._send_frame(t_frame)
+                        accepted = self._send_frame(t_frame)
                         if transition_type != "none":
                             time.sleep(0.03)  # ~30fps for transitions
                     first_frame = False
                 else:
-                    self._send_frame(frame)
+                    accepted = self._send_frame(frame)
 
+                if accepted and not published and self.now_playing:
+                    self.now_playing.playing(card, monotonic() - elapsed)
+                    published = True
+                elapsed += delay
                 if delay > 0:
                     time.sleep(delay)
 
         except Exception as e:
             logger.error(f"Error playing card {card_config.type}: {e}")
+        finally:
+            if published and self.now_playing:
+                self.now_playing.set_state("idle")
         return not first_frame
 
     def stop(self) -> None:

@@ -35,13 +35,16 @@ def test_mcp_only_wall_skips_playlist_and_starts_with_leds_off(tmp_path, monkeyp
     settings = tmp_path / "settings.yaml"
     settings.write_text("twinkly: {host: localhost, orientation: top, mirror_h: true}\n")
     load_playlist = Mock(side_effect=AssertionError("MCP-only mode loaded the playlist"))
-    client = Mock()
+    client = Mock(server_url="https://mcp.example", api_key=None)
+    publisher = Mock()
+    create_publisher = Mock(return_value=publisher)
     create_client = Mock(return_value=client)
     output = Mock()
     create_output = Mock(return_value=output)
     scheduler = Mock(wraps=daemon.Scheduler)
     monkeypatch.setattr(daemon, "load_playlist", load_playlist)
     monkeypatch.setattr(daemon, "MCPClient", create_client)
+    monkeypatch.setattr(daemon, "NowPlayingPublisher", create_publisher)
     monkeypatch.setattr(twinkly, "TwinklyOutput", create_output)
     monkeypatch.setattr(daemon.TwinklyDaemon, "_setup_signals", Mock())
     monkeypatch.setattr(daemon.Scheduler, "run_loop", Mock())
@@ -50,6 +53,8 @@ def test_mcp_only_wall_skips_playlist_and_starts_with_leds_off(tmp_path, monkeyp
     monkeypatch.delenv("TWINKLY_API_KEY", raising=False)
 
     assert main(["--mcp-only", "--settings", str(settings)]) == 0
+    publisher.start.assert_called_once_with("off")
+    publisher.close.assert_called_once()
     load_playlist.assert_not_called()
     create_client.assert_called_once_with(server_url="https://mcp.example", api_key=None)
     client.register_cards.assert_called_once_with()
