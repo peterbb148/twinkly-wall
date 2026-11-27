@@ -30,6 +30,13 @@ def _meal_strip(meal: str) -> Frame:
     return strip.frame
 
 
+def meal_frames(meal: str) -> Iterator[tuple[Frame, float]]:
+    """Scroll a meal that has already been selected."""
+    strip = _meal_strip(meal)
+    for offset in range(len(strip[0]) - WIDTH + 1):
+        yield [row[offset : offset + WIDTH] for row in strip], 1 / 25
+
+
 @register_card
 class LunchHorizontalCard(Card):
     """Scroll one full pass of today's meal, or skip when no meal is listed."""
@@ -42,6 +49,7 @@ class LunchHorizontalCard(Card):
         if not isinstance(menu, dict):
             raise ValueError("lunch_horizontal requires a 'menu' mapping of dates to meals")
 
+        self.selected_meal: str | None = None
         self.menu: dict[date, str] = {}
         for key, meal in menu.items():
             date_text = str(key)
@@ -59,10 +67,12 @@ class LunchHorizontalCard(Card):
 
     def frames(self, ctx: CardContext) -> Iterator[tuple[Frame, float]]:
         """Select the meal at playback time and scroll it right to left."""
-        meal = self.menu.get(datetime.now(ZoneInfo("Europe/Copenhagen")).date())
-        if meal is None:
-            return
+        self.selected_meal = self.menu.get(datetime.now(ZoneInfo("Europe/Copenhagen")).date())
+        if self.selected_meal is not None:
+            yield from meal_frames(self.selected_meal)
 
-        strip = _meal_strip(meal)
-        for offset in range(len(strip[0]) - WIDTH + 1):
-            yield [row[offset : offset + WIDTH] for row in strip], 1 / 25
+    def replay_inputs(self) -> dict[str, Any] | None:
+        """Provide the already selected meal for replay across date boundaries."""
+        if self.selected_meal is None or len(self.selected_meal) > 250:
+            return None
+        return {"renderer": "lunch_horizontal/v1", "meal": self.selected_meal}

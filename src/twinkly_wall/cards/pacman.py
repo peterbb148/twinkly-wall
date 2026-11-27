@@ -376,6 +376,29 @@ class PacmanUpCard(PacmanCard):
     portrait_direction = "up"
     open_sprite = PACMAN_OPEN_UP
 
+    def replay_inputs(self) -> dict[str, Any] | None:
+        """Describe the animation using its effective parameters."""
+        if not (
+            self.card_type == "pacman_up"
+            and type(self.speed) in (int, float)
+            and 0 < self.speed <= 1000
+            and type(self.repeats) is int
+            and 1 <= self.repeats <= 100
+            and type(self.num_items) is int
+            and 0 <= self.num_items <= 100
+            and len(self.pacman_color) == 3
+            and all(type(channel) is int and 0 <= channel <= 255 for channel in self.pacman_color)
+        ):
+            return None
+        return {
+            "renderer": "pacman_up/v1",
+            "theme": self.theme_name if self.theme_name in THEMES else "trees",
+            "speed": self.speed,
+            "repeats": self.repeats,
+            "num_items": self.num_items,
+            "color": list(self.pacman_color),
+        }
+
 
 @register_card
 class PacmanDownCard(PacmanCard):

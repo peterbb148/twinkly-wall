@@ -382,6 +382,19 @@ color names use their named color, with the remaining text in brown on black.
 uv run --locked twinkly-cli say preview --playlist config/lunch-horizontal.yaml --id 1 --orientation left
 ```
 
+## Watch a wall in the terminal
+
+Run the wall with MCP enabled and a server that supports now-playing. On a
+separate machine, run `twinkly-cli watch` with the same `TWINKLY_MCP_URL` and
+`TWINKLY_API_KEY` settings. `--mcp-server` overrides the URL. Press Ctrl+C to stop.
+
+The watcher replays Pac-Man Up and the horizontal lunch menu using the inputs
+published by the wall. It follows the wall's mount and mirror settings and
+starts near the current animation position. During playback it stays within the
+latest position acknowledged by the controller. For other cards it shows the card
+name and reports that local replay is unavailable. The watcher distinguishes
+idle, off, and stale state. It sends no commands to the wall.
+
 ## Develop, build, and release
 
 Use UV and Python 3.11 for source installations:

@@ -366,8 +366,8 @@ class TwinklyOutput:
 
         return bytes(data)
 
-    def send_frame(self, frame: Frame) -> None:
-        """Send a frame to the Twinkly device.
+    def send_frame(self, frame: Frame) -> bool:
+        """Send a frame and report whether the controller accepted it.
 
         Args:
             frame: 2D array of RGB tuples
@@ -384,12 +384,15 @@ class TwinklyOutput:
         frame_data = self._frame_to_bytes(viewed)
 
         try:
-            self.client._request(
+            reply = self.client._request(
                 "POST",
                 "/led/rt/frame",
                 data=frame_data,
             )
+            if reply is not None and reply.get("code", 1000) != 1000:
+                raise TwinklyAPIError("Controller rejected the realtime frame")
             self._frame_count += 1
+            return True
         except TwinklyAPIError as e:
             logger.warning(f"Failed to send frame: {e}")
             # Try to recover by re-authenticating
@@ -398,3 +401,4 @@ class TwinklyOutput:
                 self.client.set_mode("rt")
             except TwinklyAPIError:
                 pass
+            return False

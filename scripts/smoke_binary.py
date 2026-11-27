@@ -40,9 +40,10 @@ def main() -> None:
                 )
             return result.stdout + result.stderr
 
-        assert "{wall,say}" in run("--help")
-        assert "{wall,say}" in run("-h")
+        assert "{wall,say,watch}" in run("--help")
+        assert "{wall,say,watch}" in run("-h")
         assert "usage: twinkly-cli wall" in run("wall", "--help")
+        assert "usage: twinkly-cli watch" in run("watch", "--help")
         assert "Usage:" in run("say", "--help")
         assert "Usage:" in run("say", "preview", "-h")
         assert "twinkly-cli " in run("--version")
