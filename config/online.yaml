@@ -68,7 +68,7 @@ cards:
 
   # Countdown to Christmas (Dec 24 in Denmark)
   - type: countdown
-    target: "2025-12-24"
+    target: "2026-12-24"
     label: "XMAS"
     color: [255, 0, 0]
     scroll: true
@@ -81,21 +81,11 @@ cards:
     duration: 10
     speed: 1.0
 
-  # Science Magazine publication announcement
-  - type: science_paper
-    title: "Sleeping or Sprouting: Genetic variation in a barley kinase gene determines dormancy duration and preharvest sprouting"
-    scroll_speed: 40
-
   # Barley field animation (celebrating the Science paper)
   - type: barley_field
     num_stalks: 20
     wind_speed: 1.0
     repeats: 3
-
-  # Danish Superliga standings (top 3)
-  - type: superliga
-    scroll_speed: 30
-    max_teams: 3
 
   # Matrix rain
   - type: matrix
@@ -135,32 +125,6 @@ cards:
     duration: 8
     mode: plasma
     speed: 1.5
-
-  # ChatGPT Leaderboard
-  - type: leaderboard
-    title: "ChatGPT Top 10"
-    scroll_speed: 25
-    entries:
-      - name: "Flavia Krsticevic"
-        score: 8188
-      - name: "Roberto Schimmenti"
-        score: 2580
-      - name: "Carl Malina"
-        score: 2264
-      - name: "Maria Moraru"
-        score: 1956
-      - name: "Magnus Wohlfahrt Rasmussen"
-        score: 1896
-      - name: "Rolf Ringborg"
-        score: 1624
-      - name: "Gorm S. Smidt-Jensen"
-        score: 1611
-      - name: "Ernesto Arreola"
-        score: 1290
-      - name: "Philip Tinggaard Thomsen"
-        score: 1252
-      - name: "Morten Egevang Jørgensen"
-        score: 1229
 
   # Snowfall
   - type: snow
