@@ -49,7 +49,13 @@ from .news import NewsCard
 from .ocean import OceanCard
 from .orientation_test import OrientationTestCard
 from .overlay import OverlayCard
-from .pacman import PacmanCard, PacmanChaseEatGhostsCard, PacmanDownCard, PacmanUpCard
+from .pacman import (
+    PacmanCard,
+    PacmanChaseEatGhostsCard,
+    PacmanDownCard,
+    PacmanTomatoesCard,
+    PacmanUpCard,
+)
 from .pacman_chase import PacmanChaseCard, PacmanChaseDownCard, PacmanChaseUpCard
 from .pomodoro import PomodoroCard
 from .pong import PongCard
@@ -126,6 +132,7 @@ __all__ = [
     "PacmanChaseEatGhostsCard",
     "PacmanChaseUpCard",
     "PacmanDownCard",
+    "PacmanTomatoesCard",
     "PacmanUpCard",
     "PomodoroCard",
     "PongCard",

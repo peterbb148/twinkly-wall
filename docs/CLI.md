@@ -218,6 +218,9 @@ walls. Christmas trees are the default. Pass `--theme snowman` or another
 `pacman` theme to change what he eats. Use `pacman_chase_eat_ghosts` to watch
 Pac-Man catch moving ghosts as he travels up the wall.
 
+Use `pacman_tomatoes` to play Pac-Man eating tomatoes on a landscape wall. It
+works with `say preview`, `say card`, playlists, and MCP `run_card` commands.
+
 The portrait catalog also includes `carlsberg_lab_vertical`, `coffee_vertical`,
 `friday_vertical`, `weather_vertical`, and `countdown_vertical`. These cards
 stack upright letters and artwork on the 10×50 canvas. Configure the target

@@ -1,4 +1,4 @@
-"""Exercise portrait Pac-Man cards through the registry."""
+"""Exercise Pac-Man cards through the registry."""
 
 import pytest
 
@@ -9,6 +9,19 @@ from twinkly_wall.types import GOLD, YELLOW, Frame
 
 def _color_rows(frame: Frame, color: tuple[int, int, int]) -> set[int]:
     return {y for y, row in enumerate(frame) if color in row}
+
+
+def test_landscape_pacman_eats_tomatoes_in_order():
+    card = create_card("pacman_tomatoes", {"speed": 30})
+    assert card is not None
+    frames = [frame for frame, _ in card.frames(CardContext())]
+    first = frames[0]
+    assert len(first) == 10 and all(len(row) == 50 for row in first)
+    assert any((233, 42, 30) in row for row in first)
+    stem = (44, 160, 36)
+    stem_counts = [frame[1].count(stem) for frame in frames]
+    assert stem_counts == sorted(stem_counts, reverse=True)
+    assert set(stem_counts) == {0, 1, 2, 3, 4}
 
 
 @pytest.mark.parametrize("name,first,last", [("pacman_up", 49, 0), ("pacman_down", 0, 49)])
@@ -42,6 +55,14 @@ def test_default_portrait_christmas_trees_do_not_overlap(name):
     assert len(stars) == 4
     assert _color_rows(frame, trunk) == {y + offset for y in stars for offset in (7, 8)}
     assert len(_color_rows(frame, trunk)) == 8
+
+
+@pytest.mark.parametrize("name", ["pacman", "pacman_chase_eat_ghosts"])
+def test_pacman_prey_have_dark_blue_bodies(name):
+    card = create_card(name, {"theme": "ghosts"})
+    assert card is not None
+    frame, _ = next(card.frames(CardContext()))
+    assert _color_rows(frame, (0, 0, 139))
 
 
 def test_reverse_chase_catches_moving_ghosts_before_they_exit():

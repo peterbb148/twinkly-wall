@@ -219,7 +219,13 @@ def _build_card(card_type: str, args: CLIOptions, duration: float):
     speed = 15.0 if args.speed is None else args.speed
     if card_type in ("pacman_chase_up", "pacman_chase_down") and args.speed is not None:
         return create_card(card_type, {"duration": duration, "speed": args.speed}), card_type
-    if card_type in ("pacman", "pacman_up", "pacman_down", "pacman_chase_eat_ghosts"):
+    if card_type in (
+        "pacman",
+        "pacman_up",
+        "pacman_down",
+        "pacman_chase_eat_ghosts",
+        "pacman_tomatoes",
+    ):
         return create_card(
             card_type,
             {
