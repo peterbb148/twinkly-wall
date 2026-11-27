@@ -5,9 +5,12 @@ default_duration: 10
 default_transition: none
 
 cards:
-  # Carlsberg Research Laboratory branding (inverted)
+  # Carlsberg Research Laboratory branding
   - type: carlsberg_lab
     scroll_speed: 25
+    text_color: [255, 255, 255]
+    bg_color: [0, 0, 0]
+    hop_color: [40, 74, 65]
 
   - type: lok_is_back
   - type: pacman_tomatoes
