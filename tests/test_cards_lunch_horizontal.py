@@ -22,6 +22,7 @@ _GREEN = (0, 128, 0)
 @pytest.mark.parametrize(
     ("day", "meal"),
     [
+        ("2026-11-27", "Whole Roasted Grass Pork with Burnt Red Cabbage, Potatoes and Sauce"),
         ("2026-11-30", "Green Thai Curry with Veggies and Rice"),
         ("2026-12-01", "Gyros with Pork and Pita"),
         ("2026-12-02", "Pork Meatloaf with Sauce & Potatoes"),
@@ -48,6 +49,9 @@ def test_dated_playlist_scrolls_the_exact_meal(day, meal):
     draw_text(expected, WIDTH, 1, meal, _BROWN)
     if day == "2026-11-30":
         draw_text(expected, WIDTH, 1, "Green", _GREEN)
+    if day == "2026-11-27":
+        red_x = WIDTH + meal.index("Red") * (CHAR_WIDTH + CHAR_SPACING)
+        draw_text(expected, red_x, 1, "Red", (255, 0, 0))
 
     assert len(frames) == WIDTH + width + 1
     for offset, (frame, delay) in enumerate(frames):

@@ -1,5 +1,6 @@
 """Tests for the card scheduler."""
 
+from datetime import datetime
 from unittest.mock import Mock, call
 
 import pytest
@@ -52,6 +53,33 @@ def test_mcp_only_loop_waits_for_hours_and_plays_remote_frames(monkeypatch):
     assert output.send_frame.call_count > 0
     assert methods[-1] == "turn_off"
     assert len(frame_only_output.frames) == output.send_frame.call_count
+
+
+def test_unlisted_lunch_playlist_polls_remote_commands_and_waits(monkeypatch):
+    card = CardConfig(type="lunch_horizontal", config={"menu": {"2026-11-30": "Curry"}})
+    output = MockOutput()
+    client = MCPClient()
+    remote_frame = [[WHITE] * WIDTH for _ in range(HEIGHT)]
+    remote_card = Mock()
+    remote_card.frames.return_value = iter([(remote_frame, 0)])
+    poll = Mock(return_value=[{"type": "run_card"}])
+    monkeypatch.setattr(client, "poll_commands", poll)
+    monkeypatch.setattr(client, "create_card_from_command", Mock(return_value=remote_card))
+    scheduler = Scheduler(PlaylistConfig(cards=[card]), outputs=[output], mcp_client=client)
+
+    lunch_clock = Mock()
+    lunch_clock.now.return_value = datetime(2026, 11, 29, 12)
+    monkeypatch.setattr("twinkly_wall.cards.lunch_horizontal.datetime", lunch_clock)
+    clock = Mock()
+    clock.time.return_value = 100.0
+    clock.sleep.side_effect = lambda delay: scheduler.stop() if delay == 2.0 else None
+    monkeypatch.setattr(scheduler_module, "time", clock)
+
+    scheduler.run_loop()
+
+    poll.assert_called_once()
+    assert output.frames == [remote_frame]
+    assert clock.sleep.call_args_list == [call(0.03), call(2.0)]
 
 
 def test_mcp_only_loop_stays_off_when_stopped_during_poll(monkeypatch):
