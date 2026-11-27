@@ -273,6 +273,7 @@ class Scheduler:
                     time.sleep(self._mcp_poll_interval)
                 continue
 
+            played_frame = False
             for i, card_config in enumerate(self.playlist.cards):
                 if not self.state.running:
                     break
@@ -282,8 +283,14 @@ class Scheduler:
                     break  # Exit inner loop, will be caught by outer loop
 
                 self.state.current_card_index = i
-                self._play_card(card_config)
+                played_frame = self._play_card(card_config) or played_frame
                 self.state.cards_played += 1
+
+            if not played_frame and self._can_play_remote_frame():
+                if self._check_mcp_commands():
+                    self._play_mcp_cards()
+                if self.state.running:
+                    time.sleep(self._mcp_poll_interval)
 
     def _set_output_power(self, enabled: bool) -> None:
         """Set realtime or off mode on outputs with power controls."""
@@ -292,22 +299,17 @@ class Scheduler:
             if set_power is not None:
                 set_power()
 
-    def _play_card(self, card_config: CardConfig) -> None:
-        """Play a single card.
-
-        Args:
-            card_config: Card configuration
-        """
+    def _play_card(self, card_config: CardConfig) -> bool:
+        """Play a card and report whether it produced a displayed frame."""
         card = self._create_card_from_config(card_config)
         if card is None:
             logger.warning(f"Skipping unknown card type: {card_config.type}")
-            return
+            return False
 
-        logger.info(f"Playing card: {card_config.type} for {card_config.duration}s")
         self.state.mcp_interrupt = False
+        first_frame = True
 
         try:
-            first_frame = True
             for frame, delay in card.frames(self.context):
                 if not self.state.running:
                     break
@@ -322,6 +324,7 @@ class Scheduler:
 
                 # Apply transition for first frame
                 if first_frame:
+                    logger.info(f"Playing card: {card_config.type} for {card_config.duration}s")
                     transition_type = card_config.transition
                     for t_frame in self._apply_transition(
                         self.state.last_frame, frame, transition_type
@@ -338,7 +341,7 @@ class Scheduler:
 
         except Exception as e:
             logger.error(f"Error playing card {card_config.type}: {e}")
-            # Continue to next card
+        return not first_frame
 
     def stop(self) -> None:
         """Stop the scheduler."""

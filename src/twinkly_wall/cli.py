@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+from itertools import chain
 from pathlib import Path
 from typing import Annotated
 
@@ -475,15 +476,21 @@ def _preview_playlist(args: CLIOptions) -> int:
 
     try:
         while True:  # Loop playlist
+            played_frame = False
             for idx, cfg in enumerate(playlist.cards, start=1):
                 card = create_card(cfg.type, {**cfg.config, "duration": cfg.duration})
                 if card is None:
                     raise ValueError(f"Unknown card type in playlist: {cfg.type}")
 
-                print(f"[{idx}/{total_cards}] {cfg.type} ({cfg.duration}s)")
+                frames = card.frames(ctx)
+                first_frame = next(frames, None)
+                if first_frame is None:
+                    continue
 
+                played_frame = True
+                print(f"[{idx}/{total_cards}] {cfg.type} ({cfg.duration}s)")
                 animate_frames(
-                    card.frames(ctx),
+                    chain((first_frame,), frames),
                     color_mode=not args.no_color,
                     use_half_blocks=True,
                     clear_between=False,
@@ -491,6 +498,8 @@ def _preview_playlist(args: CLIOptions) -> int:
                     mirror_h=display.mirror_h,
                     mirror_v=display.mirror_v,
                 )
+            if not played_frame:
+                time.sleep(2)
     except KeyboardInterrupt:
         print("\nStopped.")
 

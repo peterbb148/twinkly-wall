@@ -368,6 +368,17 @@ the supplied date and gives longer text enough time to scroll through in full.
 For on-demand playback, set `type: lunch_vertical` and `menu_path: menu.json` in a
 named external card and call it by that name.
 
+## Preview the horizontal lunch menu
+
+The [lunch playlist](../config/lunch-horizontal.yaml) maps ISO dates to meal text.
+It selects the Copenhagen date each time the card plays and skips dates without
+an entry. Meals scroll right to left in their original capitalization. Standalone
+color names use their named color, with the remaining text in brown on black.
+
+```bash
+uv run --locked twinkly-cli say preview --playlist config/lunch-horizontal.yaml --id 1 --orientation left
+```
+
 ## Develop, build, and release
 
 Use UV and Python 3.11 for source installations:
