@@ -20,6 +20,7 @@ from .types import Frame, Orientation
 
 _POLL_SECONDS = 1.0
 _DISPLAY_STEP = 1 / 30
+_CATCH_UP_BATCH = 32
 
 
 @dataclass(frozen=True)
@@ -151,14 +152,16 @@ class _Viewer:
         self.elapsed = min(acknowledged, self.elapsed + max(0.0, now - self.last_tick))
         self.last_tick = now
         frame = None
-        while self.frame_end <= self.elapsed:
+        for _ in range(_CATCH_UP_BATCH):
+            if self.frame_end > self.elapsed:
+                break
             step = next(self.frames, None)
             if step is None:
                 self.finished = True
                 break
             frame, delay = step
             self.frame_end += delay
-        if frame is not None:
+        if frame is not None and (self.frame_end > self.elapsed or self.finished):
             self.output.send_frame(frame)
 
 

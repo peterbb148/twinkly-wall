@@ -60,9 +60,6 @@ def test_watch_replays_a_midpoint_and_switches_repeated_card(renderer, monkeypat
     output.send_frame.assert_called_once_with(expected[index][0])
     viewer.show(observation(replay, elapsed_ms=2, instance=2))
     assert output.send_frame.call_args.args[0] == expected[0][0]
-    viewer.show(observation(replay, elapsed_ms=1_000_000, instance=3))
-    assert viewer.finished
-    assert viewer.status == "Playing card-id"
 
 
 def test_replay_cannot_outrun_an_acknowledged_position(monkeypatch):
@@ -82,6 +79,40 @@ def test_replay_cannot_outrun_an_acknowledged_position(monkeypatch):
     viewer.show(observation(replay, elapsed_ms=1600))
     assert 0.8 < viewer.elapsed < 0.85
     assert output.send_frame.call_count == 2
+
+
+def test_midpoint_catch_up_is_bounded_and_interruptible(monkeypatch):
+    monkeypatch.setattr(watch, "monotonic", lambda: 100)
+    output = Mock()
+    viewer = watch._Viewer(output)
+    steps = 0
+
+    def slow_card(inputs, ctx):
+        nonlocal steps
+        while True:
+            steps += 1
+            yield [[(0, 0, 0)]], 1 / 30
+
+    monkeypatch.setattr(watch, "_replay_frames", slow_card)
+    replay = {"renderer": "pacman_up/v1"}
+    viewer.show(observation(replay, elapsed_ms=3_600_000))
+    assert steps == watch._CATCH_UP_BATCH
+    output.send_frame.assert_not_called()
+    viewer.show(observation(None, state="off"))
+    assert viewer.status == "Wall is off"
+    assert steps == watch._CATCH_UP_BATCH
+
+
+def test_replay_holds_last_frame_until_wall_reports_state_change(monkeypatch):
+    monkeypatch.setattr(watch, "monotonic", lambda: 100)
+    frame = [[(0, 0, 0)]]
+    monkeypatch.setattr(watch, "_replay_frames", lambda inputs, ctx: iter([(frame, 0.04)]))
+    output = Mock()
+    viewer = watch._Viewer(output)
+    viewer.show(observation({"renderer": "lunch_horizontal/v1"}, elapsed_ms=60))
+    output.send_frame.assert_called_once_with(frame)
+    assert viewer.finished
+    assert viewer.status == "Playing card-id"
 
 
 def test_unsupported_and_stale_wall_states_clear_the_preview(capsys, monkeypatch):
@@ -254,3 +285,28 @@ def test_snapshot_uses_utf8_and_preserves_metadata_within_wire_limit(characters,
     expected_replay = playback["replay"] if includes_replay else None
     assert sent == {"state": "playing", "playback": {**playback, "replay": expected_replay}}
     assert ("🍅".encode() in body) is includes_replay
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"repeats": 2.0},
+        {"num_items": True},
+        {"speed": True},
+        {"pacman_color": [1.0, 2, 3]},
+        {"pacman_color": [1, 2]},
+    ],
+)
+def test_incompatible_pacman_config_only_publishes_card_metadata(config):
+    card = create_card("pacman_up", config)
+    assert card.replay_inputs() is None
+
+
+def test_shutdown_wait_budget_covers_an_inflight_post_and_the_off_post():
+    publisher = now_playing.NowPlayingPublisher(
+        "http://example.test", None, Orientation.top, False, False
+    )
+    publisher._worker = Mock()
+    publisher.close()
+    publisher._worker.join.assert_called_once_with(timeout=4 * now_playing.REQUEST_TIMEOUT)
+    assert publisher._state == "off"

@@ -98,7 +98,8 @@ class NowPlayingPublisher:
         with self._condition:
             self._closed = True
             self._condition.notify()
-        self._worker.join(timeout=REQUEST_TIMEOUT)
+        # Both the in-flight update and final off update may need connect and read time.
+        self._worker.join(timeout=4 * REQUEST_TIMEOUT)
 
     def _publish(self) -> None:
         last_sequence = 0

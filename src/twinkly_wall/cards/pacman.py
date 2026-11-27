@@ -380,10 +380,14 @@ class PacmanUpCard(PacmanCard):
         """Describe the animation using its effective parameters."""
         if not (
             self.card_type == "pacman_up"
+            and type(self.speed) in (int, float)
             and 0 < self.speed <= 1000
+            and type(self.repeats) is int
             and 1 <= self.repeats <= 100
+            and type(self.num_items) is int
             and 0 <= self.num_items <= 100
-            and all(0 <= channel <= 255 for channel in self.pacman_color)
+            and len(self.pacman_color) == 3
+            and all(type(channel) is int and 0 <= channel <= 255 for channel in self.pacman_color)
         ):
             return None
         return {
