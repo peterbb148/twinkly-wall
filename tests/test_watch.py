@@ -1,10 +1,10 @@
 """Test local replay, transport failures, and wall playback publication."""
 
+import json
 from itertools import islice
 from queue import Queue
 from threading import Event
-from time import monotonic
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 import requests
@@ -60,8 +60,28 @@ def test_watch_replays_a_midpoint_and_switches_repeated_card(renderer, monkeypat
     output.send_frame.assert_called_once_with(expected[index][0])
     viewer.show(observation(replay, elapsed_ms=2, instance=2))
     assert output.send_frame.call_args.args[0] == expected[0][0]
-    viewer.show(observation(replay, elapsed_ms=1_000_000, instance=2))
-    assert "Waiting for the next card" in viewer.status
+    viewer.show(observation(replay, elapsed_ms=1_000_000, instance=3))
+    assert viewer.finished
+    assert viewer.status == "Playing card-id"
+
+
+def test_replay_cannot_outrun_an_acknowledged_position(monkeypatch):
+    tick = [100.0]
+    monkeypatch.setattr(watch, "monotonic", lambda: tick[0])
+    output = Mock()
+    viewer = watch._Viewer(output)
+    replay = {"renderer": "lunch_horizontal/v1", "meal": "Red Cabbage"}
+    viewer.show(observation(replay, elapsed_ms=800))
+    first = output.send_frame.call_args
+    tick[0] = 120.0
+    viewer.show(observation(replay, elapsed_ms=800))
+    assert viewer.elapsed == 0.8
+    assert output.send_frame.call_args == first
+    assert not viewer.finished
+    tick[0] += 0.04
+    viewer.show(observation(replay, elapsed_ms=1600))
+    assert 0.8 < viewer.elapsed < 0.85
+    assert output.send_frame.call_count == 2
 
 
 def test_unsupported_and_stale_wall_states_clear_the_preview(capsys, monkeypatch):
@@ -135,8 +155,12 @@ def test_publisher_keeps_latest_retries_and_shuts_down_off(monkeypatch):
 
     def post(url, **kwargs):
         assert url.endswith("/api/now-playing")
-        assert kwargs["headers"] == {"Authorization": "Bearer test"}
-        sample = kwargs["json"]
+        assert kwargs["headers"] == {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer test",
+        }
+        assert isinstance(kwargs["data"], bytes)
+        sample = json.loads(kwargs["data"])
         attempts.append(sample)
         published.put(sample)
         if len(attempts) == 1:
@@ -148,7 +172,7 @@ def test_publisher_keeps_latest_retries_and_shuts_down_off(monkeypatch):
     manager = MagicMock()
     manager.__enter__.return_value = session
     monkeypatch.setattr(now_playing.requests, "Session", lambda: manager)
-    monkeypatch.setattr(now_playing, "HEARTBEAT_SECONDS", 0.05)
+    monkeypatch.setattr(now_playing, "PROGRESS_SECONDS", 0.1)
     publisher = now_playing.NowPlayingPublisher(
         "http://example.test", "test", Orientation.top, True, False
     )
@@ -158,16 +182,17 @@ def test_publisher_keeps_latest_retries_and_shuts_down_off(monkeypatch):
         assert initial["state"] == "off"
         publisher.set_state("idle")
         card = create_card("pacman_up", {"theme": "unknown"})
-        publisher.playing(card, monotonic() - 0.2)
+        publisher.playing(card, 0.2)
         release_first.set()
         current = published.get(timeout=2)
+        publisher.progress(0.5)
         heartbeat = published.get(timeout=2)
         assert current["state"] == "playing" and current["orientation"] == "top"
-        assert current["playback"]["elapsed_ms"] >= 200
+        assert current["playback"]["elapsed_ms"] == 200
         assert current["playback"]["replay"]["theme"] == "trees"
         assert heartbeat["sequence"] > current["sequence"] > initial["sequence"]
         assert heartbeat["playback"]["instance"] == current["playback"]["instance"]
-        assert heartbeat["playback"]["elapsed_ms"] > current["playback"]["elapsed_ms"]
+        assert heartbeat["playback"]["elapsed_ms"] == 500
     finally:
         release_first.set()
         publisher.close()
@@ -180,19 +205,23 @@ def test_scheduler_requires_controller_ack_and_tracks_remote_interruption(monkey
     config = CardConfig(type="pacman_up")
     publisher = Mock()
     device = Mock()
-    device.send_frame.side_effect = [False] + [True] * 17
+    device.send_frame.side_effect = [False] + [True] * 20
     scheduler = Scheduler(PlaylistConfig(cards=[config]), outputs=[device], now_playing=publisher)
     monkeypatch.setattr(scheduler_module, "time", Mock())
     remote = create_card("pacman_up", {"theme": "dots"})
     frame = next(remote.frames(CardContext()))[0]
     playlist = create_card("pacman_up", {"theme": "trees"})
-    monkeypatch.setattr(playlist, "frames", lambda ctx: iter([(frame, 0.04)] * 3))
-    monkeypatch.setattr(remote, "frames", lambda ctx: iter([(frame, 0)]))
+    monkeypatch.setattr(playlist, "frames", lambda ctx: iter([(frame, 0.04)] * 4))
+    monkeypatch.setattr(remote, "frames", lambda ctx: iter([(frame, 0.04)] * 2))
     monkeypatch.setattr(scheduler, "_create_card_from_config", lambda _: playlist)
-    monkeypatch.setattr(scheduler, "_check_mcp_commands", Mock(side_effect=[False, False, True]))
+    monkeypatch.setattr(
+        scheduler, "_check_mcp_commands", Mock(side_effect=[False, False, False, True])
+    )
     monkeypatch.setattr(scheduler, "_play_mcp_cards", lambda: scheduler._play_card_instance(remote))
     scheduler.run_once()
     assert [args.args[0] for args in publisher.playing.call_args_list] == [playlist, remote]
+    assert [args.args[1] for args in publisher.playing.call_args_list] == [0.04, 0]
+    assert publisher.progress.call_args_list == [call(0.08), call(0.04)]
     assert publisher.set_state.call_args.args == ("idle",)
     scheduler._set_output_power(False)
     publisher.set_state.assert_called_with("off")
@@ -207,3 +236,21 @@ def test_controller_ack_distinguishes_device_rejection(monkeypatch):
     frame = [[(0, 0, 0)] * 50 for _ in range(10)]
     assert output.send_frame(frame) is True
     assert output.send_frame(frame) is False
+
+
+@pytest.mark.parametrize(("characters", "includes_replay"), [(250, True), (1000, False)])
+def test_snapshot_uses_utf8_and_preserves_metadata_within_wire_limit(characters, includes_replay):
+    meal = "🍅" * characters
+    playback = {
+        "instance": 1,
+        "card_id": "lunch_horizontal",
+        "elapsed_ms": 0,
+        "replay": {"renderer": "lunch_horizontal/v1", "meal": meal},
+    }
+    original = {"state": "playing", "playback": playback}
+    body = now_playing._snapshot_bytes(original)
+    assert len(body) <= now_playing.MAX_SNAPSHOT_BYTES
+    sent = json.loads(body)
+    expected_replay = playback["replay"] if includes_replay else None
+    assert sent == {"state": "playing", "playback": {**playback, "replay": expected_replay}}
+    assert ("🍅".encode() in body) is includes_replay

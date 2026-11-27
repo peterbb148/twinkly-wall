@@ -147,6 +147,8 @@ def load_card_definitions() -> dict[str, CardDefinition]:
         if source.suffix not in {".yaml", ".yml"} or not source.is_file():
             continue
         name = source.stem
+        if len(name) > 100:
+            raise ValueError(f"{source}: card name must be at most 100 characters")
         if not re.fullmatch(r"[a-z][a-z0-9_-]*", name):
             raise ValueError(f"{source}: card name must use lowercase letters, digits, _, or -")
         if name in _card_registry:

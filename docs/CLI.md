@@ -390,7 +390,8 @@ separate machine, run `twinkly-cli watch` with the same `TWINKLY_MCP_URL` and
 
 The watcher replays Pac-Man Up and the horizontal lunch menu using the inputs
 published by the wall. It follows the wall's mount and mirror settings and
-starts near the current animation position. For other cards it shows the card
+starts near the current animation position. During playback it stays within the
+latest position acknowledged by the controller. For other cards it shows the card
 name and reports that local replay is unavailable. The watcher distinguishes
 idle, off, and stale state. It sends no commands to the wall.
 

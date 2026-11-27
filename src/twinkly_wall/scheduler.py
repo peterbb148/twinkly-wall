@@ -4,7 +4,6 @@ import logging
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass
-from time import monotonic
 from typing import TYPE_CHECKING, Any, Protocol
 
 from .cards import Card, CardContext, create_card
@@ -215,9 +214,12 @@ class Scheduler:
                 else:
                     accepted = self._send_frame(frame)
 
-                if accepted and not published and self.now_playing:
-                    self.now_playing.playing(card, monotonic() - elapsed)
-                    published = True
+                if accepted and self.now_playing:
+                    if published:
+                        self.now_playing.progress(elapsed)
+                    else:
+                        self.now_playing.playing(card, elapsed)
+                        published = True
                 elapsed += delay
                 if not self._wait_for_remote_frame(delay):
                     return
@@ -358,9 +360,12 @@ class Scheduler:
                 else:
                     accepted = self._send_frame(frame)
 
-                if accepted and not published and self.now_playing:
-                    self.now_playing.playing(card, monotonic() - elapsed)
-                    published = True
+                if accepted and self.now_playing:
+                    if published:
+                        self.now_playing.progress(elapsed)
+                    else:
+                        self.now_playing.playing(card, elapsed)
+                        published = True
                 elapsed += delay
                 if delay > 0:
                     time.sleep(delay)

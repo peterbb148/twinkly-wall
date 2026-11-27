@@ -66,6 +66,7 @@ def test_external_portrait_asset_updates_across_playbacks(
     ("name", "contents", "message"),
     [
         ("clock.yaml", "type: image", "already in use"),
+        ("a" * 101 + ".yaml", "type: clock", "at most 100 characters"),
         ("bad.yml", "type: missing", "built-in card renderer"),
         ("bad.yml", "type: image\npath: missing.gif", "image does not exist"),
         ("bad.yml", "[", "could not read card definition"),

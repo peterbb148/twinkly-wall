@@ -94,6 +94,8 @@ class _Viewer:
         self.instance: tuple[int, int] | None = None
         self.frames: Iterator[tuple[Frame, float]] = iter(())
         self.frame_end = 0.0
+        self.elapsed = 0.0
+        self.last_tick = 0.0
         self.finished = False
 
     def _show_status(self, status: str) -> None:
@@ -109,7 +111,8 @@ class _Viewer:
             self.instance = None
             self._show_status(observation.status)
             return
-        age = observation.age_ms / 1000 + max(0.0, monotonic() - observation.received)
+        now = monotonic()
+        age = observation.age_ms / 1000 + max(0.0, now - observation.received)
         if age > STALE_SECONDS:
             self.instance = None
             self._show_status("Wall state is stale")
@@ -121,9 +124,12 @@ class _Viewer:
 
         playback = snapshot["playback"]
         instance = (snapshot["publisher"], playback["instance"])
+        acknowledged = playback["elapsed_ms"] / 1000
         if self.instance != instance:
             self.instance = instance
             self.frame_end = 0.0
+            self.elapsed = acknowledged
+            self.last_tick = now
             self.finished = False
             self.status = ""
             self.output.orientation = Orientation(snapshot["orientation"])
@@ -142,14 +148,14 @@ class _Viewer:
 
         if self.finished:
             return
-        elapsed = playback["elapsed_ms"] / 1000 + age
+        self.elapsed = min(acknowledged, self.elapsed + max(0.0, now - self.last_tick))
+        self.last_tick = now
         frame = None
-        while self.frame_end <= elapsed:
+        while self.frame_end <= self.elapsed:
             step = next(self.frames, None)
             if step is None:
                 self.finished = True
-                self._show_status(f"Waiting for the next card ({playback['card_id']})")
-                return
+                break
             frame, delay = step
             self.frame_end += delay
         if frame is not None:
