@@ -69,6 +69,17 @@ SPRITE_HEART: list[list[int]] = [
     [0, 0, 0, 1, 0, 0, 0],
 ]
 
+# Tomato sprite (7x7) with a green stem and a highlight.
+SPRITE_TOMATO: list[list[int]] = [
+    [0, 0, 0, 2, 0, 0, 0],
+    [0, 0, 2, 2, 2, 0, 0],
+    [0, 1, 1, 2, 1, 1, 0],
+    [1, 3, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 0, 0],
+]
+
 # Snowflake sprite (7x7)
 SPRITE_SNOWFLAKE: list[list[int]] = [
     [0, 0, 1, 0, 1, 0, 0],
@@ -159,6 +170,11 @@ THEMES: dict[str, EdibleTheme] = {
         color_map={
             1: (255, 0, 80),  # Pink-red heart
         },
+        y_offset=1,
+    ),
+    "tomatoes": EdibleTheme(
+        sprite=SPRITE_TOMATO,
+        color_map={1: (233, 42, 30), 2: (44, 160, 36), 3: (255, 110, 70)},
         y_offset=1,
     ),
     "snow": EdibleTheme(
@@ -339,6 +355,16 @@ class PacmanCard(Card):
             if mouth_timer >= 0.15:
                 mouth_open = not mouth_open
                 mouth_timer = 0.0
+
+
+@register_card
+class PacmanTomatoesCard(PacmanCard):
+    """Eat tomatoes across the landscape display."""
+
+    card_type = "pacman_tomatoes"
+
+    def __init__(self, config: dict[str, Any] | None = None):
+        super().__init__({**(config or {}), "theme": "tomatoes"})
 
 
 @register_card

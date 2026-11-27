@@ -1,0 +1,5 @@
+type: text
+text: "LOK IS BACK!!!"
+color: [255, 0, 0]
+bgcolor: [0, 0, 0]
+scroll: true

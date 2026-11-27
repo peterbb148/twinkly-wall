@@ -9,6 +9,9 @@ cards:
   - type: carlsberg_lab
     scroll_speed: 25
 
+  - type: lok_is_back
+  - type: pacman_tomatoes
+
   # Merry Christmas
   - type: text
     text: "Merry Christmas!"

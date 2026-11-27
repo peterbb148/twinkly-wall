@@ -179,6 +179,7 @@ def test_command_validation(args):
         "clock",
         "text",
         "pacman",
+        "pacman_tomatoes",
         "beer",
         "snow",
         "rainbow",
