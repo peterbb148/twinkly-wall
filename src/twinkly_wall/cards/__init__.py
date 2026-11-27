@@ -40,6 +40,7 @@ from .image import ImageCard
 from .lava import LavaCard
 from .lava_column import LavaColumnCard
 from .leaderboard import LeaderboardCard
+from .lunch_horizontal import LunchHorizontalCard
 from .lunch_vertical import LunchVerticalCard
 from .matrix import MatrixCard
 from .menorah import MenorahCard
@@ -115,6 +116,7 @@ __all__ = [
     "LavaCard",
     "LavaColumnCard",
     "LeaderboardCard",
+    "LunchHorizontalCard",
     "LunchVerticalCard",
     "MatrixCard",
     "MeteorShowerCard",

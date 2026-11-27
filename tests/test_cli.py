@@ -1,5 +1,6 @@
 """Tests for the CLI module."""
 
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -339,6 +340,43 @@ def test_looping_playlist_stops_cleanly(playlist, monkeypatch):
     result = runner.invoke(app, ["preview", "--playlist", str(playlist)])
     assert result.exit_code == 0
     assert "Stopped" in result.output
+
+
+def test_unlisted_lunch_playlist_waits_before_retrying(tmp_path, monkeypatch):
+    path = tmp_path / "lunch.yaml"
+    path.write_text("cards: [{type: lunch_horizontal, menu: {2026-11-30: Curry}}]")
+    clock = MagicMock()
+    clock.now.return_value = datetime(2026, 11, 29, 12)
+    monkeypatch.setattr("twinkly_wall.cards.lunch_horizontal.datetime", clock)
+    idle_clock = MagicMock()
+    idle_clock.sleep.side_effect = KeyboardInterrupt
+    monkeypatch.setattr(cli, "time", idle_clock)
+    animate = MagicMock(side_effect=KeyboardInterrupt)
+    monkeypatch.setattr(cli, "animate_frames", animate)
+
+    result = runner.invoke(app, ["preview", "--playlist", str(path)])
+
+    assert result.exit_code == 0, result.output
+    assert "Stopped" in result.output
+    animate.assert_not_called()
+    idle_clock.sleep.assert_called_once_with(2)
+
+
+def test_looping_preview_skips_unlisted_lunch_in_a_mixed_playlist(tmp_path, monkeypatch):
+    path = tmp_path / "mixed.yaml"
+    path.write_text("cards: [{type: lunch_horizontal, menu: {}}, {type: clock}]")
+    clock = MagicMock()
+    monkeypatch.setattr(cli, "time", clock)
+    animate = MagicMock(side_effect=[None, KeyboardInterrupt])
+    monkeypatch.setattr(cli, "animate_frames", animate)
+
+    result = runner.invoke(app, ["preview", "--playlist", str(path)])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.count("[2/2] clock") == 2
+    assert "[1/2] lunch_horizontal" not in result.output
+    assert len(next(animate.call_args_list[0].args[0])[0]) == 10
+    clock.sleep.assert_not_called()
 
 
 def test_empty_playlist(tmp_path):
