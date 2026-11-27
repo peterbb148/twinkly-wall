@@ -171,7 +171,7 @@ THEMES: dict[str, EdibleTheme] = {
     "ghosts": EdibleTheme(
         sprite=SPRITE_GHOST,
         color_map={
-            1: (33, 33, 255),  # Blue ghost body (vulnerable/scared)
+            1: (0, 0, 139),  # Dark blue ghost body (vulnerable/scared)
             2: (255, 255, 255),  # White eyes
         },
         y_offset=1,

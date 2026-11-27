@@ -1,4 +1,4 @@
-"""Exercise portrait Pac-Man cards through the registry."""
+"""Exercise Pac-Man cards through the registry."""
 
 import pytest
 
@@ -42,6 +42,14 @@ def test_default_portrait_christmas_trees_do_not_overlap(name):
     assert len(stars) == 4
     assert _color_rows(frame, trunk) == {y + offset for y in stars for offset in (7, 8)}
     assert len(_color_rows(frame, trunk)) == 8
+
+
+@pytest.mark.parametrize("name", ["pacman", "pacman_chase_eat_ghosts"])
+def test_pacman_prey_have_dark_blue_bodies(name):
+    card = create_card(name, {"theme": "ghosts"})
+    assert card is not None
+    frame, _ = next(card.frames(CardContext()))
+    assert _color_rows(frame, (0, 0, 139))
 
 
 def test_reverse_chase_catches_moving_ghosts_before_they_exit():
