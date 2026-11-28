@@ -266,7 +266,11 @@ mount. `--scale` sets pixels per LED (default 8); scaling uses nearest-neighbor
 pixels. `--no-color` is only available for terminal previews.
 
 Recording happens in real time because cards can depend on the clock and live
-data. GIF playback loops; viewers may impose their own timing limits. GIF colors
+data. Frame generation and conversion count toward the recording deadline and
+GIF timing. An in-progress frame or provider call cannot be interrupted by the
+deadline; if it finishes late, its frame is discarded and capture stops. File
+encoding happens after capture and is not included in `--record-duration`.
+GIF playback loops; viewers may impose their own timing limits. GIF colors
 are quantized to at most 256 per frame, and delays are rounded to hundredths of
 a second with a 10 ms minimum. Identical frames may be combined; a resulting
 frame delay cannot exceed 655.35 seconds. GIF dimensions cannot exceed 65,535

@@ -31,16 +31,21 @@ def record_gif(
     if duration is not None and (not math.isfinite(duration) or duration <= 0):
         raise ValueError("GIF duration must be finite and greater than zero")
     images: list[Image.Image] = []
-    durations: list[int] = []
-    elapsed = 0.0
-    ticks = 0
+    timestamps: list[float] = []
+    started = time.monotonic()
+    deadline = started + duration if duration is not None else math.inf
     size: tuple[int, int] | None = None
 
-    for frame, delay in frames:
+    while time.monotonic() < deadline:
+        item = next(frames, None)
+        if item is None or time.monotonic() >= deadline:
+            break
+        frame, delay = item
         if not math.isfinite(delay) or delay < 0:
             raise ValueError("GIF frame delays must be finite and nonnegative")
-        if duration is not None:
-            delay = min(delay, duration - elapsed)
+        delay = min(delay, max(0.0, deadline - time.monotonic()))
+        if delay > 655.35:
+            raise ValueError("A GIF frame delay cannot exceed 655.35 seconds")
         if len(images) >= MAX_FRAMES:
             raise ValueError(f"Recording exceeds the {MAX_FRAMES} frame memory limit")
 
@@ -60,20 +65,21 @@ def record_gif(
         image = Image.new("RGB", (width, height))
         image.putdata([pixel for row in oriented for pixel in row])
         image = image.quantize(colors=256).resize(scaled_size, Image.Resampling.NEAREST)
-        elapsed += delay
-        next_ticks = round(elapsed * 100)
-        frame_ticks = max(1, next_ticks - ticks)
-        if frame_ticks > 65535:
-            raise ValueError("A GIF frame delay cannot exceed 655.35 seconds")
-        images.append(image)
-        durations.append(frame_ticks * 10)
-        ticks = next_ticks
-        time.sleep(delay)
-        if duration is not None and elapsed >= duration - 1e-9:
+        ready = time.monotonic()
+        if ready >= deadline:
             break
+        # Keep the previous frame visible while the next frame is prepared.
+        timestamps.append(ready - started if images else 0.0)
+        images.append(image)
+        time.sleep(min(delay, max(0.0, deadline - ready)))
 
     if not images:
         raise ValueError("No frames to record")
+    timestamps.append(min(time.monotonic(), deadline) - started)
+    ticks = [round(timestamp * 100) for timestamp in timestamps]
+    durations = [max(1, end - start) * 10 for start, end in zip(ticks, ticks[1:])]
+    if max(durations) > 655350:
+        raise ValueError("A GIF frame delay cannot exceed 655.35 seconds")
     temporary_path: Path | None = None
     try:
         # Encode beside the destination so failure never truncates an existing GIF.

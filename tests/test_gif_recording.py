@@ -15,6 +15,23 @@ def isolate_config(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
 
 
+class CaptureClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def sleep(self, delay):
+        self.now += delay
+
+    def monotonic(self):
+        return self.now
+
+
+def _mock_capture_clock(monkeypatch):
+    clock = CaptureClock()
+    monkeypatch.setattr(gif_output, "time", clock)
+    return clock
+
+
 def test_record_card_matches_display_mapping_and_timing(tmp_path, monkeypatch):
     class Card:
         def frames(self, context):
@@ -22,7 +39,7 @@ def test_record_card_matches_display_mapping_and_timing(tmp_path, monkeypatch):
             yield [[(0, 255, 0), (0, 0, 255)]], 0.06
 
     monkeypatch.setattr(cli, "_build_card", lambda *args: (Card(), "example"))
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     settings = tmp_path / "settings.yaml"
     settings.write_text("twinkly:\n  mirror_h: true\n")
     output = tmp_path / "card.gif"
@@ -54,7 +71,7 @@ def test_record_playlist_loops_until_duration(tmp_path, monkeypatch):
         "create_card",
         lambda name, config: Card((255, 0, 0) if name == "clock" else (0, 0, 255)),
     )
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     playlist = tmp_path / "cards.yaml"
     playlist.write_text("cards:\n  - type: clock\n  - type: rainbow\n")
     output = tmp_path / "playlist.gif"
@@ -108,7 +125,7 @@ def test_recording_honors_portrait_orientation(tmp_path, monkeypatch):
             yield [[(255, 0, 0), (0, 0, 255)]], 0.01
 
     monkeypatch.setattr(cli, "_build_card", lambda *args: (Card(), "example"))
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     output = tmp_path / "portrait.gif"
     result = CliRunner().invoke(
         cli.app,
@@ -128,7 +145,7 @@ def test_recording_reports_output_errors(tmp_path, monkeypatch):
             yield [[(255, 0, 0)]], 0.01
 
     monkeypatch.setattr(cli, "_build_card", lambda *args: (Card(), "example"))
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     result = CliRunner().invoke(
         cli.app, ["preview", "clock", "--gif", str(tmp_path / "missing" / "out.gif")]
     )
@@ -177,7 +194,7 @@ def test_real_playlist_records_at_native_resolution(tmp_path):
 
 
 def test_delays_are_rounded_without_accumulating_30fps_drift(tmp_path, monkeypatch):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     frames = [([[(i, 0, 0)]], 1 / 30) for i in range(6)]
     output = tmp_path / "timing.gif"
     gif_output.record_gif(iter(frames), output, Orientation.right, scale=1)
@@ -202,13 +219,13 @@ def test_delays_are_rounded_without_accumulating_30fps_drift(tmp_path, monkeypat
     ],
 )
 def test_invalid_frames_fail_clearly(tmp_path, monkeypatch, frames, message):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     with pytest.raises(ValueError, match=message):
         gif_output.record_gif(iter(frames), tmp_path / "out.gif", Orientation.right, scale=1)
 
 
 def test_recording_limits_memory_and_dimensions(tmp_path, monkeypatch):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     frame = [[(255, 0, 0)]]
     monkeypatch.setattr(gif_output, "MAX_FRAMES", 1)
     with pytest.raises(ValueError, match="frame memory limit"):
@@ -259,7 +276,7 @@ def test_invalid_scale_rejected(tmp_path, scale):
 
 
 def test_merged_frame_delay_overflow_preserves_destination(tmp_path, monkeypatch):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     output = tmp_path / "out.gif"
     output.write_bytes(b"existing file")
     frames = iter([([[(255, 0, 0)]], 400)] * 2)
@@ -320,7 +337,7 @@ def test_nonfinite_cli_duration_fails(duration):
 
 
 def test_text_gif_defaults_match_approved_settings(tmp_path, monkeypatch):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     (tmp_path / "settings.yaml").write_text(
         "twinkly:\n  orientation: bottom\n  mirror_h: true\n  mirror_v: true\n"
     )
@@ -403,7 +420,7 @@ def test_terminal_text_keeps_existing_defaults(monkeypatch):
 
 @pytest.mark.parametrize("short_delay", [0, 0.001])
 def test_minimum_gif_delay_does_not_shorten_later_frames(tmp_path, monkeypatch, short_delay):
-    monkeypatch.setattr("time.sleep", lambda _: None)
+    _mock_capture_clock(monkeypatch)
     frames = [([[(i, 0, 0)]], short_delay) for i in range(10)]
     frames.append(([[(255, 0, 0)]], 0.1))
     output = tmp_path / "minimum-delay.gif"
@@ -411,3 +428,63 @@ def test_minimum_gif_delay_does_not_shorten_later_frames(tmp_path, monkeypatch, 
     with Image.open(output) as image:
         durations = [image.seek(i) or image.info["duration"] for i in range(image.n_frames)]
         assert durations == [10] * 10 + [100]
+
+
+@pytest.mark.parametrize("slow_stage", ["generation", "conversion"])
+@pytest.mark.parametrize("limited", [False, True])
+def test_processing_time_counts_toward_timestamps_and_deadline(
+    tmp_path, monkeypatch, slow_stage, limited
+):
+    clock = _mock_capture_clock(monkeypatch)
+    original_quantize = Image.Image.quantize
+    produced = []
+
+    def quantize(image, *args, **kwargs):
+        clock.sleep(0.04)
+        return original_quantize(image, *args, **kwargs)
+
+    if slow_stage == "conversion":
+        monkeypatch.setattr(Image.Image, "quantize", quantize)
+
+    def frames():
+        for i in range(10 if limited else 2):
+            produced.append(i)
+            if slow_stage == "generation":
+                clock.sleep(0.04)
+            yield [[(i * 20, 0, 0)]], 0.02
+
+    output = tmp_path / "slow.gif"
+    gif_output.record_gif(
+        frames(), output, Orientation.right, scale=1, duration=0.15 if limited else None
+    )
+    with Image.open(output) as image:
+        durations = [image.seek(i) or image.info["duration"] for i in range(image.n_frames)]
+        assert durations == ([100, 50] if limited else [100, 20])
+    assert len(produced) == (3 if limited else 2)
+    assert clock.now == pytest.approx(0.16 if limited else 0.12)
+
+
+def test_deadline_before_first_frame_fails_without_overwriting(tmp_path, monkeypatch):
+    clock = _mock_capture_clock(monkeypatch)
+    output = tmp_path / "existing.gif"
+    output.write_bytes(b"existing")
+
+    def frames():
+        clock.sleep(1)
+        yield [[(255, 0, 0)]], 0.1
+
+    with pytest.raises(ValueError, match="No frames"):
+        gif_output.record_gif(frames(), output, Orientation.right, duration=0.1)
+    assert output.read_bytes() == b"existing"
+
+
+def test_processing_time_cannot_exceed_gif_frame_delay(tmp_path, monkeypatch):
+    clock = _mock_capture_clock(monkeypatch)
+
+    def frames():
+        yield [[(255, 0, 0)]], 0.1
+        clock.sleep(656)
+        yield [[(0, 255, 0)]], 0.1
+
+    with pytest.raises(ValueError, match="655.35"):
+        gif_output.record_gif(frames(), tmp_path / "out.gif", Orientation.right)
