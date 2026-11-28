@@ -239,6 +239,35 @@ twinkly-cli say list --layout portrait
 twinkly-cli say list --playlist config/cards.yaml --layout portrait
 ```
 
+### Record previews as GIFs
+
+Add `--gif` to a preview to write a color GIF instead of displaying it:
+
+```bash
+twinkly-cli say preview clock --duration 3 --gif clock.gif
+twinkly-cli say preview --playlist config/cards.yaml --id 1 --gif card.gif
+twinkly-cli say preview --playlist config/cards.yaml --record-duration 30 --gif playlist.gif
+```
+
+The full playlist loops just like terminal preview, so `--record-duration` is
+required to stop recording it. For a single card, the card's duration applies;
+`--record-duration` can also stop it earlier. The recording uses the same
+orientation and mirror settings as preview, and `--orientation` overrides the
+mount. `--scale` sets pixels per LED (default 8); scaling uses nearest-neighbor
+pixels. `--no-color` is only available for terminal previews.
+
+Recording happens in real time because cards can depend on the clock and live
+data. GIF playback loops; viewers may impose their own timing limits. GIF colors
+are quantized to at most 256 per frame, and delays are rounded to hundredths of
+a second with a 10 ms minimum. Identical frames may be combined; a resulting
+frame delay cannot exceed 655.35 seconds. GIF dimensions cannot exceed 65,535
+pixels per axis. To bound memory, recording rejects more than 10,000 frames or
+25 million scaled frame pixels; lower the duration or scale if needed. Long
+recordings also take more time and disk space. Interrupting capture before
+encoding cancels it without saving a GIF.
+The destination is replaced only after encoding succeeds, so a failed or
+interrupted recording preserves any existing file.
+
 ## Commands and compatibility
 
 ```bash

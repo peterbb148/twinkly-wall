@@ -67,10 +67,11 @@ jobs:
         run: uv audit --locked --python-version 3.11
       - name: Run all tests and measure CLI coverage
         run: |
-          uv run --locked pytest --cov=twinkly_wall.cli --cov=scripts.retain_binaries --cov=twinkly_wall.command --cov-branch --cov-report=term-missing --cov-fail-under=81
+          uv run --locked pytest --cov=twinkly_wall.cli --cov=scripts.retain_binaries --cov=twinkly_wall.command --cov=twinkly_wall.outputs.gif --cov-branch --cov-report=term-missing --cov-fail-under=81
           uv run --locked coverage report --include='scripts/retain_binaries.py' --fail-under=81
           uv run --locked coverage report --include='src/twinkly_wall/cli.py' --fail-under=81
           uv run --locked coverage report --include='src/twinkly_wall/command.py' --fail-under=81
+          uv run --locked coverage report --include='src/twinkly_wall/outputs/gif.py' --fail-under=81
       - run: uv run --locked ruff check src/ tests/ scripts/ packaging/
       - run: uv run --locked ruff format --check src/ tests/ scripts/ packaging/
 
