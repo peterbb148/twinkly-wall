@@ -317,3 +317,85 @@ def test_nonfinite_cli_duration_fails(duration):
     )
     assert result.exit_code == 1
     assert "finite" in result.output
+
+
+def test_text_gif_defaults_match_approved_settings(tmp_path, monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    (tmp_path / "settings.yaml").write_text(
+        "twinkly:\n  orientation: bottom\n  mirror_h: true\n  mirror_v: true\n"
+    )
+    approved = tmp_path / "approved.yaml"
+    approved.write_text("twinkly:\n  orientation: left\n  mirror_h: false\n  mirror_v: false\n")
+    default_output = tmp_path / "default.gif"
+    explicit_output = tmp_path / "explicit.gif"
+    for output, extra in [
+        (default_output, []),
+        (explicit_output, ["--scroll", "--settings", str(approved), "--orientation", "left"]),
+    ]:
+        result = CliRunner().invoke(
+            cli.app,
+            ["preview", "text", "--text", "Merry christmas", "--gif", str(output), *extra],
+        )
+        assert result.exit_code == 0, result.output
+    assert default_output.read_bytes() == explicit_output.read_bytes()
+    with Image.open(default_output) as image:
+        assert image.size == (400, 80)
+        assert image.n_frames > 100
+
+
+@pytest.mark.parametrize("explicit_settings", [False, True])
+@pytest.mark.parametrize("orientation", [None, "right"])
+def test_text_gif_display_overrides(tmp_path, monkeypatch, explicit_settings, orientation):
+    settings = tmp_path / "settings.yaml"
+    settings.write_text("twinkly:\n  orientation: top\n  mirror_h: true\n  mirror_v: true\n")
+    captured = {}
+
+    def record(frames, path, mount, **options):
+        captured.update(mount=mount, **options)
+
+    monkeypatch.setattr(cli, "record_gif", record)
+    extra = ["--settings", str(settings)] if explicit_settings else []
+    if orientation:
+        extra += ["--orientation", orientation]
+    result = CliRunner().invoke(
+        cli.app, ["preview", "text", "--text", "Hello", "--gif", "out.gif", *extra]
+    )
+    assert result.exit_code == 0, result.output
+    assert captured["mount"] == (orientation or ("top" if explicit_settings else "left"))
+    assert captured["mirror_h"] is explicit_settings
+    assert captured["mirror_v"] is explicit_settings
+
+
+def test_text_gif_can_disable_scrolling(tmp_path):
+    output = tmp_path / "static.gif"
+    result = CliRunner().invoke(
+        cli.app,
+        [
+            "preview",
+            "text",
+            "--text",
+            "Hello",
+            "--gif",
+            str(output),
+            "--no-scroll",
+            "--record-duration",
+            "0.01",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    with Image.open(output) as image:
+        assert image.n_frames == 1
+
+
+def test_terminal_text_keeps_existing_defaults(monkeypatch):
+    captured = {}
+
+    def preview(options):
+        captured.update(vars(options))
+        return 0
+
+    monkeypatch.setattr(cli, "cmd_preview", preview)
+    result = CliRunner().invoke(cli.app, ["preview", "text", "--text", "Hello"])
+    assert result.exit_code == 0, result.output
+    assert captured["scroll"] is False
+    assert captured["orientation"] is None

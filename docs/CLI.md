@@ -245,13 +245,22 @@ Add `--gif` to a preview to write a color GIF instead of displaying it:
 
 ```bash
 twinkly-cli say preview clock --duration 3 --gif clock.gif
+twinkly-cli say preview text --text "Merry christmas" --gif merry-christmas.gif
 twinkly-cli say preview --playlist config/cards.yaml --id 1 --gif card.gif
 twinkly-cli say preview --playlist config/cards.yaml --record-duration 30 --gif playlist.gif
 ```
 
+Direct `preview text --gif` recordings default to scrolling, wires on the left,
+and no horizontal or vertical mirroring, even when automatically discovered
+wall settings use another mount. Use `--no-scroll` for static text,
+`--orientation` to override the wire edge, or an explicit `--settings` file to
+use its orientation and mirror settings. These defaults apply only to direct
+text GIFs; other cards, playlist entries, and terminal previews retain their
+existing settings.
+
 The full playlist loops just like terminal preview, so `--record-duration` is
 required to stop recording it. For a single card, the card's duration applies;
-`--record-duration` can also stop it earlier. The recording uses the same
+`--record-duration` can also stop it earlier. Other recordings use the same
 orientation and mirror settings as preview, and `--orientation` overrides the
 mount. `--scale` sets pixels per LED (default 8); scaling uses nearest-neighbor
 pixels. `--no-color` is only available for terminal previews.

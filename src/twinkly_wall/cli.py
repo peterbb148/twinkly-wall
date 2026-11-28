@@ -480,8 +480,13 @@ def _record_preview(args: CLIOptions) -> int:
         raise ValueError("--no-color is only supported for terminal previews")
     if args.record_duration is not None and not math.isfinite(args.record_duration):
         raise ValueError("--record-duration must be finite")
-    ctx = create_context_with_datasources(args.settings, orientation=args.orientation)
     display = load_settings(args.settings).twinkly
+    orientation = args.orientation
+    if args.card == "text" and args.id is None and args.settings is None:
+        orientation = orientation or Orientation.left
+        display.mirror_h = False
+        display.mirror_v = False
+    ctx = create_context_with_datasources(args.settings, orientation=orientation)
     if args.playlist and not args.id and not args.card:
         if args.record_duration is None:
             raise ValueError("--record-duration is required when recording a looping playlist")
@@ -794,7 +799,10 @@ def preview(
     twelve_hour: bool = False,
     no_blink: bool = False,
     text: Text = None,
-    scroll: bool = False,
+    scroll: Annotated[
+        bool | None,
+        typer.Option("--scroll/--no-scroll", help="Scroll text (default: enabled for text GIFs)"),
+    ] = None,
     scroll_direction: ScrollDirection = ScrollDirection.horizontal,
     speed: Speed = None,
     theme: PacmanTheme = PacmanTheme.trees,
@@ -823,7 +831,9 @@ def preview(
             twelve_hour=twelve_hour,
             no_blink=no_blink,
             text=text,
-            scroll=scroll,
+            scroll=(gif is not None and card == "text" and id is None)
+            if scroll is None
+            else scroll,
             scroll_direction=scroll_direction,
             speed=speed,
             theme=theme,
