@@ -502,7 +502,7 @@ def test_scrolling_text_recording_respects_card_duration(
         playlist = tmp_path / "cards.yaml"
         playlist.write_text(
             "cards:\n  - type: text\n    duration: 0.12\n"
-            "    config:\n      text: Merry christmas\n      scroll: true\n"
+            "    text: Merry christmas\n    scroll: true\n"
         )
         options = ["--playlist", str(playlist), "--id", "1"]
     else:
@@ -515,6 +515,9 @@ def test_scrolling_text_recording_respects_card_duration(
         assert (
             sum(image.seek(i) or image.info["duration"] for i in range(image.n_frames)) == expected
         )
+        assert image.n_frames > 1
+        image.seek(1)
+        assert image.convert("RGB").getbbox() is not None
     assert clock.now == pytest.approx(expected / 1000)
 
 
