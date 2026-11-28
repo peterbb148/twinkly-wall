@@ -259,8 +259,10 @@ text GIFs; other cards, playlist entries, and terminal previews retain their
 existing settings.
 
 The full playlist loops just like terminal preview, so `--record-duration` is
-required to stop recording it. For a single card, the card's duration applies;
-`--record-duration` can also stop it earlier. Other recordings use the same
+required to stop recording it. Single-card capture is capped at `--duration`
+(or the configured duration for a playlist entry), including scrolling cards
+that normally finish their whole scroll. `--record-duration` can stop capture
+earlier but cannot extend that cap. Other recordings use the same
 orientation and mirror settings as preview, and `--orientation` overrides the
 mount. `--scale` sets pixels per LED (default 8); scaling uses nearest-neighbor
 pixels. `--no-color` is only available for terminal previews.

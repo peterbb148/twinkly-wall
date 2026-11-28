@@ -487,6 +487,7 @@ def _record_preview(args: CLIOptions) -> int:
         display.mirror_h = False
         display.mirror_v = False
     ctx = create_context_with_datasources(args.settings, orientation=orientation)
+    capture_duration = args.record_duration
     if args.playlist and not args.id and not args.card:
         if args.record_duration is None:
             raise ValueError("--record-duration is required when recording a looping playlist")
@@ -516,6 +517,13 @@ def _record_preview(args: CLIOptions) -> int:
             return 1
         frames = card.frames(ctx)
 
+        card_duration = card.duration if args.id is not None else args.duration
+        if not math.isfinite(card_duration) or card_duration <= 0:
+            raise ValueError("Card duration must be finite and greater than zero")
+        capture_duration = (
+            card_duration if capture_duration is None else min(card_duration, capture_duration)
+        )
+
     record_gif(
         frames,
         args.gif,
@@ -523,7 +531,7 @@ def _record_preview(args: CLIOptions) -> int:
         mirror_h=display.mirror_h,
         mirror_v=display.mirror_v,
         scale=args.scale,
-        duration=args.record_duration,
+        duration=capture_duration,
     )
     print(f"Recorded GIF: {args.gif}")
     return 0

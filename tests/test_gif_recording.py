@@ -157,7 +157,7 @@ def test_real_card_records_over_time(tmp_path):
     output = tmp_path / "clock.gif"
     result = CliRunner().invoke(
         cli.app,
-        ["preview", "clock", "--duration", "0.12", "--gif", str(output), "--scale", "1"],
+        ["preview", "clock", "--duration", "0.5", "--gif", str(output), "--scale", "1"],
     )
     assert result.exit_code == 0, result.output
     with Image.open(output) as image:
@@ -383,7 +383,8 @@ def test_text_gif_display_overrides(tmp_path, monkeypatch, explicit_settings, or
     assert captured["mirror_v"] is explicit_settings
 
 
-def test_text_gif_can_disable_scrolling(tmp_path):
+def test_text_gif_can_disable_scrolling(tmp_path, monkeypatch):
+    _mock_capture_clock(monkeypatch)
     output = tmp_path / "static.gif"
     result = CliRunner().invoke(
         cli.app,
@@ -488,3 +489,38 @@ def test_processing_time_cannot_exceed_gif_frame_delay(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError, match="655.35"):
         gif_output.record_gif(frames(), tmp_path / "out.gif", Orientation.right)
+
+
+@pytest.mark.parametrize("playlist_entry", [False, True])
+@pytest.mark.parametrize("record_duration,expected", [(None, 120), ("0.06", 60), ("1", 120)])
+def test_scrolling_text_recording_respects_card_duration(
+    tmp_path, monkeypatch, playlist_entry, record_duration, expected
+):
+    clock = _mock_capture_clock(monkeypatch)
+    output = tmp_path / "bounded.gif"
+    if playlist_entry:
+        playlist = tmp_path / "cards.yaml"
+        playlist.write_text(
+            "cards:\n  - type: text\n    duration: 0.12\n"
+            "    config:\n      text: Merry christmas\n      scroll: true\n"
+        )
+        options = ["--playlist", str(playlist), "--id", "1"]
+    else:
+        options = ["text", "--text", "Merry christmas", "--duration", "0.12"]
+    if record_duration is not None:
+        options += ["--record-duration", record_duration]
+    result = CliRunner().invoke(cli.app, ["preview", *options, "--gif", str(output)])
+    assert result.exit_code == 0, result.output
+    with Image.open(output) as image:
+        assert (
+            sum(image.seek(i) or image.info["duration"] for i in range(image.n_frames)) == expected
+        )
+    assert clock.now == pytest.approx(expected / 1000)
+
+
+def test_nonfinite_card_duration_is_rejected():
+    result = CliRunner().invoke(
+        cli.app, ["preview", "text", "--text", "Hello", "--duration", "inf", "--gif", "out.gif"]
+    )
+    assert result.exit_code == 1
+    assert "Card duration must be finite" in result.output
