@@ -239,6 +239,50 @@ twinkly-cli say list --layout portrait
 twinkly-cli say list --playlist config/cards.yaml --layout portrait
 ```
 
+### Record previews as GIFs
+
+Add `--gif` to a preview to write a color GIF instead of displaying it:
+
+```bash
+twinkly-cli say preview clock --duration 3 --gif clock.gif
+twinkly-cli say preview text --text "Merry christmas" --gif merry-christmas.gif
+twinkly-cli say preview --playlist config/cards.yaml --id 1 --gif card.gif
+twinkly-cli say preview --playlist config/cards.yaml --record-duration 30 --gif playlist.gif
+```
+
+Direct `preview text --gif` recordings default to scrolling, wires on the left,
+and no horizontal or vertical mirroring, even when automatically discovered
+wall settings use another mount. Use `--no-scroll` for static text,
+`--orientation` to override the wire edge, or an explicit `--settings` file to
+use its orientation and mirror settings. These defaults apply only to direct
+text GIFs; other cards, playlist entries, and terminal previews retain their
+existing settings.
+
+The full playlist loops just like terminal preview, so `--record-duration` is
+required to stop recording it. Single-card capture is capped at `--duration`
+(or the configured duration for a playlist entry), including scrolling cards
+that normally finish their whole scroll. `--record-duration` can stop capture
+earlier but cannot extend that cap. Other recordings use the same
+orientation and mirror settings as preview, and `--orientation` overrides the
+mount. `--scale` sets pixels per LED (default 8); scaling uses nearest-neighbor
+pixels. `--no-color` is only available for terminal previews.
+
+Recording happens in real time because cards can depend on the clock and live
+data. Frame generation and conversion count toward the recording deadline and
+GIF timing. An in-progress frame or provider call cannot be interrupted by the
+deadline; if it finishes late, its frame is discarded and capture stops. File
+encoding happens after capture and is not included in `--record-duration`.
+GIF playback loops; viewers may impose their own timing limits. GIF colors
+are quantized to at most 256 per frame, and delays are rounded to hundredths of
+a second with a 10 ms minimum. Identical frames may be combined; a resulting
+frame delay cannot exceed 655.35 seconds. GIF dimensions cannot exceed 65,535
+pixels per axis. To bound memory, recording rejects more than 10,000 frames or
+25 million scaled frame pixels; lower the duration or scale if needed. Long
+recordings also take more time and disk space. Interrupting capture before
+encoding cancels it without saving a GIF.
+The destination is replaced only after encoding succeeds, so a failed or
+interrupted recording preserves any existing file.
+
 ## Commands and compatibility
 
 ```bash

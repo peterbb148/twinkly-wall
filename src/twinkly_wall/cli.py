@@ -1,8 +1,9 @@
 """Command-line interface for Twinkly Wall."""
 
+import math
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import chain
@@ -30,9 +31,10 @@ from .cards import (
 from .cards.base import CardLayout, get_card_layout, load_card_definitions
 from .config import _process_env_vars, load_playlist, load_settings
 from .fonts import draw_text, text_width
+from .outputs.gif import record_gif
 from .outputs.terminal import animate_frames, print_frame
 from .outputs.twinkly import TwinklyOutput
-from .types import HEIGHT, RGB, WHITE, WIDTH, Orientation
+from .types import HEIGHT, RGB, WHITE, WIDTH, Frame, Orientation
 
 
 @dataclass
@@ -63,6 +65,9 @@ class CLIOptions:
     server: str | None = None
     interval: float = 2.0
     api_key: str | None = None
+    gif: Path | None = None
+    record_duration: float | None = None
+    scale: int = 8
 
 
 def create_context_with_datasources(
@@ -429,6 +434,10 @@ def cmd_mcp(args: CLIOptions) -> int:
 
 def cmd_preview(args: CLIOptions) -> int:
     """Handle the 'preview' subcommand - preview a card animation."""
+    if args.gif is not None:
+        return _record_preview(args)
+    if args.record_duration is not None or args.scale != 8:
+        raise ValueError("--record-duration and --scale require --gif")
     card_type = args.card
     duration = args.duration
 
@@ -462,6 +471,69 @@ def cmd_preview(args: CLIOptions) -> int:
         mirror_v=display.mirror_v,
     )
 
+    return 0
+
+
+def _record_preview(args: CLIOptions) -> int:
+    """Record the same card frames and display mapping as terminal preview."""
+    if args.no_color:
+        raise ValueError("--no-color is only supported for terminal previews")
+    if args.record_duration is not None and not math.isfinite(args.record_duration):
+        raise ValueError("--record-duration must be finite")
+    display = load_settings(args.settings).twinkly
+    orientation = args.orientation
+    if args.card == "text" and args.id is None and args.settings is None:
+        orientation = orientation or Orientation.left
+        display.mirror_h = False
+        display.mirror_v = False
+    ctx = create_context_with_datasources(args.settings, orientation=orientation)
+    capture_duration = args.record_duration
+    if args.playlist and not args.id and not args.card:
+        if args.record_duration is None:
+            raise ValueError("--record-duration is required when recording a looping playlist")
+        playlist = load_playlist(args.playlist)
+        if not playlist.cards:
+            raise ValueError(f"No cards found in playlist: {args.playlist}")
+
+        def playlist_frames() -> Iterator[tuple[Frame, float]]:
+            while True:
+                played_frame = False
+                for cfg in playlist.cards:
+                    card = create_card(cfg.type, {**cfg.config, "duration": cfg.duration})
+                    if card is None:
+                        raise ValueError(f"Unknown card type in playlist: {cfg.type}")
+                    for frame in card.frames(ctx):
+                        played_frame = True
+                        yield frame
+                if not played_frame:
+                    raise ValueError("No frames produced by playlist")
+
+        frames = playlist_frames()
+    else:
+        if not args.id and not args.card:
+            raise ValueError("Please provide a card type or --id from playlist")
+        card, _ = _build_card(args.card, args, args.duration)
+        if card is None:
+            return 1
+        frames = card.frames(ctx)
+
+        card_duration = card.duration if args.id is not None else args.duration
+        if not math.isfinite(card_duration) or card_duration <= 0:
+            raise ValueError("Card duration must be finite and greater than zero")
+        capture_duration = (
+            card_duration if capture_duration is None else min(card_duration, capture_duration)
+        )
+
+    record_gif(
+        frames,
+        args.gif,
+        ctx.orientation,
+        mirror_h=display.mirror_h,
+        mirror_v=display.mirror_v,
+        scale=args.scale,
+        duration=capture_duration,
+    )
+    print(f"Recorded GIF: {args.gif}")
     return 0
 
 
@@ -735,7 +807,10 @@ def preview(
     twelve_hour: bool = False,
     no_blink: bool = False,
     text: Text = None,
-    scroll: bool = False,
+    scroll: Annotated[
+        bool | None,
+        typer.Option("--scroll/--no-scroll", help="Scroll text (default: enabled for text GIFs)"),
+    ] = None,
     scroll_direction: ScrollDirection = ScrollDirection.horizontal,
     speed: Speed = None,
     theme: PacmanTheme = PacmanTheme.trees,
@@ -743,6 +818,11 @@ def preview(
     accumulate: bool = False,
     mode: RainbowMode = RainbowMode.rainbow,
     pattern_mode: PatternMode = PatternMode.rows,
+    gif: Annotated[Path | None, typer.Option("--gif", help="Record to a GIF file")] = None,
+    record_duration: Annotated[
+        float | None, typer.Option("--record-duration", min=0.01, help="Recording limit in seconds")
+    ] = None,
+    scale: Annotated[int, typer.Option("--scale", min=1, help="GIF pixels per LED")] = 8,
 ) -> None:
     """Preview a card, a playlist entry, or a looping playlist in the terminal."""
     _execute(
@@ -759,7 +839,9 @@ def preview(
             twelve_hour=twelve_hour,
             no_blink=no_blink,
             text=text,
-            scroll=scroll,
+            scroll=(gif is not None and card == "text" and id is None)
+            if scroll is None
+            else scroll,
             scroll_direction=scroll_direction,
             speed=speed,
             theme=theme,
@@ -767,6 +849,9 @@ def preview(
             accumulate=accumulate,
             mode=mode,
             pattern_mode=pattern_mode,
+            gif=gif,
+            record_duration=record_duration,
+            scale=scale,
         ),
     )
 
