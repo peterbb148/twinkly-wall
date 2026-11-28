@@ -37,8 +37,8 @@ def record_gif(
     size: tuple[int, int] | None = None
 
     for frame, delay in frames:
-        if not math.isfinite(delay) or delay <= 0:
-            raise ValueError("GIF frame delays must be finite and greater than zero")
+        if not math.isfinite(delay) or delay < 0:
+            raise ValueError("GIF frame delays must be finite and nonnegative")
         if duration is not None:
             delay = min(delay, duration - elapsed)
         if len(images) >= MAX_FRAMES:
@@ -61,8 +61,8 @@ def record_gif(
         image.putdata([pixel for row in oriented for pixel in row])
         image = image.quantize(colors=256).resize(scaled_size, Image.Resampling.NEAREST)
         elapsed += delay
-        next_ticks = max(ticks + 1, round(elapsed * 100))
-        frame_ticks = next_ticks - ticks
+        next_ticks = round(elapsed * 100)
+        frame_ticks = max(1, next_ticks - ticks)
         if frame_ticks > 65535:
             raise ValueError("A GIF frame delay cannot exceed 655.35 seconds")
         images.append(image)

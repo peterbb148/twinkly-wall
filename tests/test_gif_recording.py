@@ -195,7 +195,7 @@ def test_delays_are_rounded_without_accumulating_30fps_drift(tmp_path, monkeypat
         ([], "No frames"),
         ([([], 0.1)], "empty or irregular"),
         ([([[(0, 0, 0)], []], 0.1)], "empty or irregular"),
-        ([([[(0, 0, 0)]], 0)], "delays"),
+        ([([[(0, 0, 0)]], -0.01)], "delays"),
         ([([[(0, 0, 0)]], float("nan"))], "delays"),
         ([([[(0, 0, 0)]], 656)], "655.35"),
         ([([[(0, 0, 0)]], 0.1), ([[(0, 0, 0), (0, 0, 0)]], 0.1)], "same dimensions"),
@@ -399,3 +399,15 @@ def test_terminal_text_keeps_existing_defaults(monkeypatch):
     assert result.exit_code == 0, result.output
     assert captured["scroll"] is False
     assert captured["orientation"] is None
+
+
+@pytest.mark.parametrize("short_delay", [0, 0.001])
+def test_minimum_gif_delay_does_not_shorten_later_frames(tmp_path, monkeypatch, short_delay):
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    frames = [([[(i, 0, 0)]], short_delay) for i in range(10)]
+    frames.append(([[(255, 0, 0)]], 0.1))
+    output = tmp_path / "minimum-delay.gif"
+    gif_output.record_gif(iter(frames), output, Orientation.right, scale=1)
+    with Image.open(output) as image:
+        durations = [image.seek(i) or image.info["duration"] for i in range(image.n_frames)]
+        assert durations == [10] * 10 + [100]
